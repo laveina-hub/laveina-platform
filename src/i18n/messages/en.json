@@ -1,0 +1,93 @@
+{
+  "common": {
+    "appName": "Laveina",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "confirm": "Confirm"
+  },
+  "nav": {
+    "home": "Home",
+    "pricing": "Pricing",
+    "tracking": "Track Parcel",
+    "pickupPoints": "Pickup Points",
+    "bookNow": "Book Now",
+    "login": "Log In",
+    "register": "Sign Up",
+    "dashboard": "Dashboard",
+    "logout": "Log Out"
+  },
+  "auth": {
+    "loginTitle": "Welcome Back",
+    "loginSubtitle": "Sign in to your account",
+    "registerTitle": "Create Account",
+    "registerSubtitle": "Get started with Laveina",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
+    "phone": "Phone Number",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?"
+  },
+  "booking": {
+    "title": "Book a Shipment",
+    "stepSender": "Sender Info",
+    "stepReceiver": "Receiver Info",
+    "stepPickupPoints": "Pickup Points",
+    "stepParcelDetails": "Parcel Details",
+    "stepSummary": "Summary & Pay",
+    "originPostcode": "Origin Postcode",
+    "destinationPostcode": "Destination Postcode",
+    "selectPickupPoint": "Select a pickup point",
+    "weight": "Weight (kg)",
+    "payNow": "Pay Now",
+    "priceBreakdown": "Price Breakdown"
+  },
+  "tracking": {
+    "title": "Track Your Parcel",
+    "placeholder": "Enter tracking ID",
+    "search": "Track",
+    "status": {
+      "payment_confirmed": "Payment Confirmed",
+      "waiting_at_origin": "Waiting at Origin Shop",
+      "received_at_origin": "Received at Origin Shop",
+      "in_transit": "In Transit",
+      "arrived_at_destination": "Arrived at Destination Shop",
+      "ready_for_pickup": "Ready for Pickup",
+      "delivered": "Delivered"
+    }
+  },
+  "home": {
+    "subtitle": "Smart Parcel Delivery — Shop to Shop",
+    "bookShipment": "Book a Shipment",
+    "trackParcel": "Track a Parcel",
+    "affordable": "Affordable",
+    "affordableDesc": "Competitive shop-to-shop pricing across Spain.",
+    "convenient": "Convenient",
+    "convenientDesc": "Drop off and collect from local pickup points.",
+    "transparent": "Transparent",
+    "transparentDesc": "Real-time tracking and instant notifications."
+  },
+  "dashboard": {
+    "overview": "Overview",
+    "shipments": "Shipments",
+    "pickupPoints": "Pickup Points",
+    "pricing": "Pricing",
+    "dispatch": "Dispatch",
+    "postcodes": "Postcodes",
+    "scan": "Scan QR",
+    "verify": "Verify Delivery",
+    "settings": "Settings"
+  }
+}
