@@ -1,0 +1,93 @@
+{
+  "common": {
+    "appName": "Laveina",
+    "loading": "Carregant...",
+    "error": "Alguna cosa ha anat malament",
+    "retry": "Torna-ho a provar",
+    "save": "Desar",
+    "cancel": "Cancel·lar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Cercar",
+    "back": "Enrere",
+    "next": "Següent",
+    "submit": "Enviar",
+    "confirm": "Confirmar"
+  },
+  "nav": {
+    "home": "Inici",
+    "pricing": "Preus",
+    "tracking": "Rastrejar Paquet",
+    "pickupPoints": "Punts de Recollida",
+    "bookNow": "Reservar Ara",
+    "login": "Iniciar Sessió",
+    "register": "Registrar-se",
+    "dashboard": "Panell",
+    "logout": "Tancar Sessió"
+  },
+  "auth": {
+    "loginTitle": "Benvingut de nou",
+    "loginSubtitle": "Inicia sessió al teu compte",
+    "registerTitle": "Crear Compte",
+    "registerSubtitle": "Comença amb Laveina",
+    "email": "Correu electrònic",
+    "password": "Contrasenya",
+    "confirmPassword": "Confirmar Contrasenya",
+    "fullName": "Nom Complet",
+    "phone": "Número de Telèfon",
+    "forgotPassword": "Has oblidat la contrasenya?",
+    "noAccount": "No tens compte?",
+    "hasAccount": "Ja tens compte?"
+  },
+  "booking": {
+    "title": "Reservar un Enviament",
+    "stepSender": "Dades del Remitent",
+    "stepReceiver": "Dades del Destinatari",
+    "stepPickupPoints": "Punts de Recollida",
+    "stepParcelDetails": "Detalls del Paquet",
+    "stepSummary": "Resum i Pagament",
+    "originPostcode": "Codi Postal d'Origen",
+    "destinationPostcode": "Codi Postal de Destí",
+    "selectPickupPoint": "Seleccionar punt de recollida",
+    "weight": "Pes (kg)",
+    "payNow": "Pagar Ara",
+    "priceBreakdown": "Desglossament de Preu"
+  },
+  "tracking": {
+    "title": "Rastreja el Teu Paquet",
+    "placeholder": "Introdueix l'ID de seguiment",
+    "search": "Rastrejar",
+    "status": {
+      "payment_confirmed": "Pagament Confirmat",
+      "waiting_at_origin": "Esperant a la Botiga d'Origen",
+      "received_at_origin": "Rebut a la Botiga d'Origen",
+      "in_transit": "En Trànsit",
+      "arrived_at_destination": "Arribat a la Botiga de Destí",
+      "ready_for_pickup": "Llest per Recollir",
+      "delivered": "Lliurat"
+    }
+  },
+  "home": {
+    "subtitle": "Lliurament Intel·ligent de Paquets — De Botiga a Botiga",
+    "bookShipment": "Reservar un Enviament",
+    "trackParcel": "Rastrejar un Paquet",
+    "affordable": "Assequible",
+    "affordableDesc": "Preus competitius de botiga a botiga a tota Espanya.",
+    "convenient": "Convenient",
+    "convenientDesc": "Entrega i recollida en punts de recollida locals.",
+    "transparent": "Transparent",
+    "transparentDesc": "Seguiment en temps real i notificacions instantànies."
+  },
+  "dashboard": {
+    "overview": "Resum",
+    "shipments": "Enviaments",
+    "pickupPoints": "Punts de Recollida",
+    "pricing": "Preus",
+    "dispatch": "Despatx",
+    "postcodes": "Codis Postals",
+    "scan": "Escanejar QR",
+    "verify": "Verificar Lliurament",
+    "settings": "Configuració"
+  }
+}

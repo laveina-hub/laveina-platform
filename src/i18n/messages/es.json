@@ -1,0 +1,93 @@
+{
+  "common": {
+    "appName": "Laveina",
+    "loading": "Cargando...",
+    "error": "Algo salió mal",
+    "retry": "Intentar de nuevo",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "submit": "Enviar",
+    "confirm": "Confirmar"
+  },
+  "nav": {
+    "home": "Inicio",
+    "pricing": "Precios",
+    "tracking": "Rastrear Paquete",
+    "pickupPoints": "Puntos de Recogida",
+    "bookNow": "Reservar Ahora",
+    "login": "Iniciar Sesión",
+    "register": "Registrarse",
+    "dashboard": "Panel",
+    "logout": "Cerrar Sesión"
+  },
+  "auth": {
+    "loginTitle": "Bienvenido de nuevo",
+    "loginSubtitle": "Inicia sesión en tu cuenta",
+    "registerTitle": "Crear Cuenta",
+    "registerSubtitle": "Empieza con Laveina",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "fullName": "Nombre Completo",
+    "phone": "Número de Teléfono",
+    "forgotPassword": "¿Olvidaste la contraseña?",
+    "noAccount": "¿No tienes cuenta?",
+    "hasAccount": "¿Ya tienes cuenta?"
+  },
+  "booking": {
+    "title": "Reservar un Envío",
+    "stepSender": "Datos del Remitente",
+    "stepReceiver": "Datos del Destinatario",
+    "stepPickupPoints": "Puntos de Recogida",
+    "stepParcelDetails": "Detalles del Paquete",
+    "stepSummary": "Resumen y Pago",
+    "originPostcode": "Código Postal de Origen",
+    "destinationPostcode": "Código Postal de Destino",
+    "selectPickupPoint": "Seleccionar punto de recogida",
+    "weight": "Peso (kg)",
+    "payNow": "Pagar Ahora",
+    "priceBreakdown": "Desglose de Precio"
+  },
+  "tracking": {
+    "title": "Rastrea Tu Paquete",
+    "placeholder": "Introduce el ID de seguimiento",
+    "search": "Rastrear",
+    "status": {
+      "payment_confirmed": "Pago Confirmado",
+      "waiting_at_origin": "Esperando en Tienda de Origen",
+      "received_at_origin": "Recibido en Tienda de Origen",
+      "in_transit": "En Tránsito",
+      "arrived_at_destination": "Llegó a Tienda de Destino",
+      "ready_for_pickup": "Listo para Recoger",
+      "delivered": "Entregado"
+    }
+  },
+  "home": {
+    "subtitle": "Entrega Inteligente de Paquetes — De Tienda a Tienda",
+    "bookShipment": "Reservar un Envío",
+    "trackParcel": "Rastrear un Paquete",
+    "affordable": "Asequible",
+    "affordableDesc": "Precios competitivos de tienda a tienda en toda España.",
+    "convenient": "Conveniente",
+    "convenientDesc": "Entrega y recogida en puntos de recogida locales.",
+    "transparent": "Transparente",
+    "transparentDesc": "Seguimiento en tiempo real y notificaciones instantáneas."
+  },
+  "dashboard": {
+    "overview": "Resumen",
+    "shipments": "Envíos",
+    "pickupPoints": "Puntos de Recogida",
+    "pricing": "Precios",
+    "dispatch": "Despacho",
+    "postcodes": "Códigos Postales",
+    "scan": "Escanear QR",
+    "verify": "Verificar Entrega",
+    "settings": "Configuración"
+  }
+}
