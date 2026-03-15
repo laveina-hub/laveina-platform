@@ -1,10 +1,12 @@
-export type ApiResponse<T> = {
-  data: T;
-  error: null;
-} | {
-  data: null;
-  error: ApiError;
-};
+export type ApiResponse<T> =
+  | {
+      data: T;
+      error: null;
+    }
+  | {
+      data: null;
+      error: ApiError;
+    };
 
 export type ApiError = {
   message: string;

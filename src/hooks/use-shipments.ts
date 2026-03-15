@@ -3,8 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 
 import type { PaginatedResponse } from "@/types/api";
-import type { Shipment, ShipmentWithRelations } from "@/types/shipment";
 import type { ShipmentStatus } from "@/types/enums";
+import type { Shipment, ShipmentWithRelations } from "@/types/shipment";
 
 export type ShipmentFilters = {
   page?: number;
@@ -15,9 +15,7 @@ export type ShipmentFilters = {
   search?: string;
 };
 
-async function fetchShipments(
-  filters: ShipmentFilters,
-): Promise<PaginatedResponse<Shipment>> {
+async function fetchShipments(filters: ShipmentFilters): Promise<PaginatedResponse<Shipment>> {
   const params = new URLSearchParams();
 
   if (filters.page) params.set("page", String(filters.page));
@@ -49,12 +47,8 @@ async function fetchShipment(id: string): Promise<ShipmentWithRelations> {
   return result.data;
 }
 
-async function fetchShipmentByTracking(
-  trackingId: string,
-): Promise<ShipmentWithRelations> {
-  const response = await fetch(
-    `/api/shipments/tracking/${encodeURIComponent(trackingId)}`,
-  );
+async function fetchShipmentByTracking(trackingId: string): Promise<ShipmentWithRelations> {
+  const response = await fetch(`/api/shipments/tracking/${encodeURIComponent(trackingId)}`);
 
   if (!response.ok) {
     const error = await response.json();

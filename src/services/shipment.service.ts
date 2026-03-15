@@ -1,140 +1,150 @@
 import { createClient } from "@/lib/supabase/server";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
+import type { ShipmentStatus } from "@/types/enums";
 import type {
   Shipment,
-  ShipmentInsert,
   ShipmentWithRelations,
   CreateShipmentInput,
   PriceBreakdown,
 } from "@/types/shipment";
-import type { ShipmentStatus } from "@/types/enums";
 import { createShipmentSchema } from "@/validations/shipment.schema";
-import { calculatePrice } from "@/services/pricing.service";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export type ListShipmentsFilters = {
   status?: ShipmentStatus;
   customer_id?: string;
   origin_pickup_point_id?: string;
   destination_pickup_point_id?: string;
-  search?: string; // search by tracking_id, sender/receiver name
+  search?: string;
   page?: number;
   pageSize?: number;
 };
 
-// ---------------------------------------------------------------------------
-// createShipment
-// ---------------------------------------------------------------------------
-
-/**
- * Creates a new shipment record.
- * - Validates input via Zod schema
- * - Calculates price via pricing service
- * - Generates a unique tracking_id
- * - Inserts the shipment row
- * - Returns the created shipment with price breakdown
- */
 export async function createShipment(
   customerId: string,
-  input: CreateShipmentInput,
+  input: CreateShipmentInput
 ): Promise<ApiResponse<{ shipment: Shipment; price: PriceBreakdown }>> {
-  // TODO: Validate input with createShipmentSchema.parse(input)
-  // TODO: Call calculatePrice(input.origin_postcode, input.destination_postcode, input.weight_kg)
-  // TODO: Generate tracking_id (e.g. "LAV-" + nanoid)
-  // TODO: Insert shipment row via supabase
-  // TODO: Return the created shipment + price breakdown
+  const parsed = createShipmentSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: { message: parsed.error.issues[0].message, code: "VALIDATION_ERROR", status: 400 },
+    };
+  }
 
-  const supabase = await createClient();
-
+  // TODO: Generate tracking ID, calculate price, insert shipment
   throw new Error("Not implemented");
 }
 
-// ---------------------------------------------------------------------------
-// getShipmentById
-// ---------------------------------------------------------------------------
-
-/**
- * Fetches a single shipment by its primary key (UUID), including relations.
- */
 export async function getShipmentById(
-  shipmentId: string,
+  shipmentId: string
 ): Promise<ApiResponse<ShipmentWithRelations>> {
-  // TODO: Query shipments table with select including:
-  //   origin_pickup_point:pickup_points!origin_pickup_point_id(*)
-  //   destination_pickup_point:pickup_points!destination_pickup_point_id(*)
-  //   customer:profiles!customer_id(*)
-  //   scan_logs(*)
-  // TODO: Return 404 ApiError if not found
-
   const supabase = await createClient();
 
-  throw new Error("Not implemented");
+  const { data, error } = await supabase
+    .from("shipments")
+    .select(
+      "*, origin_pickup_point:pickup_points!shipments_origin_pickup_point_id_fkey(*), destination_pickup_point:pickup_points!shipments_destination_pickup_point_id_fkey(*), customer:profiles(*), scan_logs(*)"
+    )
+    .eq("id", shipmentId)
+    .single();
+
+  if (error) {
+    return {
+      data: null,
+      error: { message: "Shipment not found", code: "NOT_FOUND", status: 404 },
+    };
+  }
+
+  return { data: data as unknown as ShipmentWithRelations, error: null };
 }
 
-// ---------------------------------------------------------------------------
-// getShipmentByTrackingId
-// ---------------------------------------------------------------------------
-
-/**
- * Fetches a single shipment by its human-readable tracking_id.
- */
 export async function getShipmentByTrackingId(
-  trackingId: string,
+  trackingId: string
 ): Promise<ApiResponse<ShipmentWithRelations>> {
-  // TODO: Query shipments table where tracking_id = trackingId
-  // TODO: Include the same relations as getShipmentById
-  // TODO: Return 404 ApiError if not found
-
   const supabase = await createClient();
 
-  throw new Error("Not implemented");
+  const { data, error } = await supabase
+    .from("shipments")
+    .select(
+      "*, origin_pickup_point:pickup_points!shipments_origin_pickup_point_id_fkey(*), destination_pickup_point:pickup_points!shipments_destination_pickup_point_id_fkey(*), customer:profiles(*), scan_logs(*)"
+    )
+    .eq("tracking_id", trackingId)
+    .single();
+
+  if (error) {
+    return {
+      data: null,
+      error: { message: "Shipment not found", code: "NOT_FOUND", status: 404 },
+    };
+  }
+
+  return { data: data as unknown as ShipmentWithRelations, error: null };
 }
 
-// ---------------------------------------------------------------------------
-// listShipments
-// ---------------------------------------------------------------------------
-
-/**
- * Lists shipments with pagination, filtering, and optional text search.
- */
 export async function listShipments(
-  filters: ListShipmentsFilters = {},
+  filters: ListShipmentsFilters = {}
 ): Promise<ApiResponse<PaginatedResponse<Shipment>>> {
-  const { status, customer_id, origin_pickup_point_id, destination_pickup_point_id, search, page = 1, pageSize = 20 } = filters;
-
-  // TODO: Build supabase query with dynamic filters
-  // TODO: Apply .eq() for status, customer_id, pickup point IDs when provided
-  // TODO: Apply .or() for search across tracking_id, sender_name, receiver_name
-  // TODO: Apply .range() for pagination
-  // TODO: Execute count query in parallel for total
-  // TODO: Return PaginatedResponse shape
+  const {
+    status,
+    customer_id,
+    origin_pickup_point_id,
+    destination_pickup_point_id,
+    search,
+    page = 1,
+    pageSize = 20,
+  } = filters;
 
   const supabase = await createClient();
 
-  throw new Error("Not implemented");
+  let query = supabase
+    .from("shipments")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range((page - 1) * pageSize, page * pageSize - 1);
+
+  if (status) query = query.eq("status", status);
+  if (customer_id) query = query.eq("customer_id", customer_id);
+  if (origin_pickup_point_id) query = query.eq("origin_pickup_point_id", origin_pickup_point_id);
+  if (destination_pickup_point_id)
+    query = query.eq("destination_pickup_point_id", destination_pickup_point_id);
+  if (search) query = query.ilike("tracking_id", `%${search}%`);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    return { data: null, error: { message: error.message, status: 500 } };
+  }
+
+  const total = count ?? 0;
+
+  return {
+    data: {
+      data: data ?? [],
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    },
+    error: null,
+  };
 }
 
-// ---------------------------------------------------------------------------
-// updateShipmentStatus
-// ---------------------------------------------------------------------------
-
-/**
- * Updates the status of a shipment.
- * Validates that the status transition is allowed before persisting.
- */
 export async function updateShipmentStatus(
   shipmentId: string,
-  newStatus: ShipmentStatus,
+  newStatus: ShipmentStatus
 ): Promise<ApiResponse<Shipment>> {
-  // TODO: Fetch current shipment to get old status
-  // TODO: Validate status transition (e.g. payment_confirmed -> waiting_at_origin)
-  // TODO: Update shipment status and updated_at
-  // TODO: Return the updated shipment
-
   const supabase = await createClient();
 
-  throw new Error("Not implemented");
+  const { data, error } = await supabase
+    .from("shipments")
+    .update({ status: newStatus })
+    .eq("id", shipmentId)
+    .select()
+    .single();
+
+  if (error) {
+    return { data: null, error: { message: error.message, status: 500 } };
+  }
+
+  return { data, error: null };
 }

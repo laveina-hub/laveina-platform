@@ -2,9 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import type { Database } from "@/types/database.types";
-
-type PickupPoint = Database["public"]["Tables"]["pickup_points"]["Row"];
+import type { PickupPoint } from "@/types/pickup-point";
 
 async function fetchPickupPoints(postcode?: string): Promise<PickupPoint[]> {
   const params = new URLSearchParams();

@@ -1,13 +1,13 @@
+import { calculateShipmentPrice } from "@/lib/pricing/calculator";
 import { createClient } from "@/lib/supabase/server";
 import type { ApiResponse } from "@/types/api";
+import type { ZoneType } from "@/types/enums";
 import type {
   PricingRule,
   PricingRuleInsert,
   PricingRuleUpdate,
-  PriceCalculationInput,
   PriceCalculationResult,
 } from "@/types/pricing";
-import type { ZoneType } from "@/types/enums";
 import {
   createPricingRuleSchema,
   updatePricingRuleSchema,
@@ -15,115 +15,157 @@ import {
   type UpdatePricingRuleInput,
 } from "@/validations/pricing.schema";
 
-// ---------------------------------------------------------------------------
-// calculatePrice
-// ---------------------------------------------------------------------------
-
-/**
- * Calculates the shipping price for a parcel given origin/destination postcodes
- * and weight.
- *
- * Steps:
- *  1. Resolve each postcode to a zone via `getZoneByPostcode`
- *  2. Look up the matching pricing_rule for (origin_zone, destination_zone, weight)
- *  3. Return the price breakdown
- */
 export async function calculatePrice(
   origin_postcode: string,
   destination_postcode: string,
-  weight_kg: number,
+  weight_kg: number
 ): Promise<ApiResponse<PriceCalculationResult>> {
-  // TODO: const originZone = await getZoneByPostcode(origin_postcode)
-  // TODO: const destZone   = await getZoneByPostcode(destination_postcode)
-  // TODO: Query pricing_rules where origin_zone, destination_zone match
-  //       and weight_kg is between min_weight_kg and max_weight_kg
-  //       and is_active = true
-  // TODO: Return 404 ApiError if no matching rule found
-  // TODO: Return PriceCalculationResult
-
   const supabase = await createClient();
 
-  throw new Error("Not implemented");
+  // Look up zones for postcodes
+  const { data: originPostcode } = await supabase
+    .from("postcodes")
+    .select("zone")
+    .eq("code", origin_postcode)
+    .single();
+
+  const { data: destPostcode } = await supabase
+    .from("postcodes")
+    .select("zone")
+    .eq("code", destination_postcode)
+    .single();
+
+  if (!originPostcode || !destPostcode) {
+    return {
+      data: null,
+      error: { message: "Invalid postcode", code: "INVALID_POSTCODE", status: 400 },
+    };
+  }
+
+  const originZone = originPostcode.zone as ZoneType;
+  const destZone = destPostcode.zone as ZoneType;
+
+  // Fetch pricing rules for this zone combination
+  const { data: rules, error } = await supabase
+    .from("pricing_rules")
+    .select("*")
+    .eq("origin_zone", originZone)
+    .eq("destination_zone", destZone)
+    .eq("is_active", true);
+
+  if (error || !rules?.length) {
+    return {
+      data: null,
+      error: {
+        message: `No pricing rules found for route ${originZone} -> ${destZone}`,
+        code: "NO_PRICING_RULES",
+        status: 404,
+      },
+    };
+  }
+
+  try {
+    const result = calculateShipmentPrice(originZone, destZone, weight_kg, rules);
+    return { data: result, error: null };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Price calculation failed";
+    return { data: null, error: { message, status: 400 } };
+  }
 }
 
-// ---------------------------------------------------------------------------
-// getZoneByPostcode
-// ---------------------------------------------------------------------------
-
-/**
- * Looks up the zone (A/B/C/D) for a given postcode from the `postcodes` table.
- */
-export async function getZoneByPostcode(
-  postcode: string,
-): Promise<ApiResponse<ZoneType>> {
-  // TODO: Query postcodes table where code = postcode
-  // TODO: Return 404 ApiError if postcode not found
-  // TODO: Return the zone value
-
+export async function getZoneByPostcode(postcode: string): Promise<ApiResponse<ZoneType>> {
   const supabase = await createClient();
 
-  throw new Error("Not implemented");
+  const { data, error } = await supabase
+    .from("postcodes")
+    .select("zone")
+    .eq("code", postcode)
+    .single();
+
+  if (error || !data) {
+    return {
+      data: null,
+      error: { message: "Postcode not found", code: "NOT_FOUND", status: 404 },
+    };
+  }
+
+  return { data: data.zone as ZoneType, error: null };
 }
 
-// ---------------------------------------------------------------------------
-// listPricingRules
-// ---------------------------------------------------------------------------
-
-/**
- * Returns all pricing rules, optionally filtered by zone or active status.
- */
 export async function listPricingRules(
   filters: {
     origin_zone?: ZoneType;
     destination_zone?: ZoneType;
     is_active?: boolean;
-  } = {},
+  } = {}
 ): Promise<ApiResponse<PricingRule[]>> {
-  // TODO: Build query with optional .eq() filters
-  // TODO: Order by origin_zone, destination_zone, min_weight_kg
-  // TODO: Return rows
-
   const supabase = await createClient();
 
-  throw new Error("Not implemented");
+  let query = supabase.from("pricing_rules").select("*").order("created_at", { ascending: false });
+
+  if (filters.origin_zone) query = query.eq("origin_zone", filters.origin_zone);
+  if (filters.destination_zone) query = query.eq("destination_zone", filters.destination_zone);
+  if (filters.is_active !== undefined) query = query.eq("is_active", filters.is_active);
+
+  const { data, error } = await query;
+
+  if (error) {
+    return { data: null, error: { message: error.message, status: 500 } };
+  }
+
+  return { data: data ?? [], error: null };
 }
 
-// ---------------------------------------------------------------------------
-// createPricingRule
-// ---------------------------------------------------------------------------
-
-/**
- * Creates a new pricing rule after validating with Zod schema.
- */
 export async function createPricingRule(
-  input: CreatePricingRuleInput,
+  input: CreatePricingRuleInput
 ): Promise<ApiResponse<PricingRule>> {
-  // TODO: Validate input with createPricingRuleSchema.parse(input)
-  // TODO: Insert row into pricing_rules
-  // TODO: Return the created rule
+  const parsed = createPricingRuleSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: { message: parsed.error.issues[0].message, code: "VALIDATION_ERROR", status: 400 },
+    };
+  }
 
   const supabase = await createClient();
 
-  throw new Error("Not implemented");
+  const { data, error } = await supabase
+    .from("pricing_rules")
+    .insert(parsed.data as PricingRuleInsert)
+    .select()
+    .single();
+
+  if (error) {
+    return { data: null, error: { message: error.message, status: 500 } };
+  }
+
+  return { data, error: null };
 }
 
-// ---------------------------------------------------------------------------
-// updatePricingRule
-// ---------------------------------------------------------------------------
-
-/**
- * Updates an existing pricing rule by ID.
- */
 export async function updatePricingRule(
   ruleId: string,
-  input: UpdatePricingRuleInput,
+  input: UpdatePricingRuleInput
 ): Promise<ApiResponse<PricingRule>> {
-  // TODO: Validate input with updatePricingRuleSchema.parse(input)
-  // TODO: Update pricing_rules row where id = ruleId
-  // TODO: Return 404 ApiError if not found
-  // TODO: Return the updated rule
+  const parsed = updatePricingRuleSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: { message: parsed.error.issues[0].message, code: "VALIDATION_ERROR", status: 400 },
+    };
+  }
 
   const supabase = await createClient();
 
-  throw new Error("Not implemented");
+  const { data, error } = await supabase
+    .from("pricing_rules")
+    .update(parsed.data as PricingRuleUpdate)
+    .eq("id", ruleId)
+    .select()
+    .single();
+
+  if (error) {
+    return { data: null, error: { message: error.message, status: 500 } };
+  }
+
+  return { data, error: null };
 }

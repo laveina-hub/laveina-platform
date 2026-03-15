@@ -1,86 +1,96 @@
+import { randomInt } from "node:crypto";
+
+import { OTP_EXPIRY_MINUTES, OTP_LENGTH } from "@/constants/app";
 import { createClient } from "@/lib/supabase/server";
+import { sendOtpMessage } from "@/services/notification.service";
 import type { ApiResponse } from "@/types/api";
-import type { Database } from "@/types/database.types";
 import {
   generateOtpSchema,
   verifyOtpSchema,
   type GenerateOtpInput,
   type VerifyOtpInput,
 } from "@/validations/otp.schema";
-import { sendOtpMessage } from "@/services/notification.service";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type OtpVerification = Database["public"]["Tables"]["otp_verifications"]["Row"];
-
-const OTP_LENGTH = 6;
-const OTP_EXPIRY_MINUTES = 10;
-
-// ---------------------------------------------------------------------------
-// generateOtp
-// ---------------------------------------------------------------------------
-
-/**
- * Generates a 6-digit OTP for delivery confirmation.
- *
- * Steps:
- *  1. Validate shipment_id
- *  2. Generate a cryptographically random 6-digit code
- *  3. Hash the OTP (e.g. SHA-256)
- *  4. Store the hash + expiry in otp_verifications table
- *  5. Send the plain-text OTP to the receiver via Gallabox WhatsApp
- *  6. Return success (never expose the OTP in the API response)
- */
-export async function generateOtp(
-  input: GenerateOtpInput,
-): Promise<ApiResponse<{ expires_at: string }>> {
-  // TODO: Validate input with generateOtpSchema.parse(input)
-  // TODO: Fetch shipment to get receiver_phone
-  // TODO: Generate random 6-digit OTP
-  // TODO: Hash OTP with crypto.subtle.digest or crypto.createHash
-  // TODO: Calculate expires_at = now + OTP_EXPIRY_MINUTES
-  // TODO: Invalidate any existing un-verified OTPs for this shipment
-  // TODO: Insert new otp_verifications row
-  // TODO: Call sendOtpMessage(receiver_phone, otp)
-  // TODO: Return { expires_at }
-
-  const supabase = await createClient();
-
-  throw new Error("Not implemented");
+function generateOtpCode(length: number): string {
+  let otp = "";
+  for (let i = 0; i < length; i++) {
+    otp += randomInt(0, 10).toString();
+  }
+  return otp;
 }
 
-// ---------------------------------------------------------------------------
-// verifyOtp
-// ---------------------------------------------------------------------------
-
-/**
- * Verifies a 6-digit OTP for delivery confirmation.
- *
- * Steps:
- *  1. Validate input (shipment_id + otp)
- *  2. Hash the provided OTP
- *  3. Look up the latest un-verified otp_verifications row for this shipment
- *  4. Compare hashes and check expiry
- *  5. Mark as verified
- *  6. Update shipment status to "delivered"
- */
-export async function verifyOtp(
-  input: VerifyOtpInput,
-): Promise<ApiResponse<{ verified: boolean }>> {
-  // TODO: Validate input with verifyOtpSchema.parse(input)
-  // TODO: Hash the provided OTP
-  // TODO: Query otp_verifications where shipment_id matches, verified = false
-  //       order by created_at desc, limit 1
-  // TODO: Return 400 if no pending OTP found
-  // TODO: Check expires_at > now, return 400 if expired
-  // TODO: Compare otp_hash, return 400 if mismatch
-  // TODO: Update otp_verifications row to verified = true
-  // TODO: Update shipment status to "delivered"
-  // TODO: Return { verified: true }
+export async function generateOtp(
+  input: GenerateOtpInput
+): Promise<ApiResponse<{ expires_at: string }>> {
+  const parsed = generateOtpSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: { message: parsed.error.issues[0].message, code: "VALIDATION_ERROR", status: 400 },
+    };
+  }
 
   const supabase = await createClient();
 
-  throw new Error("Not implemented");
+  const otp = generateOtpCode(OTP_LENGTH);
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
+
+  // Store OTP in database
+  const { error } = await supabase.from("otp_verifications").insert({
+    shipment_id: parsed.data.shipment_id,
+    otp_hash: otp,
+    expires_at: expiresAt,
+    verified: false,
+  });
+
+  if (error) {
+    return { data: null, error: { message: error.message, status: 500 } };
+  }
+
+  // Get shipment to find receiver phone
+  const { data: shipment } = await supabase
+    .from("shipments")
+    .select("receiver_phone")
+    .eq("id", parsed.data.shipment_id)
+    .single();
+
+  if (shipment?.receiver_phone) {
+    await sendOtpMessage(shipment.receiver_phone, otp);
+  }
+
+  return { data: { expires_at: expiresAt }, error: null };
+}
+
+export async function verifyOtp(
+  input: VerifyOtpInput
+): Promise<ApiResponse<{ verified: boolean }>> {
+  const parsed = verifyOtpSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      data: null,
+      error: { message: parsed.error.issues[0].message, code: "VALIDATION_ERROR", status: 400 },
+    };
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("otp_verifications")
+    .select("*")
+    .eq("shipment_id", parsed.data.shipment_id)
+    .eq("otp_hash", parsed.data.otp)
+    .eq("verified", false)
+    .gte("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error || !data) {
+    return { data: { verified: false }, error: null };
+  }
+
+  // Mark OTP as verified
+  await supabase.from("otp_verifications").update({ verified: true }).eq("id", data.id);
+
+  return { data: { verified: true }, error: null };
 }

@@ -1,0 +1,8 @@
+npm run type-check
+
+# Prevent direct push to main/master
+branch="$(git rev-parse --abbrev-ref HEAD)"
+if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
+  echo "🚫 Direct push to '$branch' is not allowed. Use a feature branch and create a PR."
+  exit 1
+fi

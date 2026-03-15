@@ -15,8 +15,18 @@
     "submit": "Enviar",
     "confirm": "Confirmar"
   },
+  "metadata": {
+    "title": "Laveina — Lliurament Intel·ligent de Paquets",
+    "titleTemplate": "%s | Laveina",
+    "description": "Plataforma de lliurament de paquets de botiga a botiga. Reserva, rastreja i gestiona enviaments a través de punts de recollida associats."
+  },
   "nav": {
     "home": "Inici",
+    "request": "Sol·licitar",
+    "track": "Rastrejar",
+    "about": "Nosaltres",
+    "contact": "Contacte",
+    "signIn": "Iniciar Sessió",
     "pricing": "Preus",
     "tracking": "Rastrejar Paquet",
     "pickupPoints": "Punts de Recollida",
@@ -24,7 +34,9 @@
     "login": "Iniciar Sessió",
     "register": "Registrar-se",
     "dashboard": "Panell",
-    "logout": "Tancar Sessió"
+    "logout": "Tancar Sessió",
+    "openMenu": "Obrir menú",
+    "closeMenu": "Tancar menú"
   },
   "auth": {
     "loginTitle": "Benvingut de nou",
@@ -55,9 +67,31 @@
     "priceBreakdown": "Desglossament de Preu"
   },
   "tracking": {
-    "title": "Rastreja el Teu Paquet",
-    "placeholder": "Introdueix l'ID de seguiment",
-    "search": "Rastrejar",
+    "title": "Rastreja el Teu Enviament",
+    "subtitle": "Introdueix el teu número de seguiment per veure l'estat en temps real del teu paquet.",
+    "placeholder": "Introdueix el Número de Seguiment",
+    "search": "Rastrejar Enviament",
+    "helperText": "Pots rastrejar fins a 5 enviaments alhora.",
+    "contactSupport": "Contactar Suport",
+    "trackingIdLabel": "ID de Seguiment: # {trackingId}",
+    "orderId": "ID de Comanda",
+    "bookingDate": "Data de Reserva",
+    "from": "Des de",
+    "to": "Fins a",
+    "help": "Ajuda",
+    "shipmentProgress": "Progrés de l'Enviament",
+    "recentShipments": "Enviaments Recents",
+    "phone": "+92-080-123456",
+    "email": "support@laveina.com",
+    "liveChat": "Xat en Directe",
+    "maskedValue": "** *** ****",
+    "progress": {
+      "orderReceived": "Comanda Rebuda",
+      "dispatched": "Despatxat",
+      "inTransit": "En Trànsit",
+      "outForDelivery": "En Repartiment",
+      "delivered": "Lliurat"
+    },
     "status": {
       "payment_confirmed": "Pagament Confirmat",
       "waiting_at_origin": "Esperant a la Botiga d'Origen",
@@ -68,6 +102,12 @@
       "delivered": "Lliurat"
     }
   },
+  "hero": {
+    "headline": "Lliurament Intel·ligent Que S'Adapta al Teu Ritme",
+    "subtext": "Simplificant Enviaments, Un Punt a la Vegada.",
+    "registerNow": "Registra't Ara",
+    "trackShipment": "Rastrejar Enviament"
+  },
   "home": {
     "subtitle": "Lliurament Intel·ligent de Paquets — De Botiga a Botiga",
     "bookShipment": "Reservar un Enviament",
@@ -77,7 +117,98 @@
     "convenient": "Convenient",
     "convenientDesc": "Entrega i recollida en punts de recollida locals.",
     "transparent": "Transparent",
-    "transparentDesc": "Seguiment en temps real i notificacions instantànies."
+    "transparentDesc": "Seguiment en temps real i notificacions instantànies.",
+    "pricingSection": {
+      "title": "Serveis i Preus",
+      "description": "Pots triar el termini de lliurament que millor s'adapti al teu horari i pressupost, ja sigui un servei exprés ultraràpid per a enviaments urgents o una opció d'enviament econòmic més assequible per a lliuraments rendibles.",
+      "requestDelivery": "Sol·licitar Lliurament",
+      "from": "des de",
+      "fastestBadge": "MÉS RÀPID",
+      "fastestName": "Exprés Mig Dia",
+      "fastestDesc": "En 4 hores",
+      "popularBadge": "POPULAR",
+      "popularName": "Estàndard 24h",
+      "popularDesc": "Lliurament l'endemà",
+      "valueBadge": "VALOR",
+      "valueName": "Flexible 48h",
+      "valueDesc": "En 2 dies",
+      "economyBadge": "ECONÒMIC",
+      "economyName": "Programat 72h",
+      "economyDesc": "En 4 hores",
+      "bulkBadge": "VOLUM",
+      "bulkName": "Econòmic 3–7 Dies",
+      "bulkDesc": "En 4 hores"
+    }
+  },
+  "whyChooseUs": {
+    "titleLine1": "Per Què Triar",
+    "titleLine2": "LAVEINA",
+    "description": "Les grans transicions empresarials requereixen més que suport transaccional — exigeixen claredat, confiança i criteri experimentat.",
+    "imageAlt": "Dona usant el mòbil envoltada dels valors de Laveina: Tecnològic, Ecològic, Transparent i Segur"
+  },
+  "pickupPointsNetwork": {
+    "title": "Xarxa de Punts de Recollida",
+    "subtitle": "Troba el teu punt de recollida més proper i gaudeix d'un lliurament i recollida de paquets ràpid i còmode a la nostra creixent xarxa d'ubicacions associades.",
+    "getDirections": "Com Arribar-hi",
+    "mapAlt": "Mapa de cobertura de la xarxa de punts de recollida",
+    "point1Name": "Hub Centre Ciutat",
+    "point1Status": "Obert fins a les 22 h",
+    "point1Distance": "0.2 km de distància",
+    "point2Name": "Urban Market Express",
+    "point2Status": "Accés 24/7",
+    "point2Distance": "0.5 km de distància",
+    "point3Name": "Taquilles Estació Metro",
+    "point3Status": "Accés 24/7",
+    "point3Distance": "0.8 km de distància"
+  },
+  "ecoPartner": {
+    "title": "Eco Partner",
+    "subtitle": "Col·laboració Empresarial Estructurada",
+    "description": "El nostre Programa Eco Partner és una oferta de servei completament estructurada — no només lliurament. Col·laborem estretament amb restaurants i marques minoristes per integrar embalatges sostenibles, optimitzar la logística i mostrar l'impacte ambiental mesurable.",
+    "feature1": "Incorporació i consultoria dedicada",
+    "feature2": "Orientació sobre embalatges sostenibles",
+    "feature3": "Informes mensuals de rendiment d'impacte",
+    "feature4": "Reconeixement de co-marca sostenible",
+    "cta": "Més Sobre Eco Partner",
+    "imageAlt": "Soci de lliurament i client donant-se la mà"
+  },
+  "cta": {
+    "titleLine1": "Preparat Per",
+    "titleLine2": "Començar a Enviar?",
+    "description": "Mou el teu paquet per la ciutat amb rapidesa, claredat i confiança.",
+    "ctaPrimary": "Sol·licitar Lliurament Ara",
+    "ctaSecondary": "Contactar Vendes",
+    "imageAlt": "Scooter de Laveina i furgoneta de repartiment preparada per a l'enviament"
+  },
+  "footerInfoBar": {
+    "ariaLabel": "Barra d'informació del peu de pàgina",
+    "gdprAlt": "Compleix amb el RGPD",
+    "soc2Alt": "Certificat SOC 2 Tipus 2",
+    "footerNav": "Navegació del peu de pàgina",
+    "stayUpdated": "Mantés-te Informat",
+    "emailPlaceholder": "Adreça electrònica",
+    "emailLabel": "La teva adreça electrònica",
+    "newsletterForm": "Subscripció al butlletí",
+    "subscribeAriaLabel": "Subscriure's",
+    "nav": {
+      "home": "Inici",
+      "request": "Sol·licitar",
+      "track": "Rastrejar",
+      "about": "Nosaltres",
+      "contact": "Contacte"
+    },
+    "social": {
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "twitter": "X (Twitter)",
+      "whatsapp": "WhatsApp"
+    }
+  },
+  "footer": {
+    "copyright": "Copyright © {year} Laveina. Tots els drets reservats.",
+    "terms": "Termes i Condicions",
+    "privacy": "Política de Privacitat",
+    "legalNav": "Navegació legal"
   },
   "dashboard": {
     "overview": "Resum",
@@ -89,5 +220,86 @@
     "scan": "Escanejar QR",
     "verify": "Verificar Lliurament",
     "settings": "Configuració"
+  },
+  "requestDelivery": {
+    "title": "Sol·licitar Lliurament",
+    "shipmentDetails": "Detalls de l'Enviament",
+    "packageType": "Tipus de Paquet",
+    "parcel": "Paquet",
+    "document": "Document",
+    "fragile": "Fràgil",
+    "packageDescription": "Descripció del Paquet",
+    "quantity": "Quantitat",
+    "decreaseQuantity": "Disminuir quantitat",
+    "increaseQuantity": "Augmentar quantitat",
+    "weight": "Pes",
+    "packageBoxAlt": "Il·lustració de caixa de paquet",
+    "decreaseWeight": "Disminuir pes en 0.5 kg",
+    "increaseWeight": "Augmentar pes en 0.5 kg",
+    "packageWeight": "Pes del paquet",
+    "pickupFrom": "Recollir Des de",
+    "pickupAddress": "Adreça de Recollida",
+    "contactName": "Nom de Contacte",
+    "phoneNumber": "Número de Telèfon",
+    "deliverTo": "Lliurar A",
+    "postalCode": "Codi Postal",
+    "pickupPoint": "Punt de Recollida",
+    "destinationPickupPoint": "Punt de Recollida de Destí",
+    "deliverySpeed": "Velocitat de Lliurament",
+    "standard": "Estàndard",
+    "express": "Exprés",
+    "sameDay": "Mateix Dia",
+    "confirmDeliveryRequest": "Confirmar Sol·licitud de Lliurament",
+    "pricingSummary": "Resum de Preus",
+    "estimatedCost": "Cost Estimat:",
+    "taxAndFees": "Impostos i Taxes:",
+    "total": "Total:"
+  },
+  "pages": {
+    "login": "Iniciar Sessió",
+    "register": "Registrar-se",
+    "forgotPassword": "He Oblidat la Contrasenya",
+    "adminDashboard": "Panell d'Administració",
+    "shipments": "Enviaments",
+    "shipmentDetail": "Detall de l'Enviament",
+    "pickupPoints": "Punts de Recollida",
+    "editPickupPoint": "Editar Punt de Recollida",
+    "dispatchManagement": "Gestió de Despatx",
+    "postcodeZones": "Zones de Codi Postal",
+    "pricingRules": "Regles de Preus",
+    "myShipments": "Els Meus Enviaments",
+    "shipmentDetails": "Detalls de l'Enviament",
+    "pickupPointDashboard": "Panell del Punt de Recollida",
+    "scanParcel": "Escanejar Paquet",
+    "settings": "Configuració",
+    "verifyRecipient": "Verificar Destinatari",
+    "pricing": "Preus",
+    "bookingSuccess": "Reserva Exitosa"
+  },
+  "errors": {
+    "somethingWentWrong": "Alguna cosa ha anat malament",
+    "tryAgain": "Torna-ho a provar",
+    "notFoundTitle": "404",
+    "pageNotFound": "Pàgina no trobada",
+    "goHome": "Anar a l'Inici"
+  },
+  "header": {
+    "logoAriaLabel": "Laveina — Anar a la pàgina principal",
+    "logoAlt": "Laveina — Lliurament al Teu Ritme"
+  },
+  "localeSwitcher": {
+    "ariaLabel": "Canviar idioma",
+    "en": "Anglès",
+    "es": "Espanyol",
+    "ca": "Català"
+  },
+  "shipmentStatus": {
+    "payment_confirmed": "Pagament confirmat",
+    "waiting_at_origin": "Esperant a la botiga d'origen",
+    "received_at_origin": "Rebut a la botiga d'origen",
+    "in_transit": "En trànsit",
+    "arrived_at_destination": "Arribat a la botiga de destí",
+    "ready_for_pickup": "Llest per recollir",
+    "delivered": "Lliurat"
   }
 }

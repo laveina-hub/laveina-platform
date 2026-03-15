@@ -1,0 +1,23 @@
+# Validate branch naming convention
+branch="$(git rev-parse --abbrev-ref HEAD)"
+if [ "$branch" != "main" ] && [ "$branch" != "master" ] && [ "$branch" != "HEAD" ]; then
+  valid_pattern="^(phase-[0-9]+/[a-z0-9-]+|feat/[a-z0-9-]+|fix/[a-z0-9-]+|hotfix/[a-z0-9-]+|refactor/[a-z0-9-]+|chore/[a-z0-9-]+|docs/[a-z0-9-]+|test/[a-z0-9-]+|release/[0-9]+\.[0-9]+\.[0-9]+)$"
+  if ! echo "$branch" | grep -qE "$valid_pattern"; then
+    echo "🚫 Invalid branch name: '$branch'"
+    echo ""
+    echo "Branch names must follow one of these patterns:"
+    echo "  phase-N/description   (e.g. phase-1/foundation)"
+    echo "  feat/description      (e.g. feat/booking-flow)"
+    echo "  fix/description       (e.g. fix/login-redirect)"
+    echo "  hotfix/description    (e.g. hotfix/stripe-webhook)"
+    echo "  refactor/description  (e.g. refactor/auth-middleware)"
+    echo "  chore/description     (e.g. chore/update-deps)"
+    echo "  docs/description      (e.g. docs/api-reference)"
+    echo "  test/description      (e.g. test/shipment-service)"
+    echo "  release/X.Y.Z         (e.g. release/1.0.0)"
+    exit 1
+  fi
+fi
+
+# Run lint-staged on staged files
+npx lint-staged

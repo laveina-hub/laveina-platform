@@ -7,7 +7,7 @@ export function Topbar() {
       <div className="text-sm text-gray-500">Dashboard</div>
 
       <div className="flex items-center gap-4">
-        <div className="h-8 w-8 rounded-full bg-primary-500 text-center text-sm font-semibold leading-8 text-white">
+        <div className="bg-primary-500 h-8 w-8 rounded-full text-center text-sm leading-8 font-semibold text-white">
           U
         </div>
       </div>

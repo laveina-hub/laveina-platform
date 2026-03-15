@@ -1,11 +1,7 @@
-/**
- * Calculate price API — POST: compute delivery price based on origin/destination
- * postcodes and parcel dimensions.
- */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { calculatePrice } from "@/services/pricing.service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,21 +15,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const result = await calculatePrice(originPostcode, destinationPostcode, weightKg);
 
-    // TODO: Look up zones for origin and destination postcodes
-    // TODO: Find matching pricing rule based on zone pair and weight
-    // TODO: Return calculated price
+    if (result.error) {
+      return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+    }
 
-    return NextResponse.json({
-      price: null,
-      currency: "EUR",
-      message: "Price calculation not yet implemented",
-    });
+    return NextResponse.json({ data: result.data });
   } catch {
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 }

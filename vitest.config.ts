@@ -1,4 +1,5 @@
 import path from "path";
+
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -12,5 +13,8 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  server: {
+    host: "0.0.0.0",
   },
 });

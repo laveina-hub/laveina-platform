@@ -1,20 +1,12 @@
-/**
- * Shipments API — GET: list shipments with optional filters and pagination.
- */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
-import { PAGINATION_DEFAULT_PAGE_SIZE } from "@/constants/app";
+import { listShipments } from "@/services/shipment.service";
+import type { ShipmentStatus } from "@/types/enums";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const page = Number(searchParams.get("page") ?? "1");
-  const limit = Number(searchParams.get("limit") ?? String(PAGINATION_DEFAULT_PAGE_SIZE));
-  const status = searchParams.get("status");
-
   const supabase = await createClient();
-
   const {
     data: { user },
     error: authError,
@@ -24,24 +16,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let query = supabase
-    .from("shipments")
-    .select("*", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range((page - 1) * limit, page * limit - 1);
-
-  if (status) {
-    query = query.eq("status", status);
-  }
-
-  const { data, error, count } = await query;
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({
-    data,
-    meta: { page, limit, total: count },
+  const { searchParams } = new URL(request.url);
+  const result = await listShipments({
+    page: Number(searchParams.get("page") ?? "1"),
+    pageSize: Number(searchParams.get("pageSize") ?? "20"),
+    status: (searchParams.get("status") as ShipmentStatus) ?? undefined,
+    customer_id: searchParams.get("customerId") ?? undefined,
+    search: searchParams.get("search") ?? undefined,
   });
+
+  if (result.error) {
+    return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+  }
+
+  return NextResponse.json(result.data);
 }
