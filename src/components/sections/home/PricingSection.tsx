@@ -53,7 +53,7 @@ function PricingCard({
         </span>
       </div>
 
-      <div className="xm:pb-3 flex flex-1 flex-col bg-white px-6 pb-4 sm:pt-10 xl:pt-24 xl:pb-5">
+      <div className="xm:pb-3 flex flex-1 flex-col bg-white px-6 pt-16 pb-4 sm:pt-10 xl:pt-24 xl:pb-5">
         <h3
           className={cn(
             "font-display text-text-primary text-center text-4xl font-bold sm:text-base xl:text-4xl"
@@ -144,11 +144,16 @@ export function PricingSection() {
   ];
 
   return (
-    <section className="bg-primary px-6 py-20 lg:py-32 xl:px-10">
+    <section className="bg-primary px-6 py-20 xl:px-10 xl:py-32">
       <SectionContainer className="px-0 md:px-0">
         <div className="grid grid-cols-1 gap-7 md:grid-cols-3 xl:gap-x-14 xl:gap-y-10">
           <div className="flex flex-col justify-center gap-6">
-            <Heading variant="display">{t("title")}</Heading>
+            <Heading
+              variant="section"
+              className="text-text-inverse text-6xl font-medium lg:text-4xl xl:text-9xl"
+            >
+              {t("title")}
+            </Heading>
             <Text variant="bodyLight">{t("description")}</Text>
           </div>
 

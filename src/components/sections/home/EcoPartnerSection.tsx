@@ -12,7 +12,7 @@ export function EcoPartnerSection() {
 
   return (
     <section className="overflow-hidden">
-      <div className="flex flex-col md:flex-row md:pt-20 lg:pt-40">
+      <div className="flex flex-col pt-6 md:flex-row md:pt-20 xl:pt-40">
         <div className="relative w-full md:w-1/2">
           <Image
             src="/images/eco-partner/eco-partner-handshake.png"
@@ -25,10 +25,8 @@ export function EcoPartnerSection() {
 
         <div className="flex w-full flex-col justify-center px-6 py-10 md:w-1/2 md:px-12 md:py-14 lg:py-20 2xl:pl-40">
           <div className="mb-4">
-            <Heading variant="section" className="xl:text-12xl">
-              {t("title")}
-            </Heading>
-            <div className="bg-success-500 mt-2 h-1 w-20 xl:w-36" />
+            <Heading variant="section">{t("title")}</Heading>
+            <div className="bg-success mt-2 h-1 w-20 xl:w-36" />
           </div>
 
           <Text variant="subtitleSm" as="h3" className="mb-4">

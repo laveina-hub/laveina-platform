@@ -29,11 +29,11 @@ export function PickupPointsNetworkSection() {
   ];
 
   return (
-    <section className="bg-white py-16 md:py-20">
+    <section className="bg-white py-12 xl:py-20">
       <SectionContainer>
         <div className="mb-10 text-center md:mb-12">
           <Heading variant="section">{t("title")}</Heading>
-          <Text variant="body" className="text-text-secondary mx-auto mt-4 max-w-3xl lg:text-2xl">
+          <Text variant="subtitle" className="text-text-secondary mx-auto mt-4 max-w-3xl">
             {t("subtitle")}
           </Text>
         </div>
