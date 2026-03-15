@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Prosto_One } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
@@ -6,6 +7,13 @@ import { Toaster } from "sonner";
 
 import { routing } from "@/i18n/routing";
 import { QueryProvider } from "@/providers/query-provider";
+
+const prostoOne = Prosto_One({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-prosto-one",
+  display: "swap",
+});
 
 type Props = {
   children: React.ReactNode;
@@ -40,11 +48,15 @@ export default async function LocaleLayout({ children, params }: Props) {
   const messages = await getMessages();
 
   return (
-    <NextIntlClientProvider messages={messages}>
-      <QueryProvider>
-        {children}
-        <Toaster richColors position="top-right" />
-      </QueryProvider>
-    </NextIntlClientProvider>
+    <html lang={locale} suppressHydrationWarning>
+      <body className={`${prostoOne.variable} font-body antialiased`}>
+        <NextIntlClientProvider messages={messages}>
+          <QueryProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </QueryProvider>
+        </NextIntlClientProvider>
+      </body>
+    </html>
   );
 }

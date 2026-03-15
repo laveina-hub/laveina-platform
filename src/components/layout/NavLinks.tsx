@@ -7,7 +7,7 @@ import { NAV_LINKS } from "@/constants/nav";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
-import { LocaleSwitcher } from "./locale-switcher";
+import { LocaleSwitcher } from "./LocaleSwitcher";
 
 export function NavLinks() {
   const t = useTranslations("nav");

@@ -1,14 +1,14 @@
-export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./button";
+export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./Button";
 export {
   ButtonLink,
   type ButtonLinkProps,
   type ButtonLinkVariant,
   type ButtonLinkSize,
-} from "./button-link";
-export { CardBody, type CardBodyProps } from "./card-body";
-export { CardHeader, type CardHeaderProps } from "./card-header";
-export { CardShell, type CardShellProps } from "./card-shell";
-export { Divider, type DividerProps } from "./divider";
+} from "./ButtonLink";
+export { CardBody, type CardBodyProps } from "./CardBody";
+export { CardHeader, type CardHeaderProps } from "./CardHeader";
+export { CardShell, type CardShellProps } from "./CardShell";
+export { Divider, type DividerProps } from "./Divider";
 export {
   Heading,
   Text,
@@ -17,8 +17,8 @@ export {
   type HeadingLevel,
   type TextProps,
   type TextVariant,
-} from "./typography";
-export { Input, type InputProps } from "./input";
-export { Label, type LabelProps } from "./label";
-export { SectionContainer, type SectionContainerProps } from "./section-container";
-export { Select, type SelectProps } from "./select";
+} from "./Typography";
+export { Input, type InputProps } from "./Input";
+export { Label, type LabelProps } from "./Label";
+export { SectionContainer, type SectionContainerProps } from "./SectionContainer";
+export { Select, type SelectProps } from "./Select";

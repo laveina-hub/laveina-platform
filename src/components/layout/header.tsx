@@ -3,8 +3,8 @@ import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 
-import { MobileMenu } from "./mobile-menu";
-import { NavLinks } from "./nav-links";
+import { MobileMenu } from "./MobileMenu";
+import { NavLinks } from "./NavLinks";
 
 export function Header() {
   const t = useTranslations("header");

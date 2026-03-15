@@ -290,5 +290,14 @@
     "en": "Anglès",
     "es": "Espanyol",
     "ca": "Català"
+  },
+  "shipmentStatus": {
+    "payment_confirmed": "Pagament confirmat",
+    "waiting_at_origin": "Esperant a la botiga d'origen",
+    "received_at_origin": "Rebut a la botiga d'origen",
+    "in_transit": "En trànsit",
+    "arrived_at_destination": "Arribat a la botiga de destí",
+    "ready_for_pickup": "Llest per recollir",
+    "delivered": "Lliurat"
   }
 }

@@ -4,12 +4,12 @@ import { useTranslations } from "next-intl";
 
 import { Heading, SectionContainer } from "@/components/atoms";
 
-import { DeliverToCard } from "./request-delivery/DeliverToCard";
-import { DeliverySpeedCard } from "./request-delivery/DeliverySpeedCard";
-import { PickupFromCard } from "./request-delivery/PickupFromCard";
-import { PricingSummaryCard } from "./request-delivery/PricingSummaryCard";
-import { ShipmentDetailsCard } from "./request-delivery/ShipmentDetailsCard";
-import { WeightCard } from "./request-delivery/WeightCard";
+import { DeliverToCard } from "./DeliverToCard";
+import { DeliverySpeedCard } from "./DeliverySpeedCard";
+import { PickupFromCard } from "./PickupFromCard";
+import { PricingSummaryCard } from "./PricingSummaryCard";
+import { ShipmentDetailsCard } from "./ShipmentDetailsCard";
+import { WeightCard } from "./WeightCard";
 
 export function RequestDeliverySection() {
   const t = useTranslations("requestDelivery");

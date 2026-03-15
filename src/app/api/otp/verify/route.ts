@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { verifyOtp } from "@/services/otp.service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,19 +17,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { shipmentId, otp } = body;
+    const result = await verifyOtp({
+      shipment_id: body.shipmentId,
+      otp: body.otp,
+    });
 
-    if (!shipmentId || !otp) {
-      return NextResponse.json(
-        { error: "Missing required fields: shipmentId, otp" },
-        { status: 400 }
-      );
+    if (result.error) {
+      return NextResponse.json({ error: result.error.message }, { status: result.error.status });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "OTP verification not yet implemented",
-    });
+    return NextResponse.json({ data: result.data });
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }

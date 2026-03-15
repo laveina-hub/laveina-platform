@@ -6,7 +6,7 @@ import {
   TrackingDetailsSection,
   ShipmentProgressSection,
   ContactSupportSection,
-} from "@/components/tracking";
+} from "@/components/sections/tracking";
 
 type Props = {
   params: Promise<{ locale: string; trackingId: string }>;

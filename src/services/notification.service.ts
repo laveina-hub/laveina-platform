@@ -1,17 +1,6 @@
+import { sendWhatsAppMessage } from "@/lib/gallabox/client";
 import type { ApiResponse } from "@/types/api";
 import type { ShipmentStatus } from "@/types/enums";
-
-const GALLABOX_API_URL = process.env.GALLABOX_API_URL!;
-const GALLABOX_API_KEY = process.env.GALLABOX_API_KEY!;
-const GALLABOX_API_SECRET = process.env.GALLABOX_API_SECRET!;
-
-async function sendWhatsAppMessage(
-  phone: string,
-  templateName: string,
-  templateParams: Record<string, string>
-): Promise<ApiResponse<{ messageId: string }>> {
-  throw new Error("Not implemented");
-}
 
 export async function sendShipmentConfirmation(params: {
   senderPhone: string;
@@ -21,16 +10,20 @@ export async function sendShipmentConfirmation(params: {
   destinationPickupPointName: string;
   priceCents: number;
 }): Promise<ApiResponse<{ messageId: string }>> {
-  const {
-    senderPhone,
-    senderName,
-    trackingId,
-    originPickupPointName,
-    destinationPickupPointName,
-    priceCents,
-  } = params;
+  try {
+    const result = await sendWhatsAppMessage(params.senderPhone, "shipment_confirmation", [
+      { name: "sender_name", value: params.senderName },
+      { name: "tracking_id", value: params.trackingId },
+      { name: "origin", value: params.originPickupPointName },
+      { name: "destination", value: params.destinationPickupPointName },
+      { name: "price", value: (params.priceCents / 100).toFixed(2) },
+    ]);
 
-  throw new Error("Not implemented");
+    return { data: { messageId: result.id }, error: null };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to send WhatsApp message";
+    return { data: null, error: { message, status: 500 } };
+  }
 }
 
 export async function sendStatusUpdate(params: {
@@ -40,14 +33,32 @@ export async function sendStatusUpdate(params: {
   oldStatus: ShipmentStatus;
   newStatus: ShipmentStatus;
 }): Promise<ApiResponse<{ messageId: string }>> {
-  const { phone, recipientName, trackingId, oldStatus, newStatus } = params;
+  try {
+    const result = await sendWhatsAppMessage(params.phone, "status_update", [
+      { name: "recipient_name", value: params.recipientName },
+      { name: "tracking_id", value: params.trackingId },
+      { name: "new_status", value: params.newStatus },
+    ]);
 
-  throw new Error("Not implemented");
+    return { data: { messageId: result.id }, error: null };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to send WhatsApp message";
+    return { data: null, error: { message, status: 500 } };
+  }
 }
 
 export async function sendOtpMessage(
   phone: string,
   otp: string
 ): Promise<ApiResponse<{ messageId: string }>> {
-  throw new Error("Not implemented");
+  try {
+    const result = await sendWhatsAppMessage(phone, "otp_verification", [
+      { name: "otp", value: otp },
+    ]);
+
+    return { data: { messageId: result.id }, error: null };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to send WhatsApp message";
+    return { data: null, error: { message, status: 500 } };
+  }
 }

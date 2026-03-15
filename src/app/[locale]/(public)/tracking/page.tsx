@@ -1,7 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 
-import { TrackingSearchSection } from "@/components/tracking";
+import { TrackingSearchSection } from "@/components/sections/tracking";
 
 type Props = {
   params: Promise<{ locale: string }>;

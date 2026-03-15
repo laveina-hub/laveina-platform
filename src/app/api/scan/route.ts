@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { processQrScan } from "@/services/tracking.service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,26 +17,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { trackingId, action } = body;
-
-    if (!trackingId || !action) {
-      return NextResponse.json(
-        { error: "Missing required fields: trackingId, action" },
-        { status: 400 }
-      );
-    }
-
-    if (!["drop_off", "collect"].includes(action)) {
-      return NextResponse.json(
-        { error: "Invalid action. Must be 'drop_off' or 'collect'" },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Scan processing not yet implemented",
+    const result = await processQrScan(user.id, {
+      tracking_id: body.trackingId,
+      pickup_point_id: body.pickupPointId,
     });
+
+    if (result.error) {
+      return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+    }
+
+    return NextResponse.json({ data: result.data });
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }

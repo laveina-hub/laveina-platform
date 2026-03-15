@@ -3,7 +3,7 @@ import { type ReactNode } from "react";
 import { Text } from "@/components/atoms";
 import { cn } from "@/lib/utils";
 
-import { IconBadge } from "./icon-badge";
+import { IconBadge } from "./IconBadge";
 
 interface FeatureListItemProps {
   icon: ReactNode;

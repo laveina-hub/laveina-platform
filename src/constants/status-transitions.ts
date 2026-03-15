@@ -10,14 +10,18 @@ export const STATUS_TRANSITIONS: Record<string, string[]> = {
   [ShipmentStatus.DELIVERED]: [], // terminal state
 };
 
-export const STATUS_LABELS: Record<string, string> = {
-  [ShipmentStatus.PAYMENT_CONFIRMED]: "Payment Confirmed",
-  [ShipmentStatus.WAITING_AT_ORIGIN]: "Waiting at Origin Shop",
-  [ShipmentStatus.RECEIVED_AT_ORIGIN]: "Received at Origin Shop",
-  [ShipmentStatus.IN_TRANSIT]: "In Transit",
-  [ShipmentStatus.ARRIVED_AT_DESTINATION]: "Arrived at Destination Shop",
-  [ShipmentStatus.READY_FOR_PICKUP]: "Ready for Pickup",
-  [ShipmentStatus.DELIVERED]: "Delivered",
+/**
+ * Use with next-intl: t(`shipmentStatus.${status}`) to get localized labels.
+ * Translation keys are in messages/{locale}.json under "shipmentStatus".
+ */
+export const STATUS_TRANSLATION_KEYS: Record<string, string> = {
+  [ShipmentStatus.PAYMENT_CONFIRMED]: "shipmentStatus.payment_confirmed",
+  [ShipmentStatus.WAITING_AT_ORIGIN]: "shipmentStatus.waiting_at_origin",
+  [ShipmentStatus.RECEIVED_AT_ORIGIN]: "shipmentStatus.received_at_origin",
+  [ShipmentStatus.IN_TRANSIT]: "shipmentStatus.in_transit",
+  [ShipmentStatus.ARRIVED_AT_DESTINATION]: "shipmentStatus.arrived_at_destination",
+  [ShipmentStatus.READY_FOR_PICKUP]: "shipmentStatus.ready_for_pickup",
+  [ShipmentStatus.DELIVERED]: "shipmentStatus.delivered",
 };
 
 export const STATUS_COLORS: Record<string, string> = {

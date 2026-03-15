@@ -290,5 +290,14 @@
     "en": "English",
     "es": "Spanish",
     "ca": "Catalan"
+  },
+  "shipmentStatus": {
+    "payment_confirmed": "Payment Confirmed",
+    "waiting_at_origin": "Waiting at Origin Shop",
+    "received_at_origin": "Received at Origin Shop",
+    "in_transit": "In Transit",
+    "arrived_at_destination": "Arrived at Destination Shop",
+    "ready_for_pickup": "Ready for Pickup",
+    "delivered": "Delivered"
   }
 }

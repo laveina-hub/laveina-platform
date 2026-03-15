@@ -1,3 +1,5 @@
+import { env } from "@/env";
+
 type TemplateParam = {
   name: string;
   value: string;
@@ -24,21 +26,11 @@ type GallaboxResponse = {
 };
 
 function getConfig() {
-  const apiKey = process.env.GALLABOX_API_KEY;
-  const apiUrl = process.env.GALLABOX_API_URL;
-  const channelId = process.env.GALLABOX_CHANNEL_ID;
-
-  if (!apiKey) {
-    throw new Error("Missing GALLABOX_API_KEY environment variable");
-  }
-  if (!apiUrl) {
-    throw new Error("Missing GALLABOX_API_URL environment variable");
-  }
-  if (!channelId) {
-    throw new Error("Missing GALLABOX_CHANNEL_ID environment variable");
-  }
-
-  return { apiKey, apiUrl, channelId };
+  return {
+    apiKey: env.GALLABOX_API_KEY,
+    apiUrl: env.GALLABOX_API_URL,
+    channelId: env.GALLABOX_CHANNEL_ID,
+  };
 }
 
 export async function sendWhatsAppMessage(

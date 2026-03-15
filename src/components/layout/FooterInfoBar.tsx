@@ -5,7 +5,7 @@ import { NAV_LINKS, SOCIAL_LINKS } from "@/constants/nav";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
-import { LocaleSwitcherMobile } from "./locale-switcher-mobile";
+import { LocaleSwitcherMobile } from "./LocaleSwitcherMobile";
 
 export async function FooterInfoBar() {
   const t = await getTranslations("footerInfoBar");
