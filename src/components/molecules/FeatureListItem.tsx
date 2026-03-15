@@ -11,7 +11,6 @@ interface FeatureListItemProps {
   className?: string;
 }
 
-/** A list row with a circular icon badge and text label. */
 function FeatureListItem({ icon, children, className }: FeatureListItemProps) {
   return (
     <li className={cn("flex items-start gap-3", className)}>

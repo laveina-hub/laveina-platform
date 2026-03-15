@@ -68,9 +68,11 @@
   },
   "tracking": {
     "title": "Rastreja el Teu Enviament",
+    "subtitle": "Introdueix el teu número de seguiment per veure l'estat en temps real del teu paquet.",
     "placeholder": "Introdueix el Número de Seguiment",
     "search": "Rastrejar Enviament",
     "helperText": "Pots rastrejar fins a 5 enviaments alhora.",
+    "contactSupport": "Contactar Suport",
     "trackingIdLabel": "ID de Seguiment: # {trackingId}",
     "orderId": "ID de Comanda",
     "bookingDate": "Data de Reserva",

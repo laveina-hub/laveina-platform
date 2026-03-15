@@ -6,7 +6,6 @@ interface MapPlaceholderProps {
   className?: string;
 }
 
-/** Placeholder block shown where a map will eventually render. */
 function MapPlaceholder({ className }: MapPlaceholderProps) {
   return (
     <div

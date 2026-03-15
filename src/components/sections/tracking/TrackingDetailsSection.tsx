@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 
-import { Button, Heading, Text } from "@/components/atoms";
+import { Button, CardHeader, CardShell, Text } from "@/components/atoms";
 
 interface TrackingDetailsSectionProps {
   trackingId: string;
@@ -17,31 +17,33 @@ export function TrackingDetailsSection({ trackingId }: TrackingDetailsSectionPro
   ];
 
   return (
-    <section className="rounded-xl bg-white shadow-sm">
-      <div className="border-border-muted border-b px-6 py-5 md:px-8">
-        <Heading variant="card">{t("trackingIdLabel", { trackingId })}</Heading>
-      </div>
+    <CardShell>
+      <CardHeader title={t("trackingIdLabel", { trackingId })} />
 
-      <div className="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-end md:gap-4 md:px-8">
-        {fields.map((field) => (
-          <div key={field.label} className="flex-1">
-            <Text variant="label" as="label" className="mb-1.5 block">
-              {field.label}
-            </Text>
-            <div className="border-border-default font-body text-text-muted rounded-lg border px-4 py-2.5 text-sm">
-              {field.value}
+      <div className="flex flex-col gap-4 px-7 py-9 md:gap-1.5 md:px-8 md:pt-7 md:pb-9 lg:flex-row lg:items-end">
+        <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-4 lg:gap-1.5">
+          {fields.map((field) => (
+            <div key={field.label}>
+              <Text as="label" className="mb-2.5 block text-base md:text-xl">
+                {field.label}
+              </Text>
+              <div className="border-border-default font-body text-text-muted flex items-center rounded-lg border px-6 py-4 text-base leading-none md:text-xl lg:py-6">
+                {field.value}
+              </div>
             </div>
-          </div>
-        ))}
-        <Button
-          type="button"
-          variant="primary"
-          size="sm"
-          className="font-body shrink-0 self-end font-semibold md:self-auto"
-        >
-          {t("help")}
-        </Button>
+          ))}
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            className="font-body h-fit w-full shrink-0 px-4 py-3 text-base font-medium md:w-32 md:text-xl lg:py-5"
+          >
+            {t("help")}
+          </Button>
+        </div>
       </div>
-    </section>
+    </CardShell>
   );
 }

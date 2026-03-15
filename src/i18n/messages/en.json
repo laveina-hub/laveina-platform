@@ -68,9 +68,11 @@
   },
   "tracking": {
     "title": "Track Your Shipment",
+    "subtitle": "Enter your tracking number to see the real-time status of your parcel.",
     "placeholder": "Enter Tracking Number",
     "search": "Track Shipment",
     "helperText": "You can track up to 5 shipments at once.",
+    "contactSupport": "Contact Support",
     "trackingIdLabel": "Tracking ID: # {trackingId}",
     "orderId": "Order ID",
     "bookingDate": "Booking Date",

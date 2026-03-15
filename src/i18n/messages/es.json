@@ -68,9 +68,11 @@
   },
   "tracking": {
     "title": "Rastrea Tu Envío",
+    "subtitle": "Introduce tu número de seguimiento para ver el estado en tiempo real de tu paquete.",
     "placeholder": "Introduce el Número de Seguimiento",
     "search": "Rastrear Envío",
     "helperText": "Puedes rastrear hasta 5 envíos a la vez.",
+    "contactSupport": "Contactar Soporte",
     "trackingIdLabel": "ID de Seguimiento: # {trackingId}",
     "orderId": "ID de Pedido",
     "bookingDate": "Fecha de Reserva",

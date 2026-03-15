@@ -22,7 +22,6 @@ interface IconBadgeProps {
   className?: string;
 }
 
-/** Circular background wrapper for an icon. */
 function IconBadge({ children, size = "sm", variant = "primary", className }: IconBadgeProps) {
   return (
     <span

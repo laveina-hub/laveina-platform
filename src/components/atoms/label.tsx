@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 const labelStyles = "text-text-muted shrink-0 text-base font-medium";
 
 interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
-  /** When true, applies the wider fixed-width layout for form rows. */
   fixed?: boolean;
 }
 

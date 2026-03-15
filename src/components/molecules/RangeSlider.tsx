@@ -6,20 +6,14 @@ import { ArrowIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 interface RangeSliderProps {
-  /** Current value. */
   value: number;
-  /** Callback when value changes. */
   onChange: (value: number) => void;
   min: number;
   max: number;
   step?: number;
-  /** Unit suffix displayed next to the value (e.g. "kg"). */
   unit?: string;
-  /** Accessible label for the hidden native range input. */
   ariaLabel: string;
-  /** Accessible label for the decrease button. */
   decreaseLabel?: string;
-  /** Accessible label for the increase button. */
   increaseLabel?: string;
   className?: string;
 }
@@ -50,7 +44,6 @@ function RangeSlider({
     <div className={cn("flex-1 rounded-4xl border px-6 py-3", className)}>
       <div className="flex items-center gap-2">
         <div className="relative flex flex-1 items-center" style={{ height: "28px" }}>
-          {/* Track background */}
           <div className="bg-secondary-50 absolute inset-x-0 top-1/2 h-3 -translate-y-1/2 overflow-hidden rounded-full">
             <div
               className="bg-secondary-50 h-full rounded-full transition-none"
@@ -60,7 +53,6 @@ function RangeSlider({
             />
           </div>
 
-          {/* Floating thumb */}
           <div
             className="absolute top-1/2 z-10 -translate-y-1/2"
             style={{
@@ -92,7 +84,6 @@ function RangeSlider({
             </div>
           </div>
 
-          {/* Hidden native range for accessibility and drag support */}
           <input
             id={sliderId}
             type="range"

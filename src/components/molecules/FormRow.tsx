@@ -10,7 +10,6 @@ interface FormRowProps {
   className?: string;
 }
 
-/** Horizontal form row with a fixed-width label and flexible input area. */
 function FormRow({ label, htmlFor, children, className }: FormRowProps) {
   return (
     <div className={cn("flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4", className)}>

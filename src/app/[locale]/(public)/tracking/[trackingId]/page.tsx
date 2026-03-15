@@ -1,6 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 
+import { Heading, SectionContainer, Text } from "@/components/atoms";
 import {
   TrackingSearchSection,
   TrackingDetailsSection,
@@ -25,8 +26,10 @@ export default async function TrackingResultPage({ params }: Props) {
 
   return (
     <div className="bg-primary-50">
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 md:py-14 lg:px-8">
-        <h1 className="text-primary-500 mb-8 text-4xl font-medium md:text-8xl">{t("title")}</h1>
+      <SectionContainer className="space-y-8 pt-14 pb-24 sm:space-y-16 sm:py-18 sm:pb-30 lg:py-24">
+        <Heading variant="page" as="h1" className="">
+          {t("title")}
+        </Heading>
 
         <div className="flex flex-col gap-6">
           <TrackingSearchSection />
@@ -34,7 +37,7 @@ export default async function TrackingResultPage({ params }: Props) {
           <ShipmentProgressSection currentStep={2} />
           <ContactSupportSection />
         </div>
-      </div>
+      </SectionContainer>
     </div>
   );
 }

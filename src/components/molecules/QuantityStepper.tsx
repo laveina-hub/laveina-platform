@@ -10,7 +10,6 @@ interface QuantityStepperProps {
   increaseLabel?: string;
 }
 
-/** Inline +/- stepper for numeric values. */
 function QuantityStepper({
   value,
   onIncrement,
