@@ -41,22 +41,13 @@ function getConfig() {
   return { apiKey, apiUrl, channelId };
 }
 
-/**
- * Send a WhatsApp template message via the Gallabox API.
- *
- * @param to - Recipient phone number in international format (e.g. "60123456789")
- * @param templateName - The pre-approved WhatsApp template name
- * @param params - Array of template parameters to fill in the template body
- * @returns The Gallabox API response
- */
 export async function sendWhatsAppMessage(
   to: string,
   templateName: string,
-  params: TemplateParam[],
+  params: TemplateParam[]
 ): Promise<GallaboxResponse> {
   const { apiKey, apiUrl, channelId } = getConfig();
 
-  // Convert params array to a key-value map for body values
   const bodyValues: Record<string, string> = {};
   params.forEach((param, index) => {
     bodyValues[String(index + 1)] = param.value;
@@ -87,9 +78,7 @@ export async function sendWhatsAppMessage(
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(
-      `Gallabox API error (${response.status}): ${errorBody}`,
-    );
+    throw new Error(`Gallabox API error (${response.status}): ${errorBody}`);
   }
 
   return response.json() as Promise<GallaboxResponse>;

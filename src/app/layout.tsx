@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Inter, Prosto_One } from "next/font/google";
+import { Prosto_One } from "next/font/google";
 
 import "./globals.css";
 
+// Prosto One — display/heading font (loaded via Google Fonts)
 const prostoOne = Prosto_One({
   subsets: ["latin"],
   weight: "400",
@@ -10,37 +11,20 @@ const prostoOne = Prosto_One({
   display: "swap",
 });
 
-/**
- * Body font: Using Inter as a fallback until Graphik font files are provided.
- * To use Graphik: replace this with next/font/local pointing to
- * src/fonts/Graphik-{Regular,Medium,Semibold,Bold}.woff2
- */
-const bodyFont = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-graphik",
-  display: "swap",
-});
+// Graphik Web — body font (licensed, Order 1609-LPRSWK)
+// @font-face declarations in globals.css, files in src/fonts/graphik/
 
 export const metadata: Metadata = {
   title: {
-    default: "Laveina — Smart Parcel Delivery",
+    default: "Laveina",
     template: "%s | Laveina",
   },
-  description:
-    "Shop-to-shop parcel delivery platform. Book, track, and manage shipments across partner pickup points.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html suppressHydrationWarning>
-      <body className={`${prostoOne.variable} ${bodyFont.variable} font-body antialiased`}>
-        {children}
-      </body>
+      <body className={`${prostoOne.variable} font-body antialiased`}>{children}</body>
     </html>
   );
 }

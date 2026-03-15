@@ -1,7 +1,3 @@
-/**
- * Pickup points API — GET: list all active pickup points with their location and hours.
- * This is a public endpoint (no auth required).
- */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -23,8 +19,6 @@ export async function GET(request: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  // TODO: If lat/lng provided, sort by distance
 
   return NextResponse.json({ data });
 }

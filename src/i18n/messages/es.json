@@ -15,8 +15,18 @@
     "submit": "Enviar",
     "confirm": "Confirmar"
   },
+  "metadata": {
+    "title": "Laveina — Entrega Inteligente de Paquetes",
+    "titleTemplate": "%s | Laveina",
+    "description": "Plataforma de entrega de paquetes de tienda a tienda. Reserva, rastrea y gestiona envíos a través de puntos de recogida asociados."
+  },
   "nav": {
     "home": "Inicio",
+    "request": "Solicitar",
+    "track": "Rastrear",
+    "about": "Nosotros",
+    "contact": "Contacto",
+    "signIn": "Iniciar Sesión",
     "pricing": "Precios",
     "tracking": "Rastrear Paquete",
     "pickupPoints": "Puntos de Recogida",
@@ -24,7 +34,9 @@
     "login": "Iniciar Sesión",
     "register": "Registrarse",
     "dashboard": "Panel",
-    "logout": "Cerrar Sesión"
+    "logout": "Cerrar Sesión",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú"
   },
   "auth": {
     "loginTitle": "Bienvenido de nuevo",
@@ -55,9 +67,29 @@
     "priceBreakdown": "Desglose de Precio"
   },
   "tracking": {
-    "title": "Rastrea Tu Paquete",
-    "placeholder": "Introduce el ID de seguimiento",
-    "search": "Rastrear",
+    "title": "Rastrea Tu Envío",
+    "placeholder": "Introduce el Número de Seguimiento",
+    "search": "Rastrear Envío",
+    "helperText": "Puedes rastrear hasta 5 envíos a la vez.",
+    "trackingIdLabel": "ID de Seguimiento: # {trackingId}",
+    "orderId": "ID de Pedido",
+    "bookingDate": "Fecha de Reserva",
+    "from": "Desde",
+    "to": "Hasta",
+    "help": "Ayuda",
+    "shipmentProgress": "Progreso del Envío",
+    "recentShipments": "Envíos Recientes",
+    "phone": "+92-080-123456",
+    "email": "support@laveina.com",
+    "liveChat": "Chat en Vivo",
+    "maskedValue": "** *** ****",
+    "progress": {
+      "orderReceived": "Pedido Recibido",
+      "dispatched": "Despachado",
+      "inTransit": "En Tránsito",
+      "outForDelivery": "En Reparto",
+      "delivered": "Entregado"
+    },
     "status": {
       "payment_confirmed": "Pago Confirmado",
       "waiting_at_origin": "Esperando en Tienda de Origen",
@@ -68,6 +100,12 @@
       "delivered": "Entregado"
     }
   },
+  "hero": {
+    "headline": "Entrega Inteligente Que Se Adapta a Tu Ritmo",
+    "subtext": "Simplificando Envíos, Un Punto a la Vez.",
+    "registerNow": "Regístrate Ahora",
+    "trackShipment": "Rastrear Envío"
+  },
   "home": {
     "subtitle": "Entrega Inteligente de Paquetes — De Tienda a Tienda",
     "bookShipment": "Reservar un Envío",
@@ -77,7 +115,98 @@
     "convenient": "Conveniente",
     "convenientDesc": "Entrega y recogida en puntos de recogida locales.",
     "transparent": "Transparente",
-    "transparentDesc": "Seguimiento en tiempo real y notificaciones instantáneas."
+    "transparentDesc": "Seguimiento en tiempo real y notificaciones instantáneas.",
+    "pricingSection": {
+      "title": "Servicios y Precios",
+      "description": "Puedes elegir el plazo de entrega que mejor se adapte a tu horario y presupuesto, ya sea un servicio exprés ultrarrápido para envíos urgentes o una opción de envío económico más asequible para entregas rentables.",
+      "requestDelivery": "Solicitar Entrega",
+      "from": "desde",
+      "fastestBadge": "MÁS RÁPIDO",
+      "fastestName": "Exprés Medio Día",
+      "fastestDesc": "En 4 horas",
+      "popularBadge": "POPULAR",
+      "popularName": "Estándar 24h",
+      "popularDesc": "Entrega al día siguiente",
+      "valueBadge": "VALOR",
+      "valueName": "Flexible 48h",
+      "valueDesc": "En 2 días",
+      "economyBadge": "ECONÓMICO",
+      "economyName": "Programado 72h",
+      "economyDesc": "En 4 horas",
+      "bulkBadge": "VOLUMEN",
+      "bulkName": "Económico 3–7 Días",
+      "bulkDesc": "En 4 horas"
+    }
+  },
+  "whyChooseUs": {
+    "titleLine1": "Por Qué Elegir",
+    "titleLine2": "LAVEINA",
+    "description": "Las grandes transiciones empresariales requieren algo más que soporte transaccional — exigen claridad, confianza y criterio experimentado.",
+    "imageAlt": "Mujer usando el móvil rodeada de los valores de Laveina: Tecnológico, Ecológico, Transparente y Seguro"
+  },
+  "pickupPointsNetwork": {
+    "title": "Red de Puntos de Recogida",
+    "subtitle": "Encuentra tu punto de recogida más cercano y disfruta de una entrega y recogida de paquetes rápida y cómoda en nuestra creciente red de ubicaciones asociadas.",
+    "getDirections": "Cómo Llegar",
+    "mapAlt": "Mapa de cobertura de la red de puntos de recogida",
+    "point1Name": "Hub Centro Ciudad",
+    "point1Status": "Abierto hasta las 22 h",
+    "point1Distance": "0.2 km de distancia",
+    "point2Name": "Urban Market Express",
+    "point2Status": "Acceso 24/7",
+    "point2Distance": "0.5 km de distancia",
+    "point3Name": "Taquillas Estación Metro",
+    "point3Status": "Acceso 24/7",
+    "point3Distance": "0.8 km de distancia"
+  },
+  "ecoPartner": {
+    "title": "Eco Partner",
+    "subtitle": "Colaboración Empresarial Estructurada",
+    "description": "Nuestro Programa Eco Partner es una oferta de servicio completamente estructurada — no solo entrega. Colaboramos estrechamente con restaurantes y marcas minoristas para integrar empaques sostenibles, optimizar la logística y mostrar el impacto ambiental medible.",
+    "feature1": "Incorporación y consultoría dedicada",
+    "feature2": "Orientación sobre empaques sostenibles",
+    "feature3": "Informes mensuales de rendimiento de impacto",
+    "feature4": "Reconocimiento de co-marca sostenible",
+    "cta": "Más Sobre Eco Partner",
+    "imageAlt": "Socio de reparto y cliente estrechando la mano"
+  },
+  "cta": {
+    "titleLine1": "¿Listo Para",
+    "titleLine2": "Empezar a Enviar?",
+    "description": "Mueve tu paquete por la ciudad con rapidez, claridad y confianza.",
+    "ctaPrimary": "Solicitar Entrega Ahora",
+    "ctaSecondary": "Contactar Ventas",
+    "imageAlt": "Scooter de Laveina y furgoneta de reparto lista para el envío"
+  },
+  "footerInfoBar": {
+    "ariaLabel": "Barra de información del pie de página",
+    "gdprAlt": "Cumple con el RGPD",
+    "soc2Alt": "Certificado SOC 2 Tipo 2",
+    "footerNav": "Navegación del pie de página",
+    "stayUpdated": "Mantente Informado",
+    "emailPlaceholder": "Correo electrónico",
+    "emailLabel": "Tu correo electrónico",
+    "newsletterForm": "Suscripción al boletín",
+    "subscribeAriaLabel": "Suscribirse",
+    "nav": {
+      "home": "Inicio",
+      "request": "Solicitar",
+      "track": "Rastrear",
+      "about": "Nosotros",
+      "contact": "Contacto"
+    },
+    "social": {
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "twitter": "X (Twitter)",
+      "whatsapp": "WhatsApp"
+    }
+  },
+  "footer": {
+    "copyright": "Copyright © {year} Laveina. Todos los derechos reservados.",
+    "terms": "Términos y Condiciones",
+    "privacy": "Política de Privacidad",
+    "legalNav": "Navegación legal"
   },
   "dashboard": {
     "overview": "Resumen",
@@ -89,5 +218,77 @@
     "scan": "Escanear QR",
     "verify": "Verificar Entrega",
     "settings": "Configuración"
+  },
+  "requestDelivery": {
+    "title": "Solicitar Entrega",
+    "shipmentDetails": "Detalles del Envío",
+    "packageType": "Tipo de Paquete",
+    "parcel": "Paquete",
+    "document": "Documento",
+    "fragile": "Frágil",
+    "packageDescription": "Descripción del Paquete",
+    "quantity": "Cantidad",
+    "decreaseQuantity": "Disminuir cantidad",
+    "increaseQuantity": "Aumentar cantidad",
+    "weight": "Peso",
+    "packageBoxAlt": "Ilustración de caja de paquete",
+    "decreaseWeight": "Disminuir peso en 0.5 kg",
+    "increaseWeight": "Aumentar peso en 0.5 kg",
+    "packageWeight": "Peso del paquete",
+    "pickupFrom": "Recoger Desde",
+    "pickupAddress": "Dirección de Recogida",
+    "contactName": "Nombre de Contacto",
+    "phoneNumber": "Número de Teléfono",
+    "deliverTo": "Entregar A",
+    "postalCode": "Código Postal",
+    "pickupPoint": "Punto de Recogida",
+    "destinationPickupPoint": "Punto de Recogida de Destino",
+    "deliverySpeed": "Velocidad de Entrega",
+    "standard": "Estándar",
+    "express": "Exprés",
+    "sameDay": "Mismo Día",
+    "confirmDeliveryRequest": "Confirmar Solicitud de Entrega",
+    "pricingSummary": "Resumen de Precios",
+    "estimatedCost": "Coste Estimado:",
+    "taxAndFees": "Impuestos y Tasas:",
+    "total": "Total:"
+  },
+  "pages": {
+    "login": "Iniciar Sesión",
+    "register": "Registrarse",
+    "forgotPassword": "Olvidé Mi Contraseña",
+    "adminDashboard": "Panel de Administración",
+    "shipments": "Envíos",
+    "shipmentDetail": "Detalle del Envío",
+    "pickupPoints": "Puntos de Recogida",
+    "editPickupPoint": "Editar Punto de Recogida",
+    "dispatchManagement": "Gestión de Despacho",
+    "postcodeZones": "Zonas de Código Postal",
+    "pricingRules": "Reglas de Precios",
+    "myShipments": "Mis Envíos",
+    "shipmentDetails": "Detalles del Envío",
+    "pickupPointDashboard": "Panel del Punto de Recogida",
+    "scanParcel": "Escanear Paquete",
+    "settings": "Configuración",
+    "verifyRecipient": "Verificar Destinatario",
+    "pricing": "Precios",
+    "bookingSuccess": "Reserva Exitosa"
+  },
+  "errors": {
+    "somethingWentWrong": "Algo salió mal",
+    "tryAgain": "Intentar de nuevo",
+    "notFoundTitle": "404",
+    "pageNotFound": "Página no encontrada",
+    "goHome": "Ir al Inicio"
+  },
+  "header": {
+    "logoAriaLabel": "Laveina — Ir a la página principal",
+    "logoAlt": "Laveina — Entrega a Tu Ritmo"
+  },
+  "localeSwitcher": {
+    "ariaLabel": "Cambiar idioma",
+    "en": "Inglés",
+    "es": "Español",
+    "ca": "Catalán"
   }
 }

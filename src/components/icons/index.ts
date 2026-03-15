@@ -1,0 +1,11 @@
+export { TrackingTruckIcon } from "./TrackingTruckIcon";
+export { PhoneIcon } from "./PhoneIcon";
+export { MailIcon } from "./MailIcon";
+export { MessageIcon } from "./MessageIcon";
+export { PlusIcon } from "./PlusIcon";
+export { MinusIcon } from "./MinusIcon";
+export { ArrowIcon } from "./ArrowIcon";
+export { CheckIcon } from "./CheckIcon";
+export { CloseIcon } from "./CloseIcon";
+export { PinIcon } from "./PinIcon";
+export { GlobeIcon } from "./GlobeIcon";

@@ -1,11 +1,8 @@
-/**
- * Shipments API — GET: list shipments with optional filters and pagination.
- */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
 import { PAGINATION_DEFAULT_PAGE_SIZE } from "@/constants/app";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

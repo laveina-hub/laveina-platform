@@ -1,7 +1,3 @@
-/**
- * OTP verify API — POST: validate the one-time password submitted by the pickup point
- * staff to confirm parcel handover to the recipient.
- */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -29,20 +25,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Look up stored OTP for this shipment
-    // TODO: Verify OTP matches and has not expired
-    // TODO: Mark shipment as delivered
-    // TODO: Invalidate OTP
-    // TODO: Send delivery confirmation notification
-
     return NextResponse.json({
       success: true,
       message: "OTP verification not yet implemented",
     });
   } catch {
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 }

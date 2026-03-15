@@ -1,9 +1,5 @@
 import { ShipmentStatus } from "@/types/enums";
 
-/**
- * Valid status transitions map.
- * Key = current status, Value = array of allowed next statuses.
- */
 export const STATUS_TRANSITIONS: Record<string, string[]> = {
   [ShipmentStatus.PAYMENT_CONFIRMED]: [ShipmentStatus.WAITING_AT_ORIGIN],
   [ShipmentStatus.WAITING_AT_ORIGIN]: [ShipmentStatus.RECEIVED_AT_ORIGIN],

@@ -64,25 +64,20 @@ export const useBookingStore = create<BookingState & BookingActions>()(
 
       setStep: (step) => set({ currentStep: step }),
 
-      setSenderInfo: (info) =>
-        set({ senderInfo: info, currentStep: 2 }),
+      setSenderInfo: (info) => set({ senderInfo: info, currentStep: 2 }),
 
-      setReceiverInfo: (info) =>
-        set({ receiverInfo: info, currentStep: 3 }),
+      setReceiverInfo: (info) => set({ receiverInfo: info, currentStep: 3 }),
 
-      setPickupPoints: (points) =>
-        set({ selectedPickupPoints: points, currentStep: 4 }),
+      setPickupPoints: (points) => set({ selectedPickupPoints: points, currentStep: 4 }),
 
-      setParcelDetails: (details) =>
-        set({ parcelDetails: details, currentStep: 5 }),
+      setParcelDetails: (details) => set({ parcelDetails: details, currentStep: 5 }),
 
-      setPriceBreakdown: (breakdown) =>
-        set({ priceBreakdown: breakdown }),
+      setPriceBreakdown: (breakdown) => set({ priceBreakdown: breakdown }),
 
       reset: () => set(initialState),
     }),
     {
       name: "laveina-booking",
-    },
-  ),
+    }
+  )
 );

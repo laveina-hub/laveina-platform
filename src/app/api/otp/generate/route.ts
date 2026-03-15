@@ -1,12 +1,8 @@
-/**
- * OTP generate API — POST: create a one-time password and send it to the recipient
- * via WhatsApp (Gallabox) or SMS for parcel collection verification.
- */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
 import { OTP_LENGTH, OTP_EXPIRY_MINUTES } from "@/constants/app";
+import { createClient } from "@/lib/supabase/server";
 
 function generateOtp(length: number): string {
   const digits = "0123456789";
@@ -33,18 +29,11 @@ export async function POST(request: NextRequest) {
     const { shipmentId } = body;
 
     if (!shipmentId) {
-      return NextResponse.json(
-        { error: "Missing required field: shipmentId" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required field: shipmentId" }, { status: 400 });
     }
 
     const otp = generateOtp(OTP_LENGTH);
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
-
-    // TODO: Store OTP in database with expiration
-    // TODO: Look up recipient phone from shipment
-    // TODO: Send OTP via Gallabox WhatsApp API
 
     console.log(`Generated OTP ${otp} for shipment ${shipmentId}, expires at ${expiresAt}`);
 
@@ -54,9 +43,6 @@ export async function POST(request: NextRequest) {
       message: "OTP sent to recipient",
     });
   } catch {
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 }

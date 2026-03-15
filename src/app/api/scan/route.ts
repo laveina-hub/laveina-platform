@@ -1,6 +1,3 @@
-/**
- * Scan API — POST: process a QR code scan from a pickup point to update parcel status.
- */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -35,20 +32,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Look up shipment by tracking ID
-    // TODO: Validate status transition
-    // TODO: Update shipment status
-    // TODO: Create status history entry
-    // TODO: Send notification to sender/receiver
-
     return NextResponse.json({
       success: true,
       message: "Scan processing not yet implemented",
     });
   } catch {
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 }

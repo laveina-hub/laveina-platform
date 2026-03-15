@@ -54,7 +54,10 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["pickup_points"]["Row"], "id" | "created_at" | "updated_at">;
+        Insert: Omit<
+          Database["public"]["Tables"]["pickup_points"]["Row"],
+          "id" | "created_at" | "updated_at"
+        >;
         Update: Partial<Database["public"]["Tables"]["pickup_points"]["Row"]>;
       };
       postcodes: {
@@ -81,7 +84,10 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["pricing_rules"]["Row"], "id" | "created_at" | "updated_at">;
+        Insert: Omit<
+          Database["public"]["Tables"]["pricing_rules"]["Row"],
+          "id" | "created_at" | "updated_at"
+        >;
         Update: Partial<Database["public"]["Tables"]["pricing_rules"]["Row"]>;
       };
       shipments: {
@@ -112,7 +118,10 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["shipments"]["Row"], "id" | "tracking_id" | "created_at" | "updated_at">;
+        Insert: Omit<
+          Database["public"]["Tables"]["shipments"]["Row"],
+          "id" | "tracking_id" | "created_at" | "updated_at"
+        >;
         Update: Partial<Database["public"]["Tables"]["shipments"]["Row"]>;
       };
       scan_logs: {

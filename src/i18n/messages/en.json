@@ -15,8 +15,18 @@
     "submit": "Submit",
     "confirm": "Confirm"
   },
+  "metadata": {
+    "title": "Laveina — Smart Parcel Delivery",
+    "titleTemplate": "%s | Laveina",
+    "description": "Shop-to-shop parcel delivery platform. Book, track, and manage shipments across partner pickup points."
+  },
   "nav": {
     "home": "Home",
+    "request": "Request",
+    "track": "Track",
+    "about": "About",
+    "contact": "Contact",
+    "signIn": "Sign In",
     "pricing": "Pricing",
     "tracking": "Track Parcel",
     "pickupPoints": "Pickup Points",
@@ -24,7 +34,9 @@
     "login": "Log In",
     "register": "Sign Up",
     "dashboard": "Dashboard",
-    "logout": "Log Out"
+    "logout": "Log Out",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "auth": {
     "loginTitle": "Welcome Back",
@@ -55,9 +67,29 @@
     "priceBreakdown": "Price Breakdown"
   },
   "tracking": {
-    "title": "Track Your Parcel",
-    "placeholder": "Enter tracking ID",
-    "search": "Track",
+    "title": "Track Your Shipment",
+    "placeholder": "Enter Tracking Number",
+    "search": "Track Shipment",
+    "helperText": "You can track up to 5 shipments at once.",
+    "trackingIdLabel": "Tracking ID: # {trackingId}",
+    "orderId": "Order ID",
+    "bookingDate": "Booking Date",
+    "from": "From",
+    "to": "To",
+    "help": "Help",
+    "shipmentProgress": "Shipment Progress",
+    "recentShipments": "Recent Shipments",
+    "phone": "+92-080-123456",
+    "email": "support@laveina.com",
+    "liveChat": "Live Chat",
+    "maskedValue": "** *** ****",
+    "progress": {
+      "orderReceived": "Order Received",
+      "dispatched": "Dispatched",
+      "inTransit": "In Transit",
+      "outForDelivery": "Out for Delivery",
+      "delivered": "Delivered"
+    },
     "status": {
       "payment_confirmed": "Payment Confirmed",
       "waiting_at_origin": "Waiting at Origin Shop",
@@ -68,6 +100,12 @@
       "delivered": "Delivered"
     }
   },
+  "hero": {
+    "headline": "Smart Delivery That Moves at Your Speed",
+    "subtext": "Simplifying Deliveries, One Stop at a Time.",
+    "registerNow": "Register Now",
+    "trackShipment": "Track Shipment"
+  },
   "home": {
     "subtitle": "Smart Parcel Delivery — Shop to Shop",
     "bookShipment": "Book a Shipment",
@@ -77,7 +115,98 @@
     "convenient": "Convenient",
     "convenientDesc": "Drop off and collect from local pickup points.",
     "transparent": "Transparent",
-    "transparentDesc": "Real-time tracking and instant notifications."
+    "transparentDesc": "Real-time tracking and instant notifications.",
+    "pricingSection": {
+      "title": "Service & Pricing Details",
+      "description": "You can choose the delivery timeframe that best fits your schedule and budget whether you need lightning-fast express same-day service for urgent shipments or a more affordable economy shipping option for cost-effective delivery.",
+      "requestDelivery": "Request Delivery",
+      "from": "from",
+      "fastestBadge": "FASTEST",
+      "fastestName": "Half-Day Express",
+      "fastestDesc": "Within 4 hours",
+      "popularBadge": "POPULAR",
+      "popularName": "24h Standard",
+      "popularDesc": "Next day delivery",
+      "valueBadge": "VALUE",
+      "valueName": "48h Flexible",
+      "valueDesc": "Within 2 days",
+      "economyBadge": "ECONOMY",
+      "economyName": "72h Scheduled",
+      "economyDesc": "Within 4 hours",
+      "bulkBadge": "BULK",
+      "bulkName": "3–7 Day Economy",
+      "bulkDesc": "Within 4 hours"
+    }
+  },
+  "whyChooseUs": {
+    "titleLine1": "Why Choose",
+    "titleLine2": "LAVEINA",
+    "description": "Major business transitions require more than transaction support—they demand clarity, trust, and experienced judgment.",
+    "imageAlt": "Woman using her phone surrounded by Laveina's core values: Tech-Driven, Eco-Friendly, Transparent, and Secure"
+  },
+  "pickupPointsNetwork": {
+    "title": "Pickup Points Network",
+    "subtitle": "Find your nearest pickup point and enjoy fast, convenient parcel delivery and collection across our growing network of partner locations.",
+    "getDirections": "Get Directions",
+    "mapAlt": "Coverage map showing pickup point network area",
+    "point1Name": "City Centre Hub",
+    "point1Status": "Open until 10 PM",
+    "point1Distance": "0.2 Miles away",
+    "point2Name": "Urban Market Express",
+    "point2Status": "24/7 Access",
+    "point2Distance": "0.5 Miles away",
+    "point3Name": "Metro Station Lockers",
+    "point3Status": "24/7 Access",
+    "point3Distance": "0.8 Miles away"
+  },
+  "ecoPartner": {
+    "title": "Eco Partner",
+    "subtitle": "Structured Business Collaboration",
+    "description": "Our Eco Partner Program is a fully structured service offering — not just delivery. We collaborate closely with restaurants and retail brands to integrate sustainable packaging, optimize logistics, and showcase measurable environmental impact.",
+    "feature1": "Dedicated onboarding & consultation",
+    "feature2": "Sustainable packaging guidance",
+    "feature3": "Monthly impact performance reporting",
+    "feature4": "Co-branding sustainability recognition",
+    "cta": "More About Eco Partner",
+    "imageAlt": "Delivery partner and customer shaking hands"
+  },
+  "cta": {
+    "titleLine1": "Ready To",
+    "titleLine2": "Start Shipping?",
+    "description": "Move your package across the city with speed, clarity, & confidence.",
+    "ctaPrimary": "Request Delivery Now",
+    "ctaSecondary": "Contact Sales",
+    "imageAlt": "Laveina scooter and branded delivery van ready for shipment"
+  },
+  "footerInfoBar": {
+    "ariaLabel": "Footer info bar",
+    "gdprAlt": "GDPR compliant",
+    "soc2Alt": "SOC 2 Type 2 certified",
+    "footerNav": "Footer navigation",
+    "stayUpdated": "Stay Updated",
+    "emailPlaceholder": "Email Address",
+    "emailLabel": "Your email address",
+    "newsletterForm": "Newsletter subscription",
+    "subscribeAriaLabel": "Subscribe",
+    "nav": {
+      "home": "Home",
+      "request": "Request",
+      "track": "Track",
+      "about": "About",
+      "contact": "Contact"
+    },
+    "social": {
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "twitter": "X (Twitter)",
+      "whatsapp": "WhatsApp"
+    }
+  },
+  "footer": {
+    "copyright": "Copyright © {year} Laveina. All Right Reserved.",
+    "terms": "Terms & Condition",
+    "privacy": "Privacy Policy",
+    "legalNav": "Legal navigation"
   },
   "dashboard": {
     "overview": "Overview",
@@ -89,5 +218,77 @@
     "scan": "Scan QR",
     "verify": "Verify Delivery",
     "settings": "Settings"
+  },
+  "requestDelivery": {
+    "title": "Request Delivery",
+    "shipmentDetails": "Shipment Details",
+    "packageType": "Package Type",
+    "parcel": "Parcel",
+    "document": "Document",
+    "fragile": "Fragile",
+    "packageDescription": "Package Description",
+    "quantity": "Quantity",
+    "decreaseQuantity": "Decrease quantity",
+    "increaseQuantity": "Increase quantity",
+    "weight": "Weight",
+    "packageBoxAlt": "Package box illustration",
+    "decreaseWeight": "Decrease weight by 0.5 kg",
+    "increaseWeight": "Increase weight by 0.5 kg",
+    "packageWeight": "Package weight",
+    "pickupFrom": "Pickup From",
+    "pickupAddress": "Pickup Address",
+    "contactName": "Contact Name",
+    "phoneNumber": "Phone Number",
+    "deliverTo": "Deliver To",
+    "postalCode": "Postal Code",
+    "pickupPoint": "Pickup Point",
+    "destinationPickupPoint": "Destination Pickup Point",
+    "deliverySpeed": "Delivery Speed",
+    "standard": "Standard",
+    "express": "Express",
+    "sameDay": "Same-Day",
+    "confirmDeliveryRequest": "Confirm Delivery Request",
+    "pricingSummary": "Pricing Summary",
+    "estimatedCost": "Estimated Cost:",
+    "taxAndFees": "Tax & Fees:",
+    "total": "Total:"
+  },
+  "pages": {
+    "login": "Login",
+    "register": "Register",
+    "forgotPassword": "Forgot Password",
+    "adminDashboard": "Admin Dashboard",
+    "shipments": "Shipments",
+    "shipmentDetail": "Shipment Detail",
+    "pickupPoints": "Pickup Points",
+    "editPickupPoint": "Edit Pickup Point",
+    "dispatchManagement": "Dispatch Management",
+    "postcodeZones": "Postcode Zones",
+    "pricingRules": "Pricing Rules",
+    "myShipments": "My Shipments",
+    "shipmentDetails": "Shipment Details",
+    "pickupPointDashboard": "Pickup Point Dashboard",
+    "scanParcel": "Scan Parcel",
+    "settings": "Settings",
+    "verifyRecipient": "Verify Recipient",
+    "pricing": "Pricing",
+    "bookingSuccess": "Booking Success"
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "tryAgain": "Try again",
+    "notFoundTitle": "404",
+    "pageNotFound": "Page not found",
+    "goHome": "Go Home"
+  },
+  "header": {
+    "logoAriaLabel": "Laveina — Go to homepage",
+    "logoAlt": "Laveina — Delivery at Your Pace"
+  },
+  "localeSwitcher": {
+    "ariaLabel": "Change language",
+    "en": "English",
+    "es": "Spanish",
+    "ca": "Catalan"
   }
 }

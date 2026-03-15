@@ -23,7 +23,6 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh the session — this is required for Server Components
   const {
     data: { user },
   } = await supabase.auth.getUser();

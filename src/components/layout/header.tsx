@@ -1,27 +1,35 @@
-/**
- * Public site header — logo, navigation links, and locale/auth controls.
- */
+import Image from "next/image";
+import { useTranslations } from "next-intl";
+
 import { Link } from "@/i18n/navigation";
 
+import { MobileMenu } from "./mobile-menu";
+import { NavLinks } from "./nav-links";
+
 export function Header() {
+  const t = useTranslations("header");
+
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="font-display text-xl font-bold text-primary-500">
-          Laveina
+    <header className="bg-primary-100 sticky top-0 z-50">
+      <div className="max-w-container mx-auto flex items-center justify-between px-6 py-4 lg:px-10 lg:py-7">
+        {/* Logo */}
+        <Link href="/" className="shrink-0" aria-label={t("logoAriaLabel")}>
+          <Image
+            src="/images/header/logo-laveina.svg"
+            alt={t("logoAlt")}
+            width={148}
+            height={43}
+            priority
+            unoptimized
+            className="h-9 w-auto xl:h-16"
+          />
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm font-medium text-gray-600 md:flex">
-          <Link href="/pricing" className="transition hover:text-primary-500">
-            Pricing
-          </Link>
-          <Link href="/pickup-points" className="transition hover:text-primary-500">
-            Pickup Points
-          </Link>
-          <Link href="/book" className="rounded-lg bg-primary-500 px-4 py-2 text-white transition hover:bg-primary-600">
-            Book Now
-          </Link>
-        </nav>
+        {/* Desktop & Tablet: inline nav with Sign In */}
+        <NavLinks />
+
+        {/* Mobile: hamburger toggle + slide-down menu */}
+        <MobileMenu />
       </div>
     </header>
   );

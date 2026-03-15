@@ -1,9 +1,5 @@
-/**
- * Create checkout API — POST: create a Stripe Checkout session for a shipment.
- */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
 import Stripe from "stripe";
 
 import { createClient } from "@/lib/supabase/server";
@@ -62,9 +58,6 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Error creating checkout session:", message);
-    return NextResponse.json(
-      { error: "Failed to create checkout session" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
   }
 }

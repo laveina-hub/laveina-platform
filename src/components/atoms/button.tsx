@@ -1,0 +1,46 @@
+import { forwardRef, type ButtonHTMLAttributes } from "react";
+
+import { cn } from "@/lib/utils";
+
+const baseStyles =
+  "inline-flex items-center justify-center font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50";
+
+const variantStyles = {
+  primary: "bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white",
+  outline:
+    "border border-primary-500 text-primary-600 bg-white hover:bg-primary-50 focus-visible:ring-primary-500",
+  ghost: "text-text-primary hover:bg-primary-50 hover:text-primary-600",
+  secondary: "bg-secondary-500 hover:bg-primary-600 text-white",
+} as const;
+
+const sizeStyles = {
+  sm: "rounded-lg px-6 py-2 text-sm",
+  md: "rounded-lg px-6 py-3 text-base",
+  lg: "rounded-xl px-7 py-4 text-base sm:px-8 sm:py-5 sm:text-2xl",
+  xl: "rounded-md px-6 py-3 text-base 2xl:px-10 2xl:py-7 2xl:text-2xl",
+  nav: "rounded-lg px-6 py-2 text-base xl:px-10 xl:py-4 xl:text-2xl",
+} as const;
+
+type ButtonVariant = keyof typeof variantStyles;
+type ButtonSize = keyof typeof sizeStyles;
+
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+}
+
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ variant = "primary", size = "md", className, ...props }, ref) => {
+    return (
+      <button
+        ref={ref}
+        className={cn(baseStyles, variantStyles[variant], sizeStyles[size], className)}
+        {...props}
+      />
+    );
+  }
+);
+
+Button.displayName = "Button";
+
+export { Button, type ButtonProps, type ButtonVariant, type ButtonSize };

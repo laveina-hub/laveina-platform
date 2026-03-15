@@ -1,0 +1,22 @@
+interface PlusIconProps {
+  size?: number;
+  color?: string;
+  className?: string;
+}
+
+/** Custom plus icon from design assets. */
+export function PlusIcon({ size = 14, color = "currentColor", className }: PlusIconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 14 14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M7 0v14M0 7h14" stroke={color} strokeWidth={2} />
+    </svg>
+  );
+}
