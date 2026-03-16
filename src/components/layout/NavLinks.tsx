@@ -22,7 +22,7 @@ export function NavLinks() {
             key={key}
             href={href}
             className={cn(
-              "text-base font-medium transition-colors xl:text-2xl",
+              "text-base font-medium transition-colors xl:text-xl",
               isActive ? "text-primary-500" : "text-text-primary hover:text-primary-500"
             )}
           >

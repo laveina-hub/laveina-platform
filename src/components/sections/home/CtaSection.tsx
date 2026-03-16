@@ -11,13 +11,13 @@ export function CtaSection() {
       <SectionContainer className="py-12 lg:py-16">
         <div className="flex flex-col items-start gap-8 md:flex-row md:items-center md:gap-0">
           <div className="flex flex-col items-start text-left md:w-1/2 md:pr-8 lg:pr-12">
-            <Heading variant="sectionLg" className="mb-4">
+            <Heading variant="section" className="mb-4">
               {t("titleLine1")}
               <br />
               {t("titleLine2")}
             </Heading>
 
-            <Text variant="subtitle" className="mb-8 max-w-xl">
+            <Text variant="subtitle" className="mb-8 max-w-xl text-lg xl:text-2xl">
               {t("description")}
             </Text>
 
