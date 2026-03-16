@@ -7,17 +7,19 @@ export function WhyChooseUsSection() {
   const t = useTranslations("whyChooseUs");
 
   return (
-    <section className="bg-white py-12 md:py-16 lg:py-20">
+    <section className="bg-white py-12 xl:py-20">
       <SectionContainer className="flex w-full justify-center">
-        <div className="flex w-full flex-col items-center gap-2 xl:flex-row xl:items-center">
-          <div className="w-full max-w-xl text-center xl:text-start">
+        <div className="flex w-full flex-col items-center gap-2 lg:flex-row lg:items-center">
+          <div className="w-full text-center lg:max-w-md lg:text-start xl:max-w-xl">
             <Heading variant="section">
               {t("titleLine1")}
               <br />
-              <span className="text-primary lg:text-12xl text-7xl">{t("titleLine2")}</span>
+              <span className="font-display text-primary xl:text-12xl text-6xl font-bold">
+                {t("titleLine2")}
+              </span>
             </Heading>
 
-            <Text variant="subtitle" className="mt-4 md:mt-6 xl:text-2xl">
+            <Text variant="subtitle" className="mt-4 md:mt-6">
               {t("description")}
             </Text>
           </div>
