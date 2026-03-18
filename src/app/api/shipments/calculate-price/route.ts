@@ -1,28 +1,12 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
-import { calculatePrice } from "@/services/pricing.service";
-
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { originPostcode, destinationPostcode, weightKg } = body;
-
-    if (!originPostcode || !destinationPostcode || !weightKg) {
-      return NextResponse.json(
-        { error: "Missing required fields: originPostcode, destinationPostcode, weightKg" },
-        { status: 400 }
-      );
-    }
-
-    const result = await calculatePrice(originPostcode, destinationPostcode, weightKg);
-
-    if (result.error) {
-      return NextResponse.json({ error: result.error.message }, { status: result.error.status });
-    }
-
-    return NextResponse.json({ data: result.data });
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
+/**
+ * POST /api/shipments/calculate-price
+ *
+ * Stub — pricing will be implemented in Milestone 2 using:
+ *  - Barcelona (internal): size-based prices from admin_settings
+ *  - SendCloud routes: live carrier rates from SendCloud API + margin
+ */
+export async function POST() {
+  return NextResponse.json({ error: "Price calculation is not yet implemented" }, { status: 501 });
 }

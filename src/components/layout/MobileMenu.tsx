@@ -4,13 +4,20 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useRef, useCallback } from "react";
 
-import { ButtonLink } from "@/components/atoms";
+import { Button, ButtonLink } from "@/components/atoms";
 import { CloseIcon } from "@/components/icons";
 import { NAV_LINKS } from "@/constants/nav";
-import { Link, usePathname } from "@/i18n/navigation";
+import { useAuth } from "@/hooks/use-auth";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
 import { LocaleSwitcherMobile } from "./LocaleSwitcherMobile";
+
+function getDashboardPath(role?: string): string {
+  if (role === "admin") return "/admin";
+  if (role === "pickup_point") return "/pickup-point";
+  return "/customer";
+}
 
 export function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,10 +26,11 @@ export function MobileMenu() {
   const pathname = usePathname();
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const { user, loading, signOut } = useAuth();
+  const router = useRouter();
 
   const close = useCallback(() => {
     setIsAnimating(false);
-    // Wait for the exit animation before unmounting
     const timeout = setTimeout(() => setIsOpen(false), 300);
     return () => clearTimeout(timeout);
   }, []);
@@ -56,6 +64,7 @@ export function MobileMenu() {
     if (isOpen) {
       close();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only react to pathname changes
   }, [pathname]);
 
   // Prevent body scroll when menu is open
@@ -93,6 +102,22 @@ export function MobileMenu() {
     document.addEventListener("keydown", handleTabTrap);
     return () => document.removeEventListener("keydown", handleTabTrap);
   }, [isOpen]);
+
+  const role = user?.user_metadata?.role as string | undefined;
+  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "";
+  const initials = displayName
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  async function handleSignOut() {
+    close();
+    await signOut();
+    router.push("/");
+    router.refresh();
+  }
 
   return (
     <div className="lg:hidden">
@@ -144,7 +169,7 @@ export function MobileMenu() {
             )}
           >
             {/* Panel header */}
-            <div className="border-border-default flex h-[76px] shrink-0 items-center justify-between border-b px-6">
+            <div className="border-border-default flex h-19 shrink-0 items-center justify-between border-b px-6">
               <Image
                 src="/images/header/logo-laveina.svg"
                 alt="Laveina"
@@ -161,6 +186,19 @@ export function MobileMenu() {
                 <CloseIcon size={20} className="text-text-primary" />
               </button>
             </div>
+
+            {/* User info (when logged in) */}
+            {user && (
+              <div className="border-border-default flex items-center gap-3 border-b px-6 py-4">
+                <span className="bg-primary-500 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white">
+                  {initials}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-text-primary truncate text-sm font-medium">{displayName}</p>
+                  <p className="text-text-muted truncate text-xs">{user.email}</p>
+                </div>
+              </div>
+            )}
 
             {/* Navigation links */}
             <ul className="flex-1 overflow-y-auto px-4 py-4">
@@ -182,20 +220,45 @@ export function MobileMenu() {
                   </li>
                 );
               })}
+
+              {/* Dashboard link (when logged in) */}
+              {user && (
+                <li>
+                  <Link
+                    href={getDashboardPath(role)}
+                    className="text-text-primary hover:bg-bg-muted hover:text-primary-500 flex items-center rounded-lg px-3 py-3 text-sm font-medium transition-colors"
+                  >
+                    {t("dashboard")}
+                  </Link>
+                </li>
+              )}
             </ul>
 
-            {/* Language switcher + Sign In */}
+            {/* Language switcher + Auth action */}
             <div className="border-border-default shrink-0 space-y-3 border-t p-4">
               <LocaleSwitcherMobile />
 
-              <ButtonLink
-                href="/auth/login"
-                variant="primary"
-                size="sm"
-                className="block w-full py-3 text-center font-semibold"
-              >
-                {t("signIn")}
-              </ButtonLink>
+              {loading ? (
+                <div className="bg-primary-200 h-10 animate-pulse rounded-lg" />
+              ) : user ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full py-3 font-semibold"
+                  onClick={handleSignOut}
+                >
+                  {t("logout")}
+                </Button>
+              ) : (
+                <ButtonLink
+                  href="/auth/login"
+                  variant="primary"
+                  size="sm"
+                  className="block w-full py-3 text-center font-semibold"
+                >
+                  {t("signIn")}
+                </ButtonLink>
+              )}
             </div>
           </nav>
         </>

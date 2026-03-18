@@ -9,3 +9,5 @@ export { CheckIcon } from "./CheckIcon";
 export { CloseIcon } from "./CloseIcon";
 export { PinIcon } from "./PinIcon";
 export { GlobeIcon } from "./GlobeIcon";
+export { EyeIcon } from "./EyeIcon";
+export { EyeOffIcon } from "./EyeOffIcon";

@@ -1,7 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 
-import { Heading, SectionContainer, Text } from "@/components/atoms";
+import { Heading, SectionContainer } from "@/components/atoms";
 import { TrackingSearchSection } from "@/components/sections/tracking";
 
 type Props = {

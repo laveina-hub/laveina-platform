@@ -1,0 +1,153 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
+import { Button, Checkbox, Input, Label, PasswordInput } from "@/components/atoms";
+import { useAuth } from "@/hooks/use-auth";
+import { Link, useRouter } from "@/i18n/navigation";
+import { loginSchema, type LoginInput } from "@/validations/auth.schema";
+
+export function LoginForm() {
+  const t = useTranslations("auth");
+  const { signIn } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [submitting, setSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  async function onSubmit(data: LoginInput) {
+    setSubmitting(true);
+    try {
+      await signIn(data.email, data.password);
+      const redirectTo = searchParams.get("redirect") ?? "/";
+      router.push(redirectTo);
+      router.refresh();
+    } catch {
+      toast.error(t("invalidCredentials"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Mobile logo (hidden on desktop where the branding panel shows) */}
+      <div className="flex justify-center lg:hidden">
+        <Image
+          src="/images/header/logo-laveina.svg"
+          alt="Laveina"
+          width={148}
+          height={43}
+          priority
+          unoptimized
+          className="h-10 w-auto"
+        />
+      </div>
+
+      {/* Header */}
+      <div>
+        <h1 className="font-display text-text-primary text-2xl font-bold sm:text-3xl">
+          {t("loginTitle")}
+        </h1>
+        <p className="text-text-muted mt-2 text-base">{t("loginSubtitle")}</p>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+        {/* Email */}
+        <div className="space-y-1.5">
+          <Label htmlFor="email">{t("email")}</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder={t("emailPlaceholder")}
+            autoComplete="email"
+            hasError={!!errors.email}
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? "email-error" : undefined}
+            {...register("email")}
+          />
+          {errors.email && (
+            <p id="email-error" role="alert" className="text-error text-sm">
+              {errors.email.message}
+            </p>
+          )}
+        </div>
+
+        {/* Password */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">{t("password")}</Label>
+            <Link
+              href="/auth/forgot-password"
+              className="text-primary-500 hover:text-primary-600 text-sm font-medium transition-colors"
+            >
+              {t("forgotPassword")}
+            </Link>
+          </div>
+          <PasswordInput
+            id="password"
+            placeholder={t("passwordPlaceholder")}
+            autoComplete="current-password"
+            hasError={!!errors.password}
+            showPasswordLabel={t("showPassword")}
+            hidePasswordLabel={t("hidePassword")}
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? "password-error" : undefined}
+            {...register("password")}
+          />
+          {errors.password && (
+            <p id="password-error" role="alert" className="text-error text-sm">
+              {errors.password.message}
+            </p>
+          )}
+        </div>
+
+        {/* Remember me */}
+        <Checkbox id="remember-me" label={t("rememberMe")} />
+
+        {/* Submit */}
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full"
+          disabled={submitting}
+          aria-busy={submitting}
+        >
+          {submitting ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              {t("signIn")}
+            </span>
+          ) : (
+            t("signIn")
+          )}
+        </Button>
+
+        {/* Switch to register */}
+        <p className="text-text-muted text-center text-sm">
+          {t("noAccount")}{" "}
+          <Link
+            href="/auth/register"
+            className="text-primary-500 hover:text-primary-600 font-semibold transition-colors"
+          >
+            {t("signUpLink")}
+          </Link>
+        </p>
+      </form>
+    </div>
+  );
+}

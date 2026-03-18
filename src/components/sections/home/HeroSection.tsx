@@ -1,15 +1,19 @@
+"use client";
+
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 import { ButtonLink, Heading, Text } from "@/components/atoms";
+import { useAuth } from "@/hooks/use-auth";
 
 export function HeroSection() {
   const t = useTranslations("hero");
+  const { user } = useAuth();
 
   return (
     <section className="bg-primary-50 relative overflow-hidden">
       <div className="mx-auto grid w-full grid-cols-1 px-6 pt-7 md:grid-cols-2 md:pt-16 xl:pl-32 2xl:pt-32">
-        <div className="relative z-10 flex max-w-4xl flex-col items-start gap-6 pb-0 md:pb-[200px] lg:pb-[240px] xl:pb-[320px] 2xl:gap-14 2xl:pb-[400px]">
+        <div className="relative z-10 flex max-w-4xl flex-col items-start gap-6 pb-0 md:pb-50 lg:pb-60 xl:pb-80 2xl:gap-14 2xl:pb-100">
           <Heading variant="hero" as="h1">
             {t("headline")}
           </Heading>
@@ -17,9 +21,15 @@ export function HeroSection() {
           <Text variant="hero">{t("subtext")}</Text>
 
           <div className="flex flex-wrap gap-2 md:gap-3">
-            <ButtonLink href="/auth/register" variant="primary" size="hero">
-              {t("registerNow")}
-            </ButtonLink>
+            {user ? (
+              <ButtonLink href="/book" variant="primary" size="hero">
+                {t("bookNow")}
+              </ButtonLink>
+            ) : (
+              <ButtonLink href="/auth/register" variant="primary" size="hero">
+                {t("registerNow")}
+              </ButtonLink>
+            )}
 
             <ButtonLink href="/tracking" variant="outline" size="hero">
               {t("trackShipment")}
