@@ -26,6 +26,9 @@ type GallaboxResponse = {
 };
 
 function getConfig() {
+  if (!env.GALLABOX_API_KEY || !env.GALLABOX_API_URL || !env.GALLABOX_CHANNEL_ID) {
+    throw new Error("Gallabox credentials are not configured");
+  }
   return {
     apiKey: env.GALLABOX_API_KEY,
     apiUrl: env.GALLABOX_API_URL,

@@ -16,6 +16,9 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   try {
+    if (!env.STRIPE_WEBHOOK_SECRET) {
+      return NextResponse.json({ error: "Stripe webhook not configured" }, { status: 500 });
+    }
     event = getStripe().webhooks.constructEvent(body, signature, env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
