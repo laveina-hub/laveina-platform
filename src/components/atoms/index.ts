@@ -8,6 +8,7 @@ export {
 export { CardBody, type CardBodyProps } from "./CardBody";
 export { CardHeader, type CardHeaderProps } from "./CardHeader";
 export { CardShell, type CardShellProps } from "./CardShell";
+export { Checkbox, type CheckboxProps } from "./Checkbox";
 export { Divider, type DividerProps } from "./Divider";
 export {
   Heading,
@@ -20,5 +21,6 @@ export {
 } from "./Typography";
 export { Input, type InputProps } from "./Input";
 export { Label, type LabelProps } from "./Label";
+export { PasswordInput, type PasswordInputProps } from "./PasswordInput";
 export { SectionContainer, type SectionContainerProps } from "./SectionContainer";
 export { Select, type SelectProps } from "./Select";

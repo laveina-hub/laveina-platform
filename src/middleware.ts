@@ -6,7 +6,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const intlMiddleware = createMiddleware(routing);
 
-const publicPaths = ["/", "/book", "/pricing", "/tracking", "/pickup-points", "/auth"];
+const publicPaths = ["/", "/pricing", "/tracking", "/pickup-points", "/auth"];
 const rolePaths: Record<string, string[]> = {
   "/admin": ["admin"],
   "/pickup-point": ["pickup_point", "admin"],
@@ -69,8 +69,8 @@ export async function middleware(request: NextRequest) {
 
   const requiredRoles = getRequiredRole(pathname);
   if (requiredRoles) {
-    const userRole = user.user_metadata?.role as string | undefined;
-    if (!userRole || !requiredRoles.includes(userRole)) {
+    const userRole = (user.user_metadata?.role as string | undefined) ?? "customer";
+    if (!requiredRoles.includes(userRole)) {
       const defaultPath =
         userRole === "admin"
           ? "/admin"

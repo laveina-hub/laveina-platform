@@ -10,6 +10,7 @@ type SignUpData = {
   password: string;
   fullName: string;
   phone?: string;
+  emailRedirectTo?: string;
 };
 
 export function useAuth() {
@@ -58,7 +59,7 @@ export function useAuth() {
   );
 
   const signUp = useCallback(
-    async ({ email, password, fullName, phone }: SignUpData) => {
+    async ({ email, password, fullName, phone, emailRedirectTo }: SignUpData) => {
       setLoading(true);
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -67,7 +68,9 @@ export function useAuth() {
           data: {
             full_name: fullName,
             phone,
+            role: "customer",
           },
+          emailRedirectTo,
         },
       });
       setLoading(false);

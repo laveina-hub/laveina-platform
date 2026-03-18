@@ -65,34 +65,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Generate unique tracking ID (LAV-XXXXXXXX format)
-CREATE OR REPLACE FUNCTION public.generate_tracking_id()
-RETURNS TEXT AS $$
-DECLARE
-  new_id TEXT;
-  exists_already BOOLEAN;
-BEGIN
-  LOOP
-    new_id := 'LAV-' || upper(substr(md5(random()::text || clock_timestamp()::text), 1, 8));
-    SELECT EXISTS(SELECT 1 FROM public.shipments WHERE tracking_id = new_id) INTO exists_already;
-    EXIT WHEN NOT exists_already;
-  END LOOP;
-  RETURN new_id;
-END;
-$$ LANGUAGE plpgsql;
-
--- Auto-set tracking_id on shipment insert
-CREATE OR REPLACE FUNCTION public.set_tracking_id()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.tracking_id IS NULL OR NEW.tracking_id = '' THEN
-    NEW.tracking_id := public.generate_tracking_id();
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 -- Validate shipment status transitions (state machine)
+-- Note: generate_tracking_id() and set_tracking_id() are defined after shipments table
 CREATE OR REPLACE FUNCTION public.validate_status_transition()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -115,7 +89,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- ============================================================
+-- 3. TABLES
+-- ============================================================
+
+-- ----- PROFILES -----
+-- Extends Supabase Auth users with app-specific data
+CREATE TABLE public.profiles (
+  id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email       TEXT NOT NULL,
+  full_name   TEXT NOT NULL,
+  phone       TEXT,
+  role        public.user_role NOT NULL DEFAULT 'customer',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_profiles_role ON public.profiles(role);
+
 -- Get current user's role (used by RLS policies)
+-- Defined after profiles table exists
 CREATE OR REPLACE FUNCTION public.get_user_role()
 RETURNS public.user_role AS $$
   SELECT role FROM public.profiles WHERE id = auth.uid();
@@ -136,25 +129,6 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
-
--- ============================================================
--- 3. TABLES
--- ============================================================
-
--- ----- PROFILES -----
--- Extends Supabase Auth users with app-specific data
-CREATE TABLE public.profiles (
-  id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email       TEXT NOT NULL,
-  full_name   TEXT NOT NULL,
-  phone       TEXT,
-  role        public.user_role NOT NULL DEFAULT 'customer',
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX idx_profiles_role ON public.profiles(role);
 
 -- Auto-create profile on auth signup
 CREATE TRIGGER on_auth_user_created
@@ -282,6 +256,34 @@ CREATE INDEX idx_shipments_origin ON public.shipments(origin_pickup_point_id);
 CREATE INDEX idx_shipments_destination ON public.shipments(destination_pickup_point_id);
 CREATE INDEX idx_shipments_created ON public.shipments(created_at DESC);
 CREATE INDEX idx_shipments_stripe_session ON public.shipments(stripe_checkout_session_id);
+
+-- Generate unique tracking ID (LAV-XXXXXXXX format)
+-- Defined after shipments table exists
+CREATE OR REPLACE FUNCTION public.generate_tracking_id()
+RETURNS TEXT AS $$
+DECLARE
+  new_id TEXT;
+  exists_already BOOLEAN;
+BEGIN
+  LOOP
+    new_id := 'LAV-' || upper(substr(md5(random()::text || clock_timestamp()::text), 1, 8));
+    SELECT EXISTS(SELECT 1 FROM public.shipments WHERE tracking_id = new_id) INTO exists_already;
+    EXIT WHEN NOT exists_already;
+  END LOOP;
+  RETURN new_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Auto-set tracking_id on shipment insert
+CREATE OR REPLACE FUNCTION public.set_tracking_id()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.tracking_id IS NULL OR NEW.tracking_id = '' THEN
+    NEW.tracking_id := public.generate_tracking_id();
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER set_shipments_updated_at
   BEFORE UPDATE ON public.shipments

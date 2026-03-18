@@ -14,7 +14,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "playwright test",
-    "db:gen-types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" > src/types/database.types.ts",
+    "db:gen-types": "supabase gen types typescript --project-id bqwfnitptbrqpqzopmkv > src/types/database.types.ts",
     "db:migrate": "supabase db push",
     "db:reset": "supabase db reset",
     "prepare": "husky"
