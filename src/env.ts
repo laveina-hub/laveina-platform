@@ -4,19 +4,19 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-    STRIPE_SECRET_KEY: z.string().startsWith("sk_"),
-    STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_"),
-    GALLABOX_API_KEY: z.string().min(1),
-    GALLABOX_API_SECRET: z.string().min(1),
-    GALLABOX_API_URL: z.string().url(),
-    GALLABOX_CHANNEL_ID: z.string().min(1),
+    STRIPE_SECRET_KEY: z.string().startsWith("sk_").optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_").optional(),
+    GALLABOX_API_KEY: z.string().min(1).optional(),
+    GALLABOX_API_SECRET: z.string().min(1).optional(),
+    GALLABOX_API_URL: z.string().url().optional(),
+    GALLABOX_CHANNEL_ID: z.string().min(1).optional(),
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_"),
-    NEXT_PUBLIC_APP_URL: z.string().url(),
-    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().min(1),
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_").optional(),
+    NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
   },
   runtimeEnv: {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
