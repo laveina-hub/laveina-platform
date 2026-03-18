@@ -19,51 +19,52 @@ export async function FooterInfoBar() {
         <div className="flex flex-col justify-between gap-8 lg:flex-row">
           <div className="flex items-center justify-center gap-4 lg:justify-start">
             <Image
-              src="/images/footer-info-bar/badge-gdpr.png"
+              src="/images/footer-info-bar/badge-gdpr.svg"
               alt={t("gdprAlt")}
               width={64}
               height={64}
-              className="h-16 w-16 object-contain"
+              className="h-24 w-auto object-contain md:h-18 xl:h-32 xl:w-32"
             />
             <Image
-              src="/images/footer-info-bar/badge-soc2.png"
+              src="/images/footer-info-bar/badge-soc2.svg"
               alt={t("soc2Alt")}
               width={72}
               height={72}
-              className="h-18 w-18 object-contain"
+              className="h-24 w-auto object-contain md:h-18 xl:h-32 xl:w-32"
             />
           </div>
+          <div className="flex justify-center md:items-center">
+            <div className="flex flex-col-reverse items-center gap-8 lg:flex-col">
+              <nav
+                aria-label={t("footerNav")}
+                className="flex items-center justify-center gap-x-6 gap-y-2"
+              >
+                {NAV_LINKS.map(({ key, href }) => (
+                  <Link
+                    key={key}
+                    href={href}
+                    className="text-text-muted hover:text-text-primary text-sm transition-colors md:text-lg"
+                  >
+                    {t(`nav.${key}`)}
+                  </Link>
+                ))}
+              </nav>
 
-          <div className="flex flex-col-reverse items-center gap-8 lg:flex-col">
-            <nav
-              aria-label={t("footerNav")}
-              className="flex items-center justify-center gap-x-6 gap-y-2"
-            >
-              {NAV_LINKS.map(({ key, href }) => (
-                <Link
-                  key={key}
-                  href={href}
-                  className="text-text-muted hover:text-text-primary text-sm transition-colors md:text-lg"
-                >
-                  {t(`nav.${key}`)}
-                </Link>
-              ))}
-            </nav>
-
-            <div className="flex items-center gap-3">
-              {SOCIAL_LINKS.map(({ key, icon, href }) => (
-                <a
-                  key={key}
-                  href={href}
-                  aria-label={t(`social.${key}`)}
-                  className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-full",
-                    "border border-black transition-colors"
-                  )}
-                >
-                  <Image src={icon} alt="" aria-hidden="true" width={16} height={16} />
-                </a>
-              ))}
+              <div className="flex items-center gap-3">
+                {SOCIAL_LINKS.map(({ key, icon, href }) => (
+                  <a
+                    key={key}
+                    href={href}
+                    aria-label={t(`social.${key}`)}
+                    className={cn(
+                      "flex h-9 w-9 items-center justify-center rounded-full",
+                      "border border-black transition-colors"
+                    )}
+                  >
+                    <Image src={icon} alt="" aria-hidden="true" width={16} height={16} />
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
 
