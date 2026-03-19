@@ -337,5 +337,12 @@
     "arrived_at_destination": "Arribat a la botiga de destí",
     "ready_for_pickup": "Llest per recollir",
     "delivered": "Lliurat"
+  },
+  "validation": {
+    "invalidEmail": "Introdueix un correu electrònic vàlid",
+    "passwordMin": "La contrasenya ha de tenir almenys 8 caràcters",
+    "nameMin": "El nom ha de tenir almenys 2 caràcters",
+    "invalidPhone": "Introdueix un número de telèfon vàlid",
+    "passwordsMismatch": "Les contrasenyes no coincideixen"
   }
 }

@@ -2,8 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -15,6 +15,9 @@ import { forgotPasswordSchema, type ForgotPasswordInput } from "@/validations/au
 
 export function ForgotPasswordForm() {
   const t = useTranslations("auth");
+  const tv = useTranslations("validation");
+  const locale = useLocale();
+  const supabase = useMemo(() => createClient(), []);
   const [submitting, setSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
@@ -29,9 +32,9 @@ export function ForgotPasswordForm() {
   async function onSubmit(data: ForgotPasswordInput) {
     setSubmitting(true);
     try {
-      const supabase = createClient();
+      const callbackUrl = `${window.location.origin}/${locale}/auth/callback?next=/auth/reset-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}${window.location.pathname.replace("/forgot-password", "/callback")}?next=/auth/reset-password`,
+        redirectTo: callbackUrl,
       });
 
       if (error) {
@@ -121,9 +124,9 @@ export function ForgotPasswordForm() {
             aria-describedby={errors.email ? "email-error" : undefined}
             {...register("email")}
           />
-          {errors.email && (
+          {errors.email?.message && (
             <p id="email-error" role="alert" className="text-error text-sm">
-              {errors.email.message}
+              {tv(errors.email.message.replace("validation.", ""))}
             </p>
           )}
         </div>

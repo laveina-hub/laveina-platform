@@ -8,13 +8,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { Button, Checkbox, Input, Label, PasswordInput } from "@/components/atoms";
+import { Button, Input, Label, PasswordInput } from "@/components/atoms";
 import { useAuth } from "@/hooks/use-auth";
 import { Link, useRouter } from "@/i18n/navigation";
 import { loginSchema, type LoginInput } from "@/validations/auth.schema";
 
 export function LoginForm() {
   const t = useTranslations("auth");
+  const tv = useTranslations("validation");
   const { signIn } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,7 +33,10 @@ export function LoginForm() {
     setSubmitting(true);
     try {
       await signIn(data.email, data.password);
-      const redirectTo = searchParams.get("redirect") ?? "/";
+      // Sanitize the redirect param: must be an internal path (starts with "/",
+      // no protocol) to prevent open-redirect attacks.
+      const raw = searchParams.get("redirect") ?? "/";
+      const redirectTo = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
       router.push(redirectTo);
       router.refresh();
     } catch {
@@ -80,9 +84,9 @@ export function LoginForm() {
             aria-describedby={errors.email ? "email-error" : undefined}
             {...register("email")}
           />
-          {errors.email && (
+          {errors.email?.message && (
             <p id="email-error" role="alert" className="text-error text-sm">
-              {errors.email.message}
+              {tv(errors.email.message.replace("validation.", ""))}
             </p>
           )}
         </div>
@@ -109,15 +113,12 @@ export function LoginForm() {
             aria-describedby={errors.password ? "password-error" : undefined}
             {...register("password")}
           />
-          {errors.password && (
+          {errors.password?.message && (
             <p id="password-error" role="alert" className="text-error text-sm">
-              {errors.password.message}
+              {tv(errors.password.message.replace("validation.", ""))}
             </p>
           )}
         </div>
-
-        {/* Remember me */}
-        <Checkbox id="remember-me" label={t("rememberMe")} />
 
         {/* Submit */}
         <Button

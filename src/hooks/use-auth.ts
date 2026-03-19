@@ -1,7 +1,7 @@
 "use client";
 
 import type { Session, User } from "@supabase/supabase-js";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
 
@@ -14,7 +14,7 @@ type SignUpData = {
 };
 
 export function useAuth() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -68,7 +68,8 @@ export function useAuth() {
           data: {
             full_name: fullName,
             phone,
-            role: "customer",
+            // role is NOT set here — the DB trigger always assigns 'customer'.
+            // Setting it client-side would allow anyone to register as admin.
           },
           emailRedirectTo,
         },

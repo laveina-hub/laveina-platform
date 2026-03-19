@@ -3,30 +3,20 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 
 import { Button, Label, PasswordInput } from "@/components/atoms";
 import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
-
-const resetPasswordSchema = z
-  .object({
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirm_password: z.string(),
-  })
-  .refine((data) => data.password === data.confirm_password, {
-    message: "Passwords do not match",
-    path: ["confirm_password"],
-  });
-
-type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+import { resetPasswordSchema, type ResetPasswordInput } from "@/validations/auth.schema";
 
 export function ResetPasswordForm() {
   const t = useTranslations("auth");
+  const tv = useTranslations("validation");
   const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
   const [submitting, setSubmitting] = useState(false);
 
   const {
@@ -40,7 +30,6 @@ export function ResetPasswordForm() {
   async function onSubmit(data: ResetPasswordInput) {
     setSubmitting(true);
     try {
-      const supabase = createClient();
       const { error } = await supabase.auth.updateUser({
         password: data.password,
       });
@@ -101,9 +90,9 @@ export function ResetPasswordForm() {
             aria-describedby={errors.password ? "password-error" : undefined}
             {...register("password")}
           />
-          {errors.password && (
+          {errors.password?.message && (
             <p id="password-error" role="alert" className="text-error text-sm">
-              {errors.password.message}
+              {tv(errors.password.message.replace("validation.", ""))}
             </p>
           )}
         </div>
@@ -122,9 +111,9 @@ export function ResetPasswordForm() {
             aria-describedby={errors.confirm_password ? "confirm-password-error" : undefined}
             {...register("confirm_password")}
           />
-          {errors.confirm_password && (
+          {errors.confirm_password?.message && (
             <p id="confirm-password-error" role="alert" className="text-error text-sm">
-              {errors.confirm_password.message}
+              {tv(errors.confirm_password.message.replace("validation.", ""))}
             </p>
           )}
         </div>

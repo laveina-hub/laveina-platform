@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const { user, supabaseResponse } = await updateSession(request);
+  const { user, role, supabaseResponse } = await updateSession(request);
   const intlResponse = intlMiddleware(request);
 
   supabaseResponse.cookies.getAll().forEach((cookie) => {
@@ -62,14 +62,19 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!user) {
-    const loginUrl = new URL("/auth/login", request.url);
+    // Preserve the locale prefix so next-intl keeps the user in the same locale.
+    const segments = pathname.split("/").filter(Boolean);
+    const locales = routing.locales as readonly string[];
+    const locale =
+      segments.length > 0 && locales.includes(segments[0]) ? segments[0] : routing.defaultLocale;
+    const loginUrl = new URL(`/${locale}/auth/login`, request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   const requiredRoles = getRequiredRole(pathname);
   if (requiredRoles) {
-    const userRole = (user.user_metadata?.role as string | undefined) ?? "customer";
+    const userRole = role ?? "customer";
     if (!requiredRoles.includes(userRole)) {
       const defaultPath =
         userRole === "admin"

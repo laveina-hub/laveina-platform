@@ -124,7 +124,7 @@ BEGIN
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
     COALESCE(NEW.raw_user_meta_data->>'phone', NULL),
-    COALESCE((NEW.raw_user_meta_data->>'role')::public.user_role, 'customer')
+    'customer'  -- always customer; admins/pickup_points are set manually
   );
   RETURN NEW;
 END;
@@ -383,7 +383,12 @@ CREATE POLICY profiles_select_admin ON public.profiles
   FOR SELECT USING (public.get_user_role() = 'admin');
 
 CREATE POLICY profiles_update_own ON public.profiles
-  FOR UPDATE USING (id = auth.uid());
+  FOR UPDATE
+  USING (id = auth.uid())
+  WITH CHECK (
+    id = auth.uid()
+    AND role = (SELECT role FROM public.profiles WHERE id = auth.uid())
+  );
 
 -- ===== PICKUP POINTS =====
 CREATE POLICY pickup_points_select_active ON public.pickup_points

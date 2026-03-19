@@ -237,7 +237,12 @@ export function NavLinks() {
       ) : user ? (
         <UserMenu />
       ) : (
-        <ButtonLink href="/auth/login" variant="primary" size="nav">
+        <ButtonLink
+          href="/auth/login"
+          variant="primary"
+          size="nav"
+          className="text-base xl:text-xl"
+        >
           {t("signIn")}
         </ButtonLink>
       )}
