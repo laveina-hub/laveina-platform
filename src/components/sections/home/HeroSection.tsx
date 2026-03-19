@@ -40,7 +40,7 @@ export function HeroSection() {
         <div className="relative z-10 mt-6 self-end md:mt-0">
           <Image
             src="/images/hero/hero-delivery-person.png"
-            alt="Delivery courier on a scooter"
+            alt={t("imageAlt")}
             width={560}
             height={500}
             priority

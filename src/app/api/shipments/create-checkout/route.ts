@@ -102,8 +102,8 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: "eur",
             product_data: {
-              name: "Laveina — Envío de paquete",
-              description: `${booking.parcel_size} · ${booking.weight_kg} kg`,
+              name: "Laveina — Parcel Shipment",
+              description: `${booking.parcel_size} · ${booking.weight_kg} kg · ${routing.mode}`,
             },
             // totalCents already includes IVA
             unit_amount: selectedOption.totalCents,
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ data: { url: session.url } });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Error creating checkout session:", message);

@@ -1,4 +1,4 @@
-import { randomInt } from "node:crypto";
+import { createHash, randomInt } from "node:crypto";
 
 import { OTP_EXPIRY_MINUTES, OTP_LENGTH } from "@/constants/app";
 import { createClient } from "@/lib/supabase/server";
@@ -19,6 +19,10 @@ function generateOtpCode(length: number): string {
   return otp;
 }
 
+function hashOtp(otp: string): string {
+  return createHash("sha256").update(otp).digest("hex");
+}
+
 export async function generateOtp(
   input: GenerateOtpInput
 ): Promise<ApiResponse<{ expires_at: string }>> {
@@ -32,13 +36,28 @@ export async function generateOtp(
 
   const supabase = await createClient();
 
+  // Check for an active, unexpired OTP — don't spam the receiver
+  const { data: existingOtp } = await supabase
+    .from("otp_verifications")
+    .select("expires_at")
+    .eq("shipment_id", parsed.data.shipment_id)
+    .eq("verified", false)
+    .gte("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (existingOtp) {
+    return { data: { expires_at: existingOtp.expires_at }, error: null };
+  }
+
   const otp = generateOtpCode(OTP_LENGTH);
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
-  // Store OTP in database
+  // Store hashed OTP in database — plain text never persisted
   const { error } = await supabase.from("otp_verifications").insert({
     shipment_id: parsed.data.shipment_id,
-    otp_hash: otp,
+    otp_hash: hashOtp(otp),
     expires_at: expiresAt,
     verified: false,
   });
@@ -55,7 +74,8 @@ export async function generateOtp(
     .single();
 
   if (shipment?.receiver_phone) {
-    await sendOtpMessage(shipment.receiver_phone, otp);
+    // Send plain text OTP via WhatsApp — only the hash is stored in DB
+    await sendOtpMessage(shipment.receiver_phone, otp, parsed.data.shipment_id);
   }
 
   return { data: { expires_at: expiresAt }, error: null };
@@ -74,11 +94,14 @@ export async function verifyOtp(
 
   const supabase = await createClient();
 
+  // Hash the submitted OTP and compare against stored hash
+  const otpHash = hashOtp(parsed.data.otp);
+
   const { data, error } = await supabase
     .from("otp_verifications")
     .select("*")
     .eq("shipment_id", parsed.data.shipment_id)
-    .eq("otp_hash", parsed.data.otp)
+    .eq("otp_hash", otpHash)
     .eq("verified", false)
     .gte("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false })

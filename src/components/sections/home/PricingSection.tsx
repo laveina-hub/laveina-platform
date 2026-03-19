@@ -3,6 +3,9 @@ import { useTranslations } from "next-intl";
 import { ButtonLink, Heading, SectionContainer, Text } from "@/components/atoms";
 import { cn } from "@/lib/utils";
 
+// Marketing display prices — illustrative "from" values for the homepage.
+// Actual booking prices come from admin_settings + SendCloud API at checkout.
+// These are placeholder values until client confirms marketing copy.
 const PLAN_PRICES: Record<string, number> = {
   fastest: 12,
   popular: 8,

@@ -1,9 +1,17 @@
+"use client";
+
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 import { CardHeader, CardShell, Text } from "@/components/atoms";
 import { TrackingTruckIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
+import { ShipmentStatus } from "@/types/enums";
+
+interface ScanLogEntry {
+  new_status: string;
+  scanned_at: string;
+}
 
 interface ProgressStep {
   labelKey: string;
@@ -13,17 +21,48 @@ interface ProgressStep {
 
 interface ShipmentProgressSectionProps {
   currentStep?: number;
+  scanLogs?: ScanLogEntry[];
+  status?: string;
 }
 
 const ICON_SIZE = 56;
 
-export function ShipmentProgressSection({ currentStep = 2 }: ShipmentProgressSectionProps) {
+/** Find the date a particular status was reached from scan logs. */
+function findStatusDate(scanLogs: ScanLogEntry[], status: string): string | undefined {
+  const entry = scanLogs.find((log) => log.new_status === status);
+  if (!entry) return undefined;
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(entry.scanned_at));
+}
+
+export function ShipmentProgressSection({
+  currentStep = 0,
+  scanLogs = [],
+  status,
+}: ShipmentProgressSectionProps) {
   const t = useTranslations("tracking");
+
+  // Build dates from scan logs if available
+  const stepDates = {
+    orderReceived:
+      findStatusDate(scanLogs, ShipmentStatus.WAITING_AT_ORIGIN) ??
+      findStatusDate(scanLogs, ShipmentStatus.PAYMENT_CONFIRMED),
+    dispatched: findStatusDate(scanLogs, ShipmentStatus.RECEIVED_AT_ORIGIN),
+    inTransit: findStatusDate(scanLogs, ShipmentStatus.IN_TRANSIT),
+    arrived:
+      findStatusDate(scanLogs, ShipmentStatus.ARRIVED_AT_DESTINATION) ??
+      findStatusDate(scanLogs, ShipmentStatus.READY_FOR_PICKUP),
+    delivered: findStatusDate(scanLogs, ShipmentStatus.DELIVERED),
+  };
 
   const steps: ProgressStep[] = [
     {
       labelKey: "progress.orderReceived",
-      date: "Feb 28, 2026",
+      date: stepDates.orderReceived,
       icon: (
         <Image
           src="/images/request-delivery/box-package.svg"
@@ -36,23 +75,28 @@ export function ShipmentProgressSection({ currentStep = 2 }: ShipmentProgressSec
     },
     {
       labelKey: "progress.dispatched",
-      date: "Feb 29, 2026",
+      date: stepDates.dispatched,
       icon: <TrackingTruckIcon size={ICON_SIZE} />,
     },
     {
       labelKey: "progress.inTransit",
-      date: "Mar 2, 2026",
+      date: stepDates.inTransit,
       icon: <TrackingTruckIcon size={ICON_SIZE} />,
     },
     {
       labelKey: "progress.outForDelivery",
+      date: stepDates.arrived,
       icon: <TrackingTruckIcon size={ICON_SIZE} />,
     },
     {
       labelKey: "progress.delivered",
+      date: stepDates.delivered,
       icon: <TrackingTruckIcon size={ICON_SIZE} />,
     },
   ];
+
+  // Use status prop to compute step if provided, otherwise use currentStep
+  const activeStep = status ? computeStepFromStatus(status) : currentStep;
 
   return (
     <CardShell>
@@ -69,7 +113,7 @@ export function ShipmentProgressSection({ currentStep = 2 }: ShipmentProgressSec
             className="bg-primary-500 absolute left-9.5 w-2 rounded-3xl transition-all duration-500 lg:hidden"
             style={{
               top: 42,
-              height: `calc(${(currentStep / (steps.length - 1)) * 100}% - ${(currentStep / (steps.length - 1)) * 84}px)`,
+              height: `calc(${(activeStep / (steps.length - 1)) * 100}% - ${(activeStep / (steps.length - 1)) * 84}px)`,
             }}
           />
 
@@ -78,12 +122,12 @@ export function ShipmentProgressSection({ currentStep = 2 }: ShipmentProgressSec
           <div
             className="bg-primary-500 absolute top-9.5 left-0 hidden h-2 rounded-3xl transition-all duration-500 lg:block"
             style={{
-              width: `${(currentStep / (steps.length - 1)) * 100}%`,
+              width: `${(activeStep / (steps.length - 1)) * 100}%`,
             }}
           />
 
           {steps.map((step, index) => {
-            const isActive = index <= currentStep;
+            const isActive = index <= activeStep;
             return (
               <div
                 key={step.labelKey}
@@ -116,4 +160,17 @@ export function ShipmentProgressSection({ currentStep = 2 }: ShipmentProgressSec
       </div>
     </CardShell>
   );
+}
+
+function computeStepFromStatus(status: string): number {
+  const statusStepMap: Record<string, number> = {
+    [ShipmentStatus.PAYMENT_CONFIRMED]: 0,
+    [ShipmentStatus.WAITING_AT_ORIGIN]: 0,
+    [ShipmentStatus.RECEIVED_AT_ORIGIN]: 1,
+    [ShipmentStatus.IN_TRANSIT]: 2,
+    [ShipmentStatus.ARRIVED_AT_DESTINATION]: 3,
+    [ShipmentStatus.READY_FOR_PICKUP]: 3,
+    [ShipmentStatus.DELIVERED]: 4,
+  };
+  return statusStepMap[status] ?? 0;
 }

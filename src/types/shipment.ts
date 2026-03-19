@@ -14,6 +14,22 @@ export type ShipmentWithRelations = Shipment & {
   scan_logs: Database["public"]["Tables"]["scan_logs"]["Row"][];
 };
 
+// ─── Public tracking type (sanitized — no sensitive data) ────────────────────
+
+export type PublicTrackingData = {
+  tracking_id: string;
+  status: string;
+  created_at: string;
+  parcel_size: string;
+  delivery_mode: string;
+  delivery_speed: string;
+  carrier_name: string | null;
+  carrier_tracking_number: string | null;
+  origin_pickup_point: { name: string; city: string } | null;
+  destination_pickup_point: { name: string; city: string } | null;
+  scan_logs: { new_status: string; scanned_at: string }[];
+};
+
 // ─── Service input type ───────────────────────────────────────────────────────
 // Used by shipment.service.ts → createShipment().
 // customer_id is passed as a separate param (not part of this input).

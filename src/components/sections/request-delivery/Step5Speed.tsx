@@ -12,7 +12,11 @@ import { PARCEL_SIZE_FALLBACKS } from "@/constants/parcel-sizes";
 import { useBookingStore } from "@/hooks/use-booking-store";
 import { cn } from "@/lib/utils";
 import type { PriceBreakdown, PriceOption } from "@/types/shipment";
-import { bookingStepSpeedSchema, type BookingStepSpeedInput } from "@/validations/shipment.schema";
+import {
+  bookingStepSpeedSchema,
+  type BookingStepSpeedInput,
+  type CreateCheckoutInput,
+} from "@/validations/shipment.schema";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -47,7 +51,7 @@ async function fetchRates(params: {
 
 // ─── Create-checkout API call ─────────────────────────────────────────────────
 
-async function createCheckout(payload: object): Promise<string> {
+async function createCheckout(payload: CreateCheckoutInput): Promise<string> {
   const res = await fetch("/api/shipments/create-checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -58,7 +62,7 @@ async function createCheckout(payload: object): Promise<string> {
     throw new Error(body.error ?? "Failed to create checkout");
   }
   const json = await res.json();
-  return json.url;
+  return json.data.url;
 }
 
 // ─── Price option card ────────────────────────────────────────────────────────

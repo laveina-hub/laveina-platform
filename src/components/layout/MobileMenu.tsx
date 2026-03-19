@@ -13,11 +13,10 @@ import { cn } from "@/lib/utils";
 
 import { LocaleSwitcherMobile } from "./LocaleSwitcherMobile";
 
-function getDashboardPath(role?: string): string {
-  if (role === "admin") return "/admin";
-  if (role === "pickup_point") return "/pickup-point";
-  return "/customer";
-}
+const DASHBOARD_PATHS: Record<string, string> = {
+  admin: "/admin",
+  pickup_point: "/pickup-point",
+};
 
 export function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -77,19 +76,15 @@ export function MobileMenu() {
 
   useEffect(() => {
     if (!isOpen || !panelRef.current) return;
-
     const panel = panelRef.current;
-    const focusableSelector = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
     function handleTabTrap(event: KeyboardEvent) {
       if (event.key !== "Tab") return;
-
-      const focusable = panel.querySelectorAll<HTMLElement>(focusableSelector);
+      const focusable = panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
       if (focusable.length === 0) return;
-
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
@@ -98,11 +93,11 @@ export function MobileMenu() {
         first.focus();
       }
     }
-
     document.addEventListener("keydown", handleTabTrap);
     return () => document.removeEventListener("keydown", handleTabTrap);
   }, [isOpen]);
 
+  // SAFETY: role comes from Supabase user metadata which is always string | undefined
   const role = user?.user_metadata?.role as string | undefined;
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "";
   const initials = displayName
@@ -118,7 +113,6 @@ export function MobileMenu() {
     router.push("/");
     router.refresh();
   }
-
   return (
     <div className="lg:hidden">
       <button
@@ -172,7 +166,7 @@ export function MobileMenu() {
             <div className="border-border-default flex h-19 shrink-0 items-center justify-between border-b px-6">
               <Image
                 src="/images/header/logo-laveina.svg"
-                alt="Laveina"
+                alt={t("home")}
                 width={120}
                 height={35}
                 unoptimized
@@ -225,7 +219,7 @@ export function MobileMenu() {
               {user && (
                 <li>
                   <Link
-                    href={getDashboardPath(role)}
+                    href={DASHBOARD_PATHS[role ?? ""] ?? "/customer"}
                     className="text-text-primary hover:bg-bg-muted hover:text-primary-500 flex items-center rounded-lg px-3 py-3 text-sm font-medium transition-colors"
                   >
                     {t("dashboard")}

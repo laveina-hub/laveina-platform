@@ -57,7 +57,7 @@ export function ResetPasswordForm() {
       <div className="flex justify-center lg:hidden">
         <Image
           src="/images/header/logo-laveina.svg"
-          alt="Laveina"
+          alt={t("logoAlt")}
           width={148}
           height={43}
           priority

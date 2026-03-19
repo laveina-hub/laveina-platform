@@ -9,6 +9,7 @@ import { Button, CardBody, CardHeader, CardShell, Input, Label } from "@/compone
 import { useBookingStore } from "@/hooks/use-booking-store";
 import { usePickupPoints } from "@/hooks/use-pickup-points";
 import { cn } from "@/lib/utils";
+import { getDeliveryMode } from "@/services/routing.service";
 import {
   bookingStepDestinationSchema,
   type BookingStepDestinationInput,
@@ -40,11 +41,12 @@ export function Step3Destination() {
   const selectedPointId = watch("destination_pickup_point_id");
 
   function onSubmit(data: BookingStepDestinationInput) {
-    // Detect delivery mode from postcodes and store it
+    // Detect delivery mode from postcodes using the shared routing service
     const originPostcode = origin?.origin_postcode ?? "";
-    const isInternal =
-      originPostcode.startsWith("08") && data.destination_postcode.startsWith("08");
-    setDeliveryMode(isInternal ? "internal" : "sendcloud");
+    const routing = getDeliveryMode(originPostcode, data.destination_postcode);
+    if (routing.mode !== "blocked") {
+      setDeliveryMode(routing.mode);
+    }
     setDestination(data);
   }
 

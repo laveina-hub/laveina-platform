@@ -2,7 +2,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import type { ShipmentStatus } from "@/types/enums";
-import type { Shipment, ShipmentWithRelations, CreateShipmentInput } from "@/types/shipment";
+import type {
+  Shipment,
+  ShipmentWithRelations,
+  CreateShipmentInput,
+  PublicTrackingData,
+} from "@/types/shipment";
 
 export type ListShipmentsFilters = {
   status?: ShipmentStatus;
@@ -172,4 +177,33 @@ export async function updateShipmentStatus(
   }
 
   return { data, error: null };
+}
+
+/**
+ * Public tracking lookup. Uses admin client (bypasses RLS) because
+ * tracking is unauthenticated. Returns only non-sensitive fields —
+ * no phone numbers, no customer profile, no payment data.
+ */
+export async function getPublicTrackingData(
+  trackingId: string
+): Promise<ApiResponse<PublicTrackingData>> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from("shipments")
+    .select(
+      "tracking_id, status, created_at, parcel_size, delivery_mode, delivery_speed, carrier_name, carrier_tracking_number, origin_pickup_point:pickup_points!shipments_origin_pickup_point_id_fkey(name, city), destination_pickup_point:pickup_points!shipments_destination_pickup_point_id_fkey(name, city), scan_logs(new_status, scanned_at)"
+    )
+    .eq("tracking_id", trackingId)
+    .order("scanned_at", { referencedTable: "scan_logs", ascending: true })
+    .single();
+
+  if (error || !data) {
+    return {
+      data: null,
+      error: { message: "Shipment not found", code: "NOT_FOUND", status: 404 },
+    };
+  }
+
+  return { data: data as unknown as PublicTrackingData, error: null };
 }

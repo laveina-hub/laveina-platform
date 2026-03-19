@@ -17,6 +17,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+
+    if (!body.trackingId || !body.pickupPointId) {
+      return NextResponse.json(
+        { error: "trackingId and pickupPointId are required" },
+        { status: 400 }
+      );
+    }
+
     const result = await processQrScan(user.id, {
       tracking_id: body.trackingId,
       pickup_point_id: body.pickupPointId,

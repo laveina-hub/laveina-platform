@@ -31,18 +31,18 @@ function getMockRates(weightKg: number): SendcloudRates {
 
   const standard: SendcloudRateOption = {
     shippingMethodId: 999901,
-    name: "[TEST] Correos Paquete Estándar",
+    name: "[TEST] Standard Parcel",
     carrier: "correos",
     rateCents: baseRateCents,
-    estimatedDays: "3-5 días",
+    estimatedDays: "3-5",
   };
 
   const express: SendcloudRateOption = {
     shippingMethodId: 999902,
-    name: "[TEST] Correos Express 24h",
+    name: "[TEST] Express 24h",
     carrier: "correos",
     rateCents: expressRateCents,
-    estimatedDays: "1 día",
+    estimatedDays: "1",
   };
 
   return { standard, express };
@@ -109,7 +109,7 @@ export async function getAvailableRates(weightKg: number): Promise<ApiResponse<S
         name: fastestCheapest.name,
         carrier: fastestCheapest.carrier,
         rateCents: Math.round(fastestCheapest.price * 100),
-        estimatedDays: "1 día",
+        estimatedDays: "1",
       };
     }
 
