@@ -337,5 +337,12 @@
     "arrived_at_destination": "Llegado a tienda de destino",
     "ready_for_pickup": "Listo para recoger",
     "delivered": "Entregado"
+  },
+  "validation": {
+    "invalidEmail": "Introduce un correo electrónico válido",
+    "passwordMin": "La contraseña debe tener al menos 8 caracteres",
+    "nameMin": "El nombre debe tener al menos 2 caracteres",
+    "invalidPhone": "Introduce un número de teléfono válido",
+    "passwordsMismatch": "Las contraseñas no coinciden"
   }
 }

@@ -2,21 +2,24 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { Button, Input, Label, PasswordInput } from "@/components/atoms";
+import { Button, Input, Label, PasswordInput, Text } from "@/components/atoms";
+import { CheckIcon } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { registerSchema, type RegisterInput } from "@/validations/auth.schema";
 
 export function RegisterForm() {
   const t = useTranslations("auth");
+  const tv = useTranslations("validation");
+  const locale = useLocale();
   const { signUp } = useAuth();
-  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const {
     register,
@@ -29,12 +32,13 @@ export function RegisterForm() {
   async function onSubmit(data: RegisterInput) {
     setSubmitting(true);
     try {
-      const callbackUrl = `${window.location.origin}${window.location.pathname.replace("/register", "/callback")}`;
+      // Build a robust callback URL using the current locale from next-intl.
+      // Avoids fragile string-replace on window.location.pathname.
+      const callbackUrl = `${window.location.origin}/${locale}/auth/callback?next=/customer`;
       const result = await signUp({
         email: data.email,
         password: data.password,
         fullName: data.full_name,
-        phone: data.phone || undefined,
         emailRedirectTo: callbackUrl,
       });
 
@@ -43,15 +47,49 @@ export function RegisterForm() {
         return;
       }
 
-      toast.success(t("accountCreated"), {
-        description: t("accountCreatedDescription"),
-      });
-      router.push("/auth/login");
+      setEmailSent(true);
     } catch {
       toast.error(t("genericError"));
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (emailSent) {
+    return (
+      <div className="space-y-8">
+        {/* Mobile logo */}
+        <div className="flex justify-center lg:hidden">
+          <Image
+            src="/images/header/logo-laveina.svg"
+            alt="Laveina"
+            width={148}
+            height={43}
+            priority
+            unoptimized
+            className="h-10 w-auto"
+          />
+        </div>
+
+        <div className="text-center">
+          <div className="bg-primary-100 mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full">
+            <CheckIcon size={28} color="var(--color-primary-500)" />
+          </div>
+          <h1 className="font-display text-text-primary text-2xl font-bold">{t("checkEmail")}</h1>
+          <Text variant="body" className="mt-3">
+            {t("accountCreatedDescription")}
+          </Text>
+          <div className="mt-6">
+            <Link
+              href="/auth/login"
+              className="text-primary-500 hover:text-primary-600 text-sm font-semibold transition-colors"
+            >
+              {t("backToLogin")}
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -92,9 +130,9 @@ export function RegisterForm() {
             aria-describedby={errors.full_name ? "name-error" : undefined}
             {...register("full_name")}
           />
-          {errors.full_name && (
+          {errors.full_name?.message && (
             <p id="name-error" role="alert" className="text-error text-sm">
-              {errors.full_name.message}
+              {tv(errors.full_name.message.replace("validation.", ""))}
             </p>
           )}
         </div>
@@ -112,9 +150,9 @@ export function RegisterForm() {
             aria-describedby={errors.email ? "email-error" : undefined}
             {...register("email")}
           />
-          {errors.email && (
+          {errors.email?.message && (
             <p id="email-error" role="alert" className="text-error text-sm">
-              {errors.email.message}
+              {tv(errors.email.message.replace("validation.", ""))}
             </p>
           )}
         </div>
@@ -133,9 +171,9 @@ export function RegisterForm() {
             aria-describedby={errors.password ? "password-error" : undefined}
             {...register("password")}
           />
-          {errors.password && (
+          {errors.password?.message && (
             <p id="password-error" role="alert" className="text-error text-sm">
-              {errors.password.message}
+              {tv(errors.password.message.replace("validation.", ""))}
             </p>
           )}
         </div>
@@ -154,9 +192,9 @@ export function RegisterForm() {
             aria-describedby={errors.confirm_password ? "confirm-password-error" : undefined}
             {...register("confirm_password")}
           />
-          {errors.confirm_password && (
+          {errors.confirm_password?.message && (
             <p id="confirm-password-error" role="alert" className="text-error text-sm">
-              {errors.confirm_password.message}
+              {tv(errors.confirm_password.message.replace("validation.", ""))}
             </p>
           )}
         </div>

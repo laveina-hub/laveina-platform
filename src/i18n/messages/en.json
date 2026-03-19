@@ -337,5 +337,12 @@
     "arrived_at_destination": "Arrived at Destination Shop",
     "ready_for_pickup": "Ready for Pickup",
     "delivered": "Delivered"
+  },
+  "validation": {
+    "invalidEmail": "Please enter a valid email",
+    "passwordMin": "Password must be at least 8 characters",
+    "nameMin": "Name must be at least 2 characters",
+    "invalidPhone": "Please enter a valid phone number",
+    "passwordsMismatch": "Passwords do not match"
   }
 }
