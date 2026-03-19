@@ -1,61 +1,75 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import type { DeliveryMode } from "@/types/enums";
 import type { PriceBreakdown } from "@/types/shipment";
+import type {
+  BookingStepContactInput,
+  BookingStepOriginInput,
+  BookingStepDestinationInput,
+  BookingStepParcelInput,
+  BookingStepSpeedInput,
+} from "@/validations/shipment.schema";
 
-type SenderInfo = {
-  name: string;
-  phone: string;
-  email?: string;
-};
+// ─── Step index ───────────────────────────────────────────────────────────────
+// Step 5 (speed) is skipped for internal (Barcelona) routes — handled in UI.
 
-type ReceiverInfo = {
-  name: string;
-  phone: string;
-  email?: string;
-};
+export type BookingStep = 1 | 2 | 3 | 4 | 5;
 
-type SelectedPickupPoints = {
-  originId: string;
-  destinationId: string;
-  originPostcode: string;
-  destinationPostcode: string;
-};
-
-type ParcelDetails = {
-  weightKg: number;
-  description?: string;
-};
-
-type BookingStep = 1 | 2 | 3 | 4 | 5;
+// ─── State ────────────────────────────────────────────────────────────────────
 
 type BookingState = {
   currentStep: BookingStep;
-  senderInfo: SenderInfo | null;
-  receiverInfo: ReceiverInfo | null;
-  selectedPickupPoints: SelectedPickupPoints | null;
-  parcelDetails: ParcelDetails | null;
+  /** Step 1 — sender + receiver contact info */
+  contact: BookingStepContactInput | null;
+  /** Step 2 — origin postcode + pickup point */
+  origin: BookingStepOriginInput | null;
+  /** Step 3 — destination postcode + pickup point */
+  destination: BookingStepDestinationInput | null;
+  /** Step 4 — parcel size, weight, insurance */
+  parcel: BookingStepParcelInput | null;
+  /** Step 5 — delivery speed (null for internal routes) */
+  speed: BookingStepSpeedInput | null;
+  /** Detected after steps 2+3 are completed */
+  deliveryMode: DeliveryMode | null;
+  /** Resolved from DB (parcel_size_config) in Step 4 — used by Step 5 for rate calculation */
+  parcelDimensions: { lengthCm: number; widthCm: number; heightCm: number } | null;
+  /** Returned by POST /api/shipments/get-rates after step 4 */
   priceBreakdown: PriceBreakdown | null;
 };
 
+// ─── Actions ──────────────────────────────────────────────────────────────────
+
 type BookingActions = {
   setStep: (step: BookingStep) => void;
-  setSenderInfo: (info: SenderInfo) => void;
-  setReceiverInfo: (info: ReceiverInfo) => void;
-  setPickupPoints: (points: SelectedPickupPoints) => void;
-  setParcelDetails: (details: ParcelDetails) => void;
+  setContact: (data: BookingStepContactInput) => void;
+  setOrigin: (data: BookingStepOriginInput) => void;
+  setDestination: (data: BookingStepDestinationInput) => void;
+  setParcel: (
+    data: BookingStepParcelInput,
+    dimensions: { lengthCm: number; widthCm: number; heightCm: number }
+  ) => void;
+  setSpeed: (data: BookingStepSpeedInput) => void;
+  setDeliveryMode: (mode: DeliveryMode) => void;
   setPriceBreakdown: (breakdown: PriceBreakdown) => void;
   reset: () => void;
 };
 
+// ─── Initial state ────────────────────────────────────────────────────────────
+
 const initialState: BookingState = {
   currentStep: 1,
-  senderInfo: null,
-  receiverInfo: null,
-  selectedPickupPoints: null,
-  parcelDetails: null,
+  contact: null,
+  origin: null,
+  destination: null,
+  parcel: null,
+  speed: null,
+  deliveryMode: null,
+  parcelDimensions: null,
   priceBreakdown: null,
 };
+
+// ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useBookingStore = create<BookingState & BookingActions>()(
   persist(
@@ -64,13 +78,23 @@ export const useBookingStore = create<BookingState & BookingActions>()(
 
       setStep: (step) => set({ currentStep: step }),
 
-      setSenderInfo: (info) => set({ senderInfo: info, currentStep: 2 }),
+      setContact: (data) => set({ contact: data, currentStep: 2 }),
 
-      setReceiverInfo: (info) => set({ receiverInfo: info, currentStep: 3 }),
+      setOrigin: (data) => set({ origin: data, currentStep: 3 }),
 
-      setPickupPoints: (points) => set({ selectedPickupPoints: points, currentStep: 4 }),
+      setDestination: (data) => set({ destination: data, currentStep: 4 }),
 
-      setParcelDetails: (details) => set({ parcelDetails: details, currentStep: 5 }),
+      setParcel: (data, dimensions) =>
+        set({ parcel: data, parcelDimensions: dimensions, currentStep: 5, priceBreakdown: null }),
+
+      setSpeed: (data) => set({ speed: data }),
+
+      setDeliveryMode: (mode) =>
+        set({
+          deliveryMode: mode,
+          // Clear speed selection when mode changes (internal has no speed choice)
+          speed: null,
+        }),
 
       setPriceBreakdown: (breakdown) => set({ priceBreakdown: breakdown }),
 

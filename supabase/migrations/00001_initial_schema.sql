@@ -237,7 +237,7 @@ CREATE TABLE public.shipments (
 
   -- Payment
   stripe_payment_intent_id    TEXT,
-  stripe_checkout_session_id  TEXT,
+  stripe_checkout_session_id  TEXT UNIQUE,
 
   -- Status
   status                      public.shipment_status NOT NULL DEFAULT 'payment_confirmed',
@@ -345,6 +345,25 @@ CREATE TRIGGER set_admin_settings_updated_at
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
+-- ----- PARCEL SIZE CONFIG -----
+-- Physical dimensions and weight limits per parcel size (admin-editable).
+-- The 5 size keys are fixed by the parcel_size enum above.
+-- Admin can update dimensions/max weight from /admin/settings.
+CREATE TABLE public.parcel_size_config (
+  size          public.parcel_size PRIMARY KEY,
+  max_weight_kg NUMERIC(5,2)  NOT NULL CHECK (max_weight_kg > 0),
+  length_cm     INTEGER       NOT NULL CHECK (length_cm > 0),
+  width_cm      INTEGER       NOT NULL CHECK (width_cm > 0),
+  height_cm     INTEGER       NOT NULL CHECK (height_cm > 0),
+  is_active     BOOLEAN       NOT NULL DEFAULT true,
+  updated_at    TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+
+CREATE TRIGGER set_parcel_size_config_updated_at
+  BEFORE UPDATE ON public.parcel_size_config
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
 -- ----- NOTIFICATIONS LOG -----
 -- WhatsApp message audit trail (via Gallabox)
 CREATE TABLE public.notifications_log (
@@ -369,6 +388,7 @@ CREATE INDEX idx_notifications_log_status ON public.notifications_log(status);
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pickup_points ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.insurance_options ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.parcel_size_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shipments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.scan_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.otp_verifications ENABLE ROW LEVEL SECURITY;
@@ -406,6 +426,15 @@ CREATE POLICY insurance_options_select_active ON public.insurance_options
 
 CREATE POLICY insurance_options_admin_all ON public.insurance_options
   FOR ALL USING (public.get_user_role() = 'admin');
+
+-- ===== PARCEL SIZE CONFIG =====
+-- Everyone can read (needed for booking form + pricing page)
+-- Only admin can update dimensions/weights
+CREATE POLICY parcel_size_config_select_all ON public.parcel_size_config
+  FOR SELECT USING (true);
+
+CREATE POLICY parcel_size_config_admin_update ON public.parcel_size_config
+  FOR UPDATE USING (public.get_user_role() = 'admin');
 
 -- ===== SHIPMENTS =====
 CREATE POLICY shipments_select_own ON public.shipments

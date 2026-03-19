@@ -59,6 +59,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      parcel_size_config: {
+        Row: {
+          size: Database["public"]["Enums"]["parcel_size"];
+          max_weight_kg: number;
+          length_cm: number;
+          width_cm: number;
+          height_cm: number;
+          is_active: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          size: Database["public"]["Enums"]["parcel_size"];
+          max_weight_kg: number;
+          length_cm: number;
+          width_cm: number;
+          height_cm: number;
+          is_active?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          size?: Database["public"]["Enums"]["parcel_size"];
+          max_weight_kg?: number;
+          length_cm?: number;
+          width_cm?: number;
+          height_cm?: number;
+          is_active?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       notifications_log: {
         Row: {
           created_at: string;

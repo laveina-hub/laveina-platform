@@ -1,36 +1,80 @@
 import { z } from "zod";
 
-export const bookingStepSenderSchema = z.object({
-  sender_name: z.string().min(2, "Name is required"),
-  sender_phone: z.string().min(9, "Valid phone number is required"),
-  origin_postcode: z.string().min(4, "Postcode is required").max(10),
+// ─── Step 1: Contact info ─────────────────────────────────────────────────────
+// Sender and receiver in one card. Phone collected here (not at registration).
+
+export const bookingStepContactSchema = z.object({
+  sender_name: z.string().min(2, "validation.nameMin"),
+  sender_phone: z.string().regex(/^\+?[\d\s\-]{9,15}$/, "validation.phoneInvalid"),
+  receiver_name: z.string().min(2, "validation.nameMin"),
+  receiver_phone: z.string().regex(/^\+?[\d\s\-]{9,15}$/, "validation.phoneInvalid"),
 });
 
-export const bookingStepReceiverSchema = z.object({
-  receiver_name: z.string().min(2, "Name is required"),
-  receiver_phone: z.string().min(9, "Valid phone number is required"),
-  destination_postcode: z.string().min(4, "Postcode is required").max(10),
+// ─── Step 2: Origin location ──────────────────────────────────────────────────
+// Customer enters postcode → system shows available shops → customer selects one.
+
+export const bookingStepOriginSchema = z.object({
+  origin_postcode: z.string().regex(/^[0-9]{5}$/, "validation.postcodeInvalid"),
+  origin_pickup_point_id: z.string().uuid("validation.pickupPointRequired"),
 });
 
-export const bookingStepPickupPointsSchema = z.object({
-  origin_pickup_point_id: z.string().uuid("Please select an origin pickup point"),
-  destination_pickup_point_id: z.string().uuid("Please select a destination pickup point"),
+// ─── Step 3: Destination location ────────────────────────────────────────────
+
+export const bookingStepDestinationSchema = z.object({
+  destination_postcode: z.string().regex(/^[0-9]{5}$/, "validation.postcodeInvalid"),
+  destination_pickup_point_id: z.string().uuid("validation.pickupPointRequired"),
 });
+
+// ─── Step 4: Parcel details ───────────────────────────────────────────────────
+// Size drives dimensions and volumetric weight. Max weight per size enforced
+// in the form UI (not here — schema validates the shape, UI validates the business rule).
 
 export const bookingStepParcelSchema = z.object({
-  weight_kg: z.number().positive("Weight must be greater than 0").max(30, "Maximum weight is 30kg"),
+  parcel_size: z.enum(["small", "medium", "large", "extra_large", "xxl"], {
+    errorMap: () => ({ message: "validation.parcelSizeRequired" }),
+  }),
+  weight_kg: z
+    .number({ invalid_type_error: "validation.weightRequired" })
+    .positive("validation.weightPositive")
+    .max(25, "validation.weightMax"),
+  insurance_option_id: z.string().uuid("validation.required").nullable(),
 });
 
-export const createShipmentSchema = z.object({
+// ─── Step 5: Delivery speed ───────────────────────────────────────────────────
+// Only shown for sendcloud routes. Internal routes skip this step (always standard).
+
+export const bookingStepSpeedSchema = z.object({
+  delivery_speed: z.enum(["standard", "express"]),
+});
+
+// ─── Full checkout payload ────────────────────────────────────────────────────
+// Validated server-side by POST /api/shipments/create-checkout before the
+// price is recalculated and the Stripe session is created.
+// Client price is NEVER trusted — server always recalculates from this input.
+
+export const createCheckoutSchema = z.object({
+  // Contact
   sender_name: z.string().min(2),
-  sender_phone: z.string().min(9),
+  sender_phone: z.string().regex(/^\+?[\d\s\-]{9,15}$/),
   receiver_name: z.string().min(2),
-  receiver_phone: z.string().min(9),
+  receiver_phone: z.string().regex(/^\+?[\d\s\-]{9,15}$/),
+  // Origin
+  origin_postcode: z.string().regex(/^[0-9]{5}$/),
   origin_pickup_point_id: z.string().uuid(),
+  // Destination
+  destination_postcode: z.string().regex(/^[0-9]{5}$/),
   destination_pickup_point_id: z.string().uuid(),
-  origin_postcode: z.string().min(4).max(10),
-  destination_postcode: z.string().min(4).max(10),
-  weight_kg: z.number().positive().max(30),
+  // Parcel
+  parcel_size: z.enum(["small", "medium", "large", "extra_large", "xxl"]),
+  weight_kg: z.number().positive().max(25),
+  insurance_option_id: z.string().uuid().nullable(),
+  // Speed
+  delivery_speed: z.enum(["standard", "express"]),
 });
 
-export type CreateShipmentInput = z.infer<typeof createShipmentSchema>;
+export type BookingStepContactInput = z.infer<typeof bookingStepContactSchema>;
+export type BookingStepOriginInput = z.infer<typeof bookingStepOriginSchema>;
+export type BookingStepDestinationInput = z.infer<typeof bookingStepDestinationSchema>;
+export type BookingStepParcelInput = z.infer<typeof bookingStepParcelSchema>;
+export type BookingStepSpeedInput = z.infer<typeof bookingStepSpeedSchema>;
+export type CreateCheckoutInput = z.infer<typeof createCheckoutSchema>;
