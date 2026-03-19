@@ -1,4 +1,6 @@
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
+
+import { PickupPointDashboardSection } from "@/components/sections/pickup-point-dashboard/PickupPointDashboardSection";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -7,11 +9,6 @@ type Props = {
 export default async function PickupPointDashboardPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("pages");
 
-  return (
-    <div>
-      <h1>{t("pickupPointDashboard")}</h1>
-    </div>
-  );
+  return <PickupPointDashboardSection />;
 }

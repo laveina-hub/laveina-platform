@@ -1,0 +1,92 @@
+"use client";
+
+import * as Dialog from "@radix-ui/react-dialog";
+import { AlertTriangle, X } from "lucide-react";
+
+import { Button } from "@/components/atoms";
+import { cn } from "@/lib/utils";
+
+type ConfirmDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  cancelLabel?: string;
+  onConfirm: () => void;
+  variant?: "danger" | "warning" | "default";
+  loading?: boolean;
+};
+
+export function ConfirmDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel,
+  cancelLabel = "Cancel",
+  onConfirm,
+  variant = "default",
+  loading = false,
+}: ConfirmDialogProps) {
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-6 shadow-lg">
+          <div className="flex items-start gap-4">
+            <div
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+                variant === "danger" && "bg-red-50",
+                variant === "warning" && "bg-amber-50",
+                variant === "default" && "bg-primary-50"
+              )}
+            >
+              <AlertTriangle
+                size={20}
+                className={cn(
+                  variant === "danger" && "text-red-600",
+                  variant === "warning" && "text-amber-600",
+                  variant === "default" && "text-primary-600"
+                )}
+              />
+            </div>
+            <div className="flex-1">
+              <Dialog.Title className="text-base font-semibold text-gray-900">{title}</Dialog.Title>
+              <Dialog.Description className="mt-1 text-sm text-gray-500">
+                {description}
+              </Dialog.Description>
+            </div>
+            <Dialog.Close asChild>
+              <button className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                <X size={16} />
+              </button>
+            </Dialog.Close>
+          </div>
+
+          <div className="mt-6 flex justify-end gap-3">
+            <Dialog.Close asChild>
+              <Button variant="outline" size="sm" disabled={loading}>
+                {cancelLabel}
+              </Button>
+            </Dialog.Close>
+            <Button
+              size="sm"
+              className={cn(
+                variant === "danger" && "bg-red-600 hover:bg-red-700 active:bg-red-800"
+              )}
+              onClick={() => {
+                onConfirm();
+                onOpenChange(false);
+              }}
+              disabled={loading}
+            >
+              {loading ? "..." : confirmLabel}
+            </Button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}

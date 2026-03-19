@@ -1,4 +1,6 @@
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
+
+import { AdminOverviewSection } from "@/components/sections/admin/AdminOverviewSection";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -7,11 +9,6 @@ type Props = {
 export default async function AdminDashboardPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("pages");
 
-  return (
-    <div>
-      <h1>{t("adminDashboard")}</h1>
-    </div>
-  );
+  return <AdminOverviewSection />;
 }

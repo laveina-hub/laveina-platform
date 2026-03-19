@@ -17,11 +17,19 @@ export type ListPickupPointsFilters = {
 export async function listPickupPoints(
   filters: ListPickupPointsFilters = {}
 ): Promise<ApiResponse<PickupPoint[]>> {
-  const { postcode, is_active = true, search } = filters;
+  const { postcode, is_active, search } = filters;
 
   const supabase = await createClient();
 
-  let query = supabase.from("pickup_points").select("*").eq("is_active", is_active).order("name");
+  let query = supabase.from("pickup_points").select("*").order("name");
+
+  // Default: only active. Pass is_active=undefined to skip filter (admin views).
+  if (is_active !== undefined) {
+    query = query.eq("is_active", is_active);
+  } else if (!("is_active" in filters)) {
+    // No is_active key provided at all — default to active only
+    query = query.eq("is_active", true);
+  }
 
   if (postcode) query = query.eq("postcode", postcode);
   if (search) query = query.ilike("name", `%${search}%`);
