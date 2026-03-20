@@ -1,20 +1,23 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import type { DeliveryMode } from "@/types/enums";
+import type { DeliveryMode, ParcelSize } from "@/types/enums";
 import type { PriceBreakdown } from "@/types/shipment";
 import type {
   BookingStepContactInput,
   BookingStepOriginInput,
   BookingStepDestinationInput,
-  BookingStepParcelInput,
   BookingStepSpeedInput,
+  ParcelItemInput,
 } from "@/validations/shipment.schema";
 
 // ─── Step index ───────────────────────────────────────────────────────────────
-// Step 5 (speed) is skipped for internal (Barcelona) routes — handled in UI.
 
 export type BookingStep = 1 | 2 | 3 | 4 | 5;
+
+// ─── Per-parcel dimensions resolved from DB ──────────────────────────────────
+
+export type ParcelDimensions = { lengthCm: number; widthCm: number; heightCm: number };
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -26,16 +29,16 @@ type BookingState = {
   origin: BookingStepOriginInput | null;
   /** Step 3 — destination postcode + pickup point */
   destination: BookingStepDestinationInput | null;
-  /** Step 4 — parcel size, weight, insurance */
-  parcel: BookingStepParcelInput | null;
-  /** Step 5 — delivery speed (null for internal routes) */
+  /** Step 4 — one or more parcels (each with size, weight, insurance) */
+  parcels: ParcelItemInput[];
+  /** DB-resolved dimensions per parcel (same order as parcels array) */
+  parcelDimensionsList: ParcelDimensions[];
+  /** Step 5 — delivery speed (standard or express), shared for all parcels */
   speed: BookingStepSpeedInput | null;
   /** Detected after steps 2+3 are completed */
   deliveryMode: DeliveryMode | null;
-  /** Resolved from DB (parcel_size_config) in Step 4 — used by Step 5 for rate calculation */
-  parcelDimensions: { lengthCm: number; widthCm: number; heightCm: number } | null;
-  /** Returned by POST /api/shipments/get-rates after step 4 */
-  priceBreakdown: PriceBreakdown | null;
+  /** Returned by POST /api/shipments/get-rates after step 4 — per-parcel breakdown */
+  priceBreakdowns: PriceBreakdown[] | null;
 };
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
@@ -45,13 +48,10 @@ type BookingActions = {
   setContact: (data: BookingStepContactInput) => void;
   setOrigin: (data: BookingStepOriginInput) => void;
   setDestination: (data: BookingStepDestinationInput) => void;
-  setParcel: (
-    data: BookingStepParcelInput,
-    dimensions: { lengthCm: number; widthCm: number; heightCm: number }
-  ) => void;
+  setParcels: (parcels: ParcelItemInput[], dimensions: ParcelDimensions[]) => void;
   setSpeed: (data: BookingStepSpeedInput) => void;
   setDeliveryMode: (mode: DeliveryMode) => void;
-  setPriceBreakdown: (breakdown: PriceBreakdown) => void;
+  setPriceBreakdowns: (breakdowns: PriceBreakdown[]) => void;
   reset: () => void;
 };
 
@@ -62,11 +62,11 @@ const initialState: BookingState = {
   contact: null,
   origin: null,
   destination: null,
-  parcel: null,
+  parcels: [],
+  parcelDimensionsList: [],
   speed: null,
   deliveryMode: null,
-  parcelDimensions: null,
-  priceBreakdown: null,
+  priceBreakdowns: null,
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -84,24 +84,30 @@ export const useBookingStore = create<BookingState & BookingActions>()(
 
       setDestination: (data) => set({ destination: data, currentStep: 4 }),
 
-      setParcel: (data, dimensions) =>
-        set({ parcel: data, parcelDimensions: dimensions, currentStep: 5, priceBreakdown: null }),
+      setParcels: (parcels, dimensions) =>
+        set({ parcels, parcelDimensionsList: dimensions, currentStep: 5, priceBreakdowns: null }),
 
       setSpeed: (data) => set({ speed: data }),
 
       setDeliveryMode: (mode) =>
         set({
           deliveryMode: mode,
-          // Clear speed selection when mode changes (internal has no speed choice)
+          // Clear speed selection when mode changes so user re-selects
           speed: null,
         }),
 
-      setPriceBreakdown: (breakdown) => set({ priceBreakdown: breakdown }),
+      setPriceBreakdowns: (breakdowns) => set({ priceBreakdowns: breakdowns }),
 
       reset: () => set(initialState),
     }),
     {
       name: "laveina-booking",
+      version: 2,
+      migrate: () => {
+        // v1 → v2: parcel → parcels[], priceBreakdown → priceBreakdowns[]
+        // Simply reset to initial state — in-progress bookings are transient
+        return initialState;
+      },
     }
   )
 );

@@ -67,9 +67,9 @@ export function Sidebar({ role, userFullName, open, onClose }: SidebarProps) {
   const navItems = getNavItems(role, t);
 
   const roleLabelMap: Record<UserRole, string> = {
-    admin: "Admin",
-    pickup_point: "Pickup Point",
-    customer: "Customer",
+    admin: t("roleAdmin"),
+    pickup_point: t("rolePickupPoint"),
+    customer: t("roleCustomer"),
   };
 
   return (

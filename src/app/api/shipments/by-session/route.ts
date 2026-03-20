@@ -7,9 +7,9 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * GET /api/shipments/by-session?session_id=<stripe_checkout_session_id>
  *
- * Returns the shipment created for a given Stripe Checkout session.
- * Used by the /book/success page to display confirmation details.
- * Auth required — returns only if the shipment belongs to the calling user.
+ * Returns all shipments created for a given Stripe Checkout session.
+ * Supports multi-parcel bookings (one session → multiple shipments).
+ * Auth required — returns only shipments belonging to the calling user.
  *
  * qr_code_url in the DB stores the storage file path (private bucket).
  * This route exchanges it for a 7-day signed URL before returning to the client.
@@ -39,23 +39,28 @@ export async function GET(request: NextRequest) {
       )
       .eq("stripe_checkout_session_id", sessionId)
       .eq("customer_id", user.id)
-      .single();
+      .order("created_at", { ascending: true });
 
-    if (error) {
-      return NextResponse.json({ error: "Shipment not found" }, { status: 404 });
+    if (error || !data || data.length === 0) {
+      return NextResponse.json({ error: "Shipments not found" }, { status: 404 });
     }
 
-    // Exchange the stored file path for a signed URL (private bucket)
-    let qrSignedUrl: string | null = null;
-    if (data.qr_code_url) {
-      try {
-        qrSignedUrl = await createQrSignedUrl(data.qr_code_url);
-      } catch {
-        // Non-fatal: QR may still be generating (webhook latency). Client retries.
-      }
-    }
+    // Exchange stored file paths for signed URLs (private bucket)
+    const shipments = await Promise.all(
+      data.map(async (shipment) => {
+        let qrSignedUrl: string | null = null;
+        if (shipment.qr_code_url) {
+          try {
+            qrSignedUrl = await createQrSignedUrl(shipment.qr_code_url);
+          } catch {
+            // Non-fatal: QR may still be generating (webhook latency). Client retries.
+          }
+        }
+        return { ...shipment, qr_code_url: qrSignedUrl };
+      })
+    );
 
-    return NextResponse.json({ data: { ...data, qr_code_url: qrSignedUrl } });
+    return NextResponse.json({ data: shipments });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });

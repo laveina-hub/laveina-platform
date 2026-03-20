@@ -1,26 +1,24 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type Stripe from "stripe";
+import { z } from "zod";
 
 import { env } from "@/env";
 import { generateAndUploadQrCode } from "@/lib/qr/generator";
 import { getStripe } from "@/lib/stripe/client";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createShipment, setShipmentQrCodeUrl } from "@/services/shipment.service";
-import type { DeliveryMode, DeliverySpeed, ParcelSize } from "@/types/enums";
 import type { CreateShipmentInput } from "@/types/shipment";
 
 /**
  * POST /api/webhooks/stripe
  *
  * Handles Stripe webhook events. On checkout.session.completed:
- *   1. Reconstructs CreateShipmentInput from session metadata.
- *   2. Creates shipment row (DB trigger auto-generates tracking_id).
- *   3. Generates QR code PNG, uploads to Supabase Storage.
- *   4. Updates shipment.qr_code_url.
+ *   1. Reads full booking data from pending_bookings table.
+ *   2. Creates one shipment per parcel (each with own tracking ID + QR code).
+ *   3. Marks the pending booking as processed.
  *
- * Idempotency: Stripe may deliver events more than once. The shipment insert
- * is keyed on stripe_checkout_session_id — duplicate inserts will be rejected
- * by the unique constraint and the webhook will return 200 anyway.
+ * Supports multi-parcel bookings (one payment, multiple shipments).
  */
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -49,12 +47,52 @@ export async function POST(request: NextRequest) {
       break;
     }
     default:
-      // Acknowledge all other events without action
       break;
   }
 
   return NextResponse.json({ received: true });
 }
+
+// ─── Zod schema for pending booking data validation ─────────────────────────
+
+const pendingBookingDataSchema = z.object({
+  customer_id: z.string().uuid(),
+  contact: z.object({
+    sender_name: z.string().min(1),
+    sender_phone: z.string().min(1),
+    receiver_name: z.string().min(1),
+    receiver_phone: z.string().min(1),
+  }),
+  locations: z.object({
+    origin_postcode: z.string().regex(/^[0-9]{5}$/),
+    origin_pickup_point_id: z.string().uuid(),
+    destination_postcode: z.string().regex(/^[0-9]{5}$/),
+    destination_pickup_point_id: z.string().uuid(),
+  }),
+  delivery_mode: z.enum(["internal", "sendcloud"]),
+  delivery_speed: z.enum(["standard", "express"]),
+  parcels: z
+    .array(
+      z.object({
+        parcel_size: z.enum(["small", "medium", "large", "extra_large", "xxl"]),
+        weight_kg: z.number().positive(),
+        billable_weight_kg: z.number().nonnegative(),
+        length_cm: z.number().positive(),
+        width_cm: z.number().positive(),
+        height_cm: z.number().positive(),
+        insurance_option_id: z.string().uuid().nullable(),
+        insurance_amount_cents: z.number().nonnegative(),
+        insurance_surcharge_cents: z.number().nonnegative(),
+        price_cents: z.number().positive(),
+        carrier_rate_cents: z.number().nonnegative(),
+        margin_percent: z.number().nonnegative(),
+        shipping_method_id: z.number().nullable(),
+      })
+    )
+    .min(1),
+});
+
+type PendingBookingData = z.infer<typeof pendingBookingDataSchema>;
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const meta = session.metadata;
@@ -64,6 +102,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
+  const pendingBookingId = meta.pending_booking_id;
   const customerId = meta.customer_id;
   const stripeSessionId = session.id;
   const stripePaymentIntentId =
@@ -74,57 +113,136 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  const input: CreateShipmentInput = {
-    // Contact
-    sender_name: meta.sender_name ?? "",
-    sender_phone: meta.sender_phone ?? "",
-    receiver_name: meta.receiver_name ?? "",
-    receiver_phone: meta.receiver_phone ?? "",
-    // Locations
-    origin_postcode: meta.origin_postcode ?? "",
-    origin_pickup_point_id: meta.origin_pickup_point_id ?? "",
-    destination_postcode: meta.destination_postcode ?? "",
-    destination_pickup_point_id: meta.destination_pickup_point_id ?? "",
-    // Parcel
-    // SAFETY: values come from our own validated metadata — types are known
-    parcel_size: meta.parcel_size as ParcelSize,
-    weight_kg: parseFloat(meta.weight_kg ?? "0"),
-    billable_weight_kg: parseFloat(meta.billable_weight_kg ?? "0"),
-    parcel_length_cm: parseInt(meta.parcel_length_cm ?? "0", 10),
-    parcel_width_cm: parseInt(meta.parcel_width_cm ?? "0", 10),
-    parcel_height_cm: parseInt(meta.parcel_height_cm ?? "0", 10),
-    // Delivery
-    // SAFETY: values come from our own validated metadata — types are known
-    delivery_mode: meta.delivery_mode as DeliveryMode,
-    delivery_speed: meta.delivery_speed as DeliverySpeed,
-    // Pricing snapshot
-    price_cents: parseInt(meta.price_cents ?? "0", 10),
-    carrier_rate_cents: meta.carrier_rate_cents ? parseInt(meta.carrier_rate_cents, 10) : null,
-    margin_percent: meta.margin_percent ? parseFloat(meta.margin_percent) : null,
-    shipping_method_id: meta.shipping_method_id ? parseInt(meta.shipping_method_id, 10) : null,
-    insurance_option_id: meta.insurance_option_id || null,
-    insurance_amount_cents: parseInt(meta.insurance_amount_cents ?? "0", 10),
-    insurance_surcharge_cents: parseInt(meta.insurance_surcharge_cents ?? "0", 10),
-    // Payment
-    stripe_checkout_session_id: stripeSessionId,
-    stripe_payment_intent_id: stripePaymentIntentId,
-  };
+  // ── Read booking data from pending_bookings ────────────────────────────────
+  const supabase = createAdminClient();
 
-  const shipmentResult = await createShipment(customerId, input);
-
-  if (shipmentResult.error) {
-    console.error("Stripe webhook: failed to create shipment", shipmentResult.error);
+  if (!pendingBookingId) {
+    console.error("Stripe webhook: missing pending_booking_id in metadata", session.id);
     return;
   }
 
-  const shipment = shipmentResult.data;
+  const { data: pendingBooking, error: fetchError } = await supabase
+    .from("pending_bookings")
+    .select("booking_data, processed")
+    .eq("id", pendingBookingId)
+    .single();
 
-  // Generate and upload QR code asynchronously
-  try {
-    const qrUrl = await generateAndUploadQrCode(shipment.tracking_id);
-    await setShipmentQrCodeUrl(shipment.id, qrUrl);
-  } catch (err) {
-    // QR generation failure is non-fatal — shipment exists, QR can be regenerated
-    console.error("Stripe webhook: QR code generation failed", err);
+  if (fetchError || !pendingBooking) {
+    console.error("Stripe webhook: pending booking not found", pendingBookingId, fetchError);
+    return;
   }
+
+  // Validate booking_data shape with Zod instead of unsafe cast
+  const parsed = pendingBookingDataSchema.safeParse(pendingBooking.booking_data);
+
+  if (!parsed.success) {
+    console.error(
+      "Stripe webhook: booking_data failed validation",
+      pendingBookingId,
+      parsed.error.flatten()
+    );
+    return;
+  }
+
+  const bookingData: PendingBookingData = parsed.data;
+
+  // ── Atomically claim the booking to prevent duplicate processing ──────────
+  // If two webhook deliveries race, only one will succeed at this update.
+  const { data: claimed } = await supabase
+    .from("pending_bookings")
+    .update({ processed: true })
+    .eq("id", pendingBookingId)
+    .eq("processed", false)
+    .select("id")
+    .single();
+
+  if (!claimed) {
+    console.warn(
+      "Stripe webhook: pending booking already claimed (concurrent delivery)",
+      pendingBookingId
+    );
+    return;
+  }
+
+  // ── Create one shipment per parcel ─────────────────────────────────────────
+  // All parcels must succeed. If any fails, roll back by unclaiming the
+  // pending booking so Stripe can retry the webhook.
+
+  const createdShipments: Array<{ id: string; tracking_id: string }> = [];
+  let creationFailed = false;
+
+  for (const parcel of bookingData.parcels) {
+    const input: CreateShipmentInput = {
+      sender_name: bookingData.contact.sender_name,
+      sender_phone: bookingData.contact.sender_phone,
+      receiver_name: bookingData.contact.receiver_name,
+      receiver_phone: bookingData.contact.receiver_phone,
+      origin_postcode: bookingData.locations.origin_postcode,
+      origin_pickup_point_id: bookingData.locations.origin_pickup_point_id,
+      destination_postcode: bookingData.locations.destination_postcode,
+      destination_pickup_point_id: bookingData.locations.destination_pickup_point_id,
+      parcel_size: parcel.parcel_size,
+      weight_kg: parcel.weight_kg,
+      billable_weight_kg: parcel.billable_weight_kg,
+      parcel_length_cm: parcel.length_cm,
+      parcel_width_cm: parcel.width_cm,
+      parcel_height_cm: parcel.height_cm,
+      delivery_mode: bookingData.delivery_mode,
+      delivery_speed: bookingData.delivery_speed,
+      price_cents: parcel.price_cents,
+      carrier_rate_cents: parcel.carrier_rate_cents || null,
+      margin_percent: parcel.margin_percent || null,
+      shipping_method_id: parcel.shipping_method_id,
+      insurance_option_id: parcel.insurance_option_id,
+      insurance_amount_cents: parcel.insurance_amount_cents,
+      insurance_surcharge_cents: parcel.insurance_surcharge_cents,
+      stripe_checkout_session_id: stripeSessionId,
+      stripe_payment_intent_id: stripePaymentIntentId,
+    };
+
+    const shipmentResult = await createShipment(customerId, input);
+
+    if (shipmentResult.error) {
+      console.error(
+        "Stripe webhook: failed to create shipment, rolling back",
+        shipmentResult.error
+      );
+      creationFailed = true;
+      break;
+    }
+
+    createdShipments.push({
+      id: shipmentResult.data.id,
+      tracking_id: shipmentResult.data.tracking_id,
+    });
+  }
+
+  // If any parcel failed, roll back: delete created shipments and unclaim booking
+  if (creationFailed) {
+    for (const shipment of createdShipments) {
+      await supabase.from("shipments").delete().eq("id", shipment.id);
+    }
+
+    // Unclaim the pending booking so the webhook can be retried by Stripe
+    await supabase.from("pending_bookings").update({ processed: false }).eq("id", pendingBookingId);
+
+    console.error(
+      "Stripe webhook: rolled back partial booking",
+      pendingBookingId,
+      `${createdShipments.length} shipments deleted`
+    );
+    return;
+  }
+
+  // ── Generate QR codes for all successfully created shipments ───────────────
+  for (const shipment of createdShipments) {
+    try {
+      const qrUrl = await generateAndUploadQrCode(shipment.tracking_id);
+      await setShipmentQrCodeUrl(shipment.id, qrUrl);
+    } catch (err) {
+      console.error(`Stripe webhook: QR code generation failed for ${shipment.tracking_id}`, err);
+    }
+  }
+
+  // Note: pending booking was already marked processed via atomic claim above.
 }

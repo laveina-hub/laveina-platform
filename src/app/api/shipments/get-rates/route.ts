@@ -5,31 +5,33 @@ import { z } from "zod";
 import { getClientIp, publicLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { getRates } from "@/services/pricing.service";
 import { getDeliveryMode } from "@/services/routing.service";
+import type { PriceBreakdown } from "@/types/shipment";
 import {
   bookingStepOriginSchema,
   bookingStepDestinationSchema,
-  bookingStepParcelSchema,
 } from "@/validations/shipment.schema";
+
+const parcelRateItemSchema = z.object({
+  parcel_size: z.enum(["small", "medium", "large", "extra_large", "xxl"]),
+  weight_kg: z.number().positive().max(25),
+  length_cm: z.number().int().positive(),
+  width_cm: z.number().int().positive(),
+  height_cm: z.number().int().positive(),
+  insurance_option_id: z.string().uuid().nullable(),
+});
 
 const getRatesBodySchema = z.object({
   origin_postcode: bookingStepOriginSchema.shape.origin_postcode,
   destination_postcode: bookingStepDestinationSchema.shape.destination_postcode,
-  parcel_size: bookingStepParcelSchema.shape.parcel_size,
-  weight_kg: bookingStepParcelSchema.shape.weight_kg,
-  // Dimensions come from the selected parcel_size_config row (resolved client-side)
-  length_cm: z.number().int().positive(),
-  width_cm: z.number().int().positive(),
-  height_cm: z.number().int().positive(),
-  insurance_option_id: bookingStepParcelSchema.shape.insurance_option_id,
+  parcels: z.array(parcelRateItemSchema).min(1).max(20),
 });
 
 /**
  * POST /api/shipments/get-rates
  *
- * Calculates shipping rates for a given booking combination.
- * Returns standard + express PriceOption objects (express is null for internal routes).
+ * Calculates shipping rates for one or more parcels.
+ * Returns an array of PriceBreakdown objects (one per parcel).
  * Called by the booking form Step 4→5 transition.
- * Auth required — only authenticated customers can get rates.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -47,16 +49,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const {
-      origin_postcode,
-      destination_postcode,
-      parcel_size,
-      weight_kg,
-      length_cm,
-      width_cm,
-      height_cm,
-      insurance_option_id,
-    } = parsed.data;
+    const { origin_postcode, destination_postcode, parcels } = parsed.data;
 
     const routing = getDeliveryMode(origin_postcode, destination_postcode);
 
@@ -64,21 +57,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: routing.reason }, { status: 422 });
     }
 
-    const result = await getRates({
-      deliveryMode: routing.mode,
-      parcelSize: parcel_size,
-      weightKg: weight_kg,
-      lengthCm: length_cm,
-      widthCm: width_cm,
-      heightCm: height_cm,
-      insuranceOptionId: insurance_option_id,
-    });
+    const rateResults = await Promise.all(
+      parcels.map((parcel) =>
+        getRates({
+          deliveryMode: routing.mode,
+          parcelSize: parcel.parcel_size,
+          weightKg: parcel.weight_kg,
+          lengthCm: parcel.length_cm,
+          widthCm: parcel.width_cm,
+          heightCm: parcel.height_cm,
+          insuranceOptionId: parcel.insurance_option_id,
+        })
+      )
+    );
 
-    if (result.error) {
-      return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+    for (const result of rateResults) {
+      if (result.error) {
+        return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+      }
     }
 
-    return NextResponse.json({ data: result.data });
+    // SAFETY: error results are filtered out above — only success results remain here
+    const breakdowns = rateResults.map((r) => r.data as PriceBreakdown);
+
+    return NextResponse.json({ data: breakdowns });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });

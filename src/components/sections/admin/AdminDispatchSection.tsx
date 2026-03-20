@@ -17,7 +17,7 @@ import { ShipmentStatus, type DeliveryMode } from "@/types/enums";
 import type { Shipment } from "@/types/shipment";
 
 function formatDate(dateStr: string): string {
-  return new Intl.DateTimeFormat("es-ES", {
+  return new Intl.DateTimeFormat(undefined, {
     day: "2-digit",
     month: "short",
     hour: "2-digit",

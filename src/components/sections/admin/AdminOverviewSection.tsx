@@ -39,14 +39,14 @@ function StatsCard({ label, value, icon: Icon, iconColor, iconBg }: StatsCardPro
 // ─── Format helpers ──────────────────────────────────────────────────────────
 
 function formatCents(cents: number): string {
-  return new Intl.NumberFormat("es-ES", {
+  return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency: "EUR",
   }).format(cents / 100);
 }
 
 function formatDate(dateStr: string): string {
-  return new Intl.DateTimeFormat("es-ES", {
+  return new Intl.DateTimeFormat(undefined, {
     day: "2-digit",
     month: "short",
     hour: "2-digit",

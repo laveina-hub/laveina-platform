@@ -103,7 +103,8 @@ export async function processQrScan(
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
 
-  // Find shipment by tracking ID with relations
+  // Full row needed: determineScanAction uses multiple fields, and the updated
+  // shipment is returned to the caller as ScanResult.shipment
   const { data: shipment, error: shipmentError } = await supabase
     .from("shipments")
     .select("*")
@@ -204,6 +205,9 @@ export async function processQrScan(
  * Confirms delivery after OTP verification. Transitions the shipment from
  * ready_for_pickup → delivered. Called from the OTP verify API, not from
  * a QR scan — this is a distinct code path.
+ *
+ * Authorization: verifies the pickup point matches the shipment's
+ * destination before allowing delivery confirmation.
  */
 export async function confirmDelivery(
   confirmedBy: string,
@@ -222,6 +226,18 @@ export async function confirmDelivery(
     return {
       data: null,
       error: { message: "Shipment not found", code: "NOT_FOUND", status: 404 },
+    };
+  }
+
+  // Verify the pickup point is the destination shop for this shipment
+  if (shipment.destination_pickup_point_id !== pickupPointId) {
+    return {
+      data: null,
+      error: {
+        message: "This shipment is not assigned to this pickup point",
+        code: "WRONG_SHOP",
+        status: 403,
+      },
     };
   }
 

@@ -51,10 +51,22 @@ export async function generateOtp(
     return { data: { expires_at: existingOtp.expires_at }, error: null };
   }
 
+  // Expire any old unverified OTP for this shipment before inserting a new one.
+  // The unique index (idx_otp_active_per_shipment) only allows one unverified
+  // OTP per shipment, so we must clear the expired one first.
+  await supabase
+    .from("otp_verifications")
+    .update({ verified: true })
+    .eq("shipment_id", parsed.data.shipment_id)
+    .eq("verified", false)
+    .lt("expires_at", new Date().toISOString());
+
   const otp = generateOtpCode(OTP_LENGTH);
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
-  // Store hashed OTP in database — plain text never persisted
+  // Store hashed OTP in database — plain text never persisted.
+  // If a concurrent request races past the check above, the unique index
+  // will reject this insert and we return an error gracefully.
   const { error } = await supabase.from("otp_verifications").insert({
     shipment_id: parsed.data.shipment_id,
     otp_hash: hashOtp(otp),

@@ -232,56 +232,60 @@ describe("booking step schemas", () => {
   });
 
   describe("bookingStepParcelSchema", () => {
-    it("accepts valid parcel data", () => {
+    const validParcel = {
+      parcel_size: "medium",
+      weight_kg: 3.5,
+      insurance_option_id: "550e8400-e29b-41d4-a716-446655440000",
+    };
+
+    it("accepts valid single parcel", () => {
+      const result = bookingStepParcelSchema.safeParse({ parcels: [validParcel] });
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts multiple parcels", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcel_size: "medium",
-        weight_kg: 3.5,
-        insurance_option_id: "550e8400-e29b-41d4-a716-446655440000",
+        parcels: [validParcel, { parcel_size: "small", weight_kg: 1, insurance_option_id: null }],
       });
       expect(result.success).toBe(true);
     });
 
     it("accepts null insurance_option_id", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcel_size: "small",
-        weight_kg: 1,
-        insurance_option_id: null,
+        parcels: [{ parcel_size: "small", weight_kg: 1, insurance_option_id: null }],
       });
       expect(result.success).toBe(true);
     });
 
+    it("rejects empty parcels array", () => {
+      const result = bookingStepParcelSchema.safeParse({ parcels: [] });
+      expect(result.success).toBe(false);
+    });
+
     it("rejects invalid parcel size", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcel_size: "huge",
-        weight_kg: 1,
-        insurance_option_id: null,
+        parcels: [{ parcel_size: "huge", weight_kg: 1, insurance_option_id: null }],
       });
       expect(result.success).toBe(false);
     });
 
     it("rejects weight above 25 kg", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcel_size: "xxl",
-        weight_kg: 26,
-        insurance_option_id: null,
+        parcels: [{ parcel_size: "xxl", weight_kg: 26, insurance_option_id: null }],
       });
       expect(result.success).toBe(false);
     });
 
     it("rejects zero weight", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcel_size: "small",
-        weight_kg: 0,
-        insurance_option_id: null,
+        parcels: [{ parcel_size: "small", weight_kg: 0, insurance_option_id: null }],
       });
       expect(result.success).toBe(false);
     });
 
     it("rejects negative weight", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcel_size: "small",
-        weight_kg: -1,
-        insurance_option_id: null,
+        parcels: [{ parcel_size: "small", weight_kg: -1, insurance_option_id: null }],
       });
       expect(result.success).toBe(false);
     });
@@ -289,9 +293,7 @@ describe("booking step schemas", () => {
     it("accepts all 5 valid parcel sizes", () => {
       for (const size of ["small", "medium", "large", "extra_large", "xxl"]) {
         const result = bookingStepParcelSchema.safeParse({
-          parcel_size: size,
-          weight_kg: 1,
-          insurance_option_id: null,
+          parcels: [{ parcel_size: size, weight_kg: 1, insurance_option_id: null }],
         });
         expect(result.success).toBe(true);
       }
@@ -325,9 +327,7 @@ describe("createCheckoutSchema", () => {
     origin_pickup_point_id: "550e8400-e29b-41d4-a716-446655440000",
     destination_postcode: "28001",
     destination_pickup_point_id: "660e8400-e29b-41d4-a716-446655440000",
-    parcel_size: "medium" as const,
-    weight_kg: 3.5,
-    insurance_option_id: null,
+    parcels: [{ parcel_size: "medium" as const, weight_kg: 3.5, insurance_option_id: null }],
     delivery_speed: "standard" as const,
   };
 
@@ -335,9 +335,28 @@ describe("createCheckoutSchema", () => {
     expect(createCheckoutSchema.safeParse(validCheckout).success).toBe(true);
   });
 
+  it("accepts multi-parcel checkout", () => {
+    const result = createCheckoutSchema.safeParse({
+      ...validCheckout,
+      parcels: [
+        { parcel_size: "small", weight_kg: 1, insurance_option_id: null },
+        { parcel_size: "large", weight_kg: 8, insurance_option_id: null },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("rejects missing required fields", () => {
     const { sender_name: _, ...incomplete } = validCheckout;
     expect(createCheckoutSchema.safeParse(incomplete).success).toBe(false);
+  });
+
+  it("rejects empty parcels array", () => {
+    const result = createCheckoutSchema.safeParse({
+      ...validCheckout,
+      parcels: [],
+    });
+    expect(result.success).toBe(false);
   });
 
   it("rejects invalid postcode format", () => {

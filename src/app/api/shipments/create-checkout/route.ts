@@ -7,16 +7,16 @@ import { getStripe } from "@/lib/stripe/client";
 import { createClient } from "@/lib/supabase/server";
 import { getRates } from "@/services/pricing.service";
 import { getDeliveryMode } from "@/services/routing.service";
+import type { ParcelSize } from "@/types/enums";
+import type { PriceBreakdown } from "@/types/shipment";
 import { createCheckoutSchema } from "@/validations/shipment.schema";
 
 /**
  * POST /api/shipments/create-checkout
  *
- * Validates the full booking payload, recalculates price server-side (client
- * price is NEVER trusted), then creates a Stripe Checkout session.
- *
- * All booking data is embedded in session metadata — the Stripe webhook handler
- * creates the shipment row after payment is confirmed.
+ * Validates the full booking payload, recalculates prices server-side,
+ * stores booking data in pending_bookings, then creates a Stripe Checkout
+ * session. Supports multiple parcels per booking.
  *
  * Auth required — only authenticated customers can book.
  */
@@ -57,48 +57,151 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "routing.blocked" }, { status: 422 });
     }
 
-    // ── Fetch parcel size config for dimensions ───────────────────────────────
-    const { data: sizeConfig, error: sizeError } = await supabase
-      .from("parcel_size_config")
-      .select("length_cm, width_cm, height_cm, max_weight_kg")
-      .eq("size", booking.parcel_size)
-      .eq("is_active", true)
-      .single();
+    // ── Fetch all size configs in parallel ───────────────────────────────────
+    const uniqueSizes = [...new Set(booking.parcels.map((p) => p.parcel_size))];
+    const sizeConfigResults = await Promise.all(
+      uniqueSizes.map((size) =>
+        supabase
+          .from("parcel_size_config")
+          .select("size, length_cm, width_cm, height_cm, max_weight_kg")
+          .eq("size", size)
+          .eq("is_active", true)
+          .single()
+      )
+    );
 
-    if (sizeError || !sizeConfig) {
-      return NextResponse.json({ error: "pricing.sizeNotFound" }, { status: 422 });
+    const sizeConfigMap = new Map<
+      string,
+      { length_cm: number; width_cm: number; height_cm: number; max_weight_kg: number }
+    >();
+    for (const { data: cfg, error: err } of sizeConfigResults) {
+      if (err || !cfg) {
+        return NextResponse.json({ error: "pricing.sizeNotFound" }, { status: 422 });
+      }
+      sizeConfigMap.set(cfg.size, cfg);
     }
 
-    if (booking.weight_kg > sizeConfig.max_weight_kg) {
-      return NextResponse.json({ error: "pricing.weightExceedsMax" }, { status: 422 });
+    // Validate weights against size configs
+    for (const parcel of booking.parcels) {
+      const cfg = sizeConfigMap.get(parcel.parcel_size);
+      if (!cfg || parcel.weight_kg > cfg.max_weight_kg) {
+        return NextResponse.json({ error: "pricing.weightExceedsMax" }, { status: 422 });
+      }
     }
 
-    // ── Server-side price recalculation (client price is NEVER trusted) ───────
-    const ratesResult = await getRates({
-      deliveryMode: routing.mode,
-      parcelSize: booking.parcel_size,
-      weightKg: booking.weight_kg,
-      lengthCm: sizeConfig.length_cm,
-      widthCm: sizeConfig.width_cm,
-      heightCm: sizeConfig.height_cm,
-      insuranceOptionId: booking.insurance_option_id,
+    // ── Calculate prices for each parcel in parallel ─────────────────────────
+    const rateResults = await Promise.all(
+      booking.parcels.map((parcel) => {
+        const cfg = sizeConfigMap.get(parcel.parcel_size)!;
+        return getRates({
+          deliveryMode: routing.mode,
+          parcelSize: parcel.parcel_size,
+          weightKg: parcel.weight_kg,
+          lengthCm: cfg.length_cm,
+          widthCm: cfg.width_cm,
+          heightCm: cfg.height_cm,
+          insuranceOptionId: parcel.insurance_option_id,
+        });
+      })
+    );
+
+    for (const result of rateResults) {
+      if (result.error) {
+        return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+      }
+    }
+
+    type ParcelPricingItem = {
+      parcelSize: ParcelSize;
+      weightKg: number;
+      insuranceOptionId: string | null;
+      lengthCm: number;
+      widthCm: number;
+      heightCm: number;
+      breakdown: PriceBreakdown;
+      selectedTotalCents: number;
+    };
+
+    let grandTotalCents = 0;
+    const parcelPricing: ParcelPricingItem[] = booking.parcels.map((parcel, i) => {
+      const cfg = sizeConfigMap.get(parcel.parcel_size)!;
+      // SAFETY: error results are filtered out above — only success results remain here
+      const breakdown = rateResults[i].data as PriceBreakdown;
+      const selectedOption =
+        booking.delivery_speed === "express" && breakdown.express
+          ? breakdown.express
+          : breakdown.standard;
+
+      grandTotalCents += selectedOption.totalCents;
+
+      return {
+        parcelSize: parcel.parcel_size,
+        weightKg: parcel.weight_kg,
+        insuranceOptionId: parcel.insurance_option_id,
+        lengthCm: cfg.length_cm,
+        widthCm: cfg.width_cm,
+        heightCm: cfg.height_cm,
+        breakdown,
+        selectedTotalCents: selectedOption.totalCents,
+      };
     });
 
-    if (ratesResult.error) {
-      return NextResponse.json(
-        { error: ratesResult.error.message },
-        { status: ratesResult.error.status }
-      );
-    }
+    // ── Store booking data in pending_bookings ────────────────────────────────
+    // This avoids Stripe metadata size limits and supports multi-parcel.
+    const bookingData = {
+      customer_id: user.id,
+      contact: {
+        sender_name: booking.sender_name,
+        sender_phone: booking.sender_phone,
+        receiver_name: booking.receiver_name,
+        receiver_phone: booking.receiver_phone,
+      },
+      locations: {
+        origin_postcode: booking.origin_postcode,
+        origin_pickup_point_id: booking.origin_pickup_point_id,
+        destination_postcode: booking.destination_postcode,
+        destination_pickup_point_id: booking.destination_pickup_point_id,
+      },
+      delivery_mode: routing.mode,
+      delivery_speed: booking.delivery_speed,
+      parcels: parcelPricing.map((pp) => {
+        const selectedOption =
+          booking.delivery_speed === "express" && pp.breakdown.express
+            ? pp.breakdown.express
+            : pp.breakdown.standard;
 
-    const priceBreakdown = ratesResult.data;
-    const selectedOption =
-      booking.delivery_speed === "express" && priceBreakdown.express
-        ? priceBreakdown.express
-        : priceBreakdown.standard;
+        return {
+          parcel_size: pp.parcelSize,
+          weight_kg: pp.weightKg,
+          billable_weight_kg: pp.breakdown.billableWeightKg,
+          length_cm: pp.lengthCm,
+          width_cm: pp.widthCm,
+          height_cm: pp.heightCm,
+          insurance_option_id: pp.insuranceOptionId,
+          insurance_amount_cents: pp.breakdown.insuranceCoverageCents,
+          insurance_surcharge_cents: selectedOption.insuranceSurchargeCents,
+          price_cents: selectedOption.totalCents,
+          carrier_rate_cents: selectedOption.carrierRateCents,
+          margin_percent: selectedOption.marginPercent,
+          shipping_method_id: selectedOption.shippingMethodId,
+        };
+      }),
+    };
+
+    const { data: pendingBooking, error: pendingError } = await supabase
+      .from("pending_bookings")
+      .insert({ customer_id: user.id, booking_data: bookingData })
+      .select("id")
+      .single();
+
+    if (pendingError || !pendingBooking) {
+      console.error("Failed to create pending booking:", pendingError);
+      return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
+    }
 
     // ── Create Stripe Checkout session ────────────────────────────────────────
     const appUrl = env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const parcelCount = booking.parcels.length;
 
     const session = await getStripe().checkout.sessions.create({
       payment_method_types: ["card"],
@@ -107,11 +210,15 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: "eur",
             product_data: {
-              name: "Laveina — Parcel Shipment",
-              description: `${booking.parcel_size} · ${booking.weight_kg} kg · ${routing.mode}`,
+              name:
+                parcelCount === 1
+                  ? "Laveina — Parcel Shipment"
+                  : `Laveina — ${parcelCount} Parcel Shipments`,
+              description: booking.parcels
+                .map((p) => `${p.parcel_size} · ${p.weight_kg} kg`)
+                .join(", "),
             },
-            // totalCents already includes IVA
-            unit_amount: selectedOption.totalCents,
+            unit_amount: grandTotalCents,
           },
           quantity: 1,
         },
@@ -121,38 +228,9 @@ export async function POST(request: NextRequest) {
       cancel_url: `${appUrl}/book`,
       customer_email: user.email,
       metadata: {
-        // Identity
+        pending_booking_id: pendingBooking.id,
         customer_id: user.id,
-        // Contact
-        sender_name: booking.sender_name,
-        sender_phone: booking.sender_phone,
-        receiver_name: booking.receiver_name,
-        receiver_phone: booking.receiver_phone,
-        // Locations
-        origin_postcode: booking.origin_postcode,
-        origin_pickup_point_id: booking.origin_pickup_point_id,
-        destination_postcode: booking.destination_postcode,
-        destination_pickup_point_id: booking.destination_pickup_point_id,
-        // Parcel
-        parcel_size: booking.parcel_size,
-        weight_kg: String(booking.weight_kg),
-        billable_weight_kg: String(priceBreakdown.billableWeightKg),
-        parcel_length_cm: String(sizeConfig.length_cm),
-        parcel_width_cm: String(sizeConfig.width_cm),
-        parcel_height_cm: String(sizeConfig.height_cm),
-        // Delivery
-        delivery_mode: routing.mode,
-        delivery_speed: booking.delivery_speed,
-        // Pricing snapshot (all cents as strings — Stripe metadata is string-only)
-        price_cents: String(selectedOption.totalCents),
-        carrier_rate_cents: String(selectedOption.carrierRateCents),
-        margin_percent: String(selectedOption.marginPercent),
-        shipping_method_id: selectedOption.shippingMethodId
-          ? String(selectedOption.shippingMethodId)
-          : "",
-        insurance_option_id: booking.insurance_option_id ?? "",
-        insurance_amount_cents: String(priceBreakdown.insuranceCoverageCents),
-        insurance_surcharge_cents: String(selectedOption.insuranceSurchargeCents),
+        parcel_count: String(parcelCount),
       },
     });
 

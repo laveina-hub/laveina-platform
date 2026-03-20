@@ -11,11 +11,13 @@ import { Link } from "@/i18n/navigation";
 import type { ShipmentStatus, DeliveryMode } from "@/types/enums";
 
 function formatCents(cents: number): string {
-  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(cents / 100);
+  return new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR" }).format(
+    cents / 100
+  );
 }
 
 function formatDateTime(dateStr: string): string {
-  return new Intl.DateTimeFormat("es-ES", {
+  return new Intl.DateTimeFormat(undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",

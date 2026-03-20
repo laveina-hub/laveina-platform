@@ -61,6 +61,7 @@ export function OtpCodeInput({ value, onChange, disabled, hasError }: OtpCodeInp
           autoComplete="one-time-code"
           maxLength={1}
           value={digit}
+          aria-label={`Digit ${index + 1} of ${OTP_LENGTH}`}
           onChange={(e) => handleChange(index, e.target.value)}
           onKeyDown={(e) => handleKeyDown(index, e)}
           className={cn(

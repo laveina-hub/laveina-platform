@@ -97,7 +97,10 @@
     "stepOrigin": "Origen",
     "stepDestination": "Destinació",
     "stepParcel": "Paquet",
+    "addParcel": "Afegir un altre paquet",
+    "removeParcel": "Eliminar aquest paquet",
     "stepSpeed": "Entrega",
+    "parcelsCount": "paquets",
     "senderSection": "Dades del Remitent",
     "receiverSection": "Dades del Destinatari",
     "senderName": "Nom del remitent",
@@ -125,6 +128,7 @@
     "weightPlaceholder": "0.5",
     "insuranceOption": "Opció d'assegurança",
     "noInsurance": "Sense assegurança addicional (cobertura bàsica €25 inclosa)",
+    "carrierInsuranceIncluded": "L'assegurança del transportista està inclosa automàticament en aquest enviament.",
     "insuranceCoverage": "Cobertura: {amount}",
     "insuranceSurcharge": "+{amount} addicional",
     "deliveryStandard": "Estàndard",
@@ -299,7 +303,10 @@
     "postcodes": "Codis Postals",
     "scan": "Escanejar QR",
     "verify": "Verificar Lliurament",
-    "settings": "Configuració"
+    "settings": "Configuració",
+    "roleAdmin": "Administrador",
+    "rolePickupPoint": "Punt de Recollida",
+    "roleCustomer": "Client"
   },
   "requestDelivery": {
     "title": "Sol·licitar Lliurament",
@@ -391,6 +398,8 @@
   "bookingSuccess": {
     "title": "Pagament confirmat!",
     "subtitle": "El teu enviament ha estat registrat. Porta el paquet al punt de recollida d'origen.",
+    "subtitleMulti": "{count} paquets han estat registrats. Porta'ls al punt de recollida d'origen.",
+    "parcelNumber": "Paquet #{number}",
     "trackingIdLabel": "El teu número de seguiment",
     "qrAlt": "Codi QR de l'enviament",
     "dropOff": "Dipositar a",

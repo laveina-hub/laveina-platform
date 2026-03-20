@@ -41,11 +41,20 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Enforce customer ID at application layer — customers can only see their own shipments
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const effectiveCustomerId = profile?.role === "admin" ? parsed.data.customerId : user.id;
+
   const result = await listShipments({
     page: parsed.data.page,
     pageSize: parsed.data.pageSize,
     status: parsed.data.status as (typeof ShipmentStatus)[keyof typeof ShipmentStatus] | undefined,
-    customer_id: parsed.data.customerId,
+    customer_id: effectiveCustomerId,
     search: parsed.data.search,
   });
 

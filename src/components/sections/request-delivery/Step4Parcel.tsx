@@ -2,20 +2,22 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
+import { Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 
 import { Button, CardBody, CardHeader, CardShell, Input, Label, Select } from "@/components/atoms";
 import { PARCEL_SIZE_FALLBACKS } from "@/constants/parcel-sizes";
 import { useBookingStore } from "@/hooks/use-booking-store";
-import { cn } from "@/lib/utils";
 import type { ParcelSize } from "@/types/enums";
 import {
   bookingStepParcelSchema,
   type BookingStepParcelInput,
 } from "@/validations/shipment.schema";
 
-// ─── Parcel size config from DB ───────────────────────────────────────────────
+import { ParcelSizeGrid } from "./ParcelSizeGrid";
+
+// ─── Data fetchers ────────────────────────────────────────────────────────────
 
 type ParcelSizeConfig = {
   size: ParcelSize;
@@ -46,22 +48,12 @@ async function fetchInsuranceOptions(): Promise<InsuranceOption[]> {
   return json.data;
 }
 
-// ─── Size label map ───────────────────────────────────────────────────────────
-
-const SIZE_LABEL_KEYS: Record<ParcelSize, string> = {
-  small: "parcelSizeSmall",
-  medium: "parcelSizeMedium",
-  large: "parcelSizeLarge",
-  extra_large: "parcelSizeExtraLarge",
-  xxl: "parcelSizeXxl",
-};
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function Step4Parcel() {
   const t = useTranslations("booking");
   const tv = useTranslations("validation");
-  const { parcel, setParcel, setStep } = useBookingStore();
+  const { parcels: savedParcels, deliveryMode, setParcels, setStep } = useBookingStore();
 
   const { data: sizeConfigs } = useQuery({
     queryKey: ["parcel-sizes"],
@@ -75,6 +67,17 @@ export function Step4Parcel() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const defaultParcels =
+    savedParcels.length > 0
+      ? savedParcels
+      : [
+          {
+            parcel_size: undefined as unknown as ParcelSize,
+            weight_kg: undefined as unknown as number,
+            insurance_option_id: null,
+          },
+        ];
+
   const {
     register,
     handleSubmit,
@@ -83,13 +86,11 @@ export function Step4Parcel() {
     formState: { errors },
   } = useForm<BookingStepParcelInput>({
     resolver: zodResolver(bookingStepParcelSchema),
-    defaultValues: parcel ?? { insurance_option_id: null },
+    defaultValues: { parcels: defaultParcels },
   });
 
-  const selectedSize = watch("parcel_size");
-  const selectedWeight = watch("weight_kg");
+  const { fields, append, remove } = useFieldArray({ control, name: "parcels" });
 
-  // Use DB config if available, fall back to constants
   function getSizeConfig(size: ParcelSize): ParcelSizeConfig {
     const fromDb = sizeConfigs?.find((s) => s.size === size);
     if (fromDb) return fromDb;
@@ -103,122 +104,138 @@ export function Step4Parcel() {
     };
   }
 
-  const allSizes: ParcelSize[] = ["small", "medium", "large", "extra_large", "xxl"];
-
   function onSubmit(data: BookingStepParcelInput) {
-    // Pass the DB-resolved dimensions so Step5 uses admin-editable values, not fallbacks
-    const cfg = getSizeConfig(data.parcel_size);
-    setParcel(data, { lengthCm: cfg.length_cm, widthCm: cfg.width_cm, heightCm: cfg.height_cm });
+    const dimensions = data.parcels.map((p) => {
+      const cfg = getSizeConfig(p.parcel_size);
+      return { lengthCm: cfg.length_cm, widthCm: cfg.width_cm, heightCm: cfg.height_cm };
+    });
+    setParcels(data.parcels, dimensions);
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
-      <CardShell>
-        <CardHeader title={t("stepParcel")} />
-        <CardBody className="space-y-6">
-          {/* Parcel size grid */}
-          <div className="space-y-2">
-            <Label>{t("parcelSize")}</Label>
-            <Controller
-              name="parcel_size"
-              control={control}
-              render={({ field }) => (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                  {allSizes.map((size) => {
-                    const cfg = getSizeConfig(size);
-                    const isSelected = field.value === size;
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => field.onChange(size)}
-                        aria-pressed={isSelected}
-                        className={cn(
-                          "flex flex-col items-center rounded-xl border p-4 text-center transition-colors focus:outline-none",
-                          isSelected
-                            ? "border-primary-400 bg-primary-50 text-primary-700"
-                            : "border-border-default hover:border-primary-200 hover:bg-primary-50 bg-white"
-                        )}
+      {fields.map((field, index) => {
+        const selectedSize = watch(`parcels.${index}.parcel_size`);
+        const selectedWeight = watch(`parcels.${index}.weight_kg`);
+
+        return (
+          <CardShell key={field.id}>
+            <CardHeader
+              title={fields.length > 1 ? `${t("stepParcel")} #${index + 1}` : t("stepParcel")}
+            />
+            <CardBody className="space-y-6">
+              {/* Parcel size grid */}
+              <div className="space-y-2">
+                <Label>{t("parcelSize")}</Label>
+                <Controller
+                  name={`parcels.${index}.parcel_size`}
+                  control={control}
+                  render={({ field: sizeField }) => (
+                    <ParcelSizeGrid
+                      selectedSize={sizeField.value}
+                      onSelect={sizeField.onChange}
+                      getSizeConfig={getSizeConfig}
+                    />
+                  )}
+                />
+                {errors.parcels?.[index]?.parcel_size?.message && (
+                  <p role="alert" className="text-error text-sm">
+                    {tv(errors.parcels[index].parcel_size.message.replace("validation.", ""))}
+                  </p>
+                )}
+              </div>
+
+              {/* Weight */}
+              <div className="space-y-1.5">
+                <Label htmlFor={`weight_kg_${index}`}>{t("weight")}</Label>
+                <Input
+                  id={`weight_kg_${index}`}
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  max={selectedSize ? getSizeConfig(selectedSize).max_weight_kg : 25}
+                  placeholder={t("weightPlaceholder")}
+                  hasError={!!errors.parcels?.[index]?.weight_kg}
+                  aria-invalid={!!errors.parcels?.[index]?.weight_kg}
+                  {...register(`parcels.${index}.weight_kg`, { valueAsNumber: true })}
+                />
+                {selectedSize && selectedWeight > getSizeConfig(selectedSize).max_weight_kg && (
+                  <p role="alert" className="text-warning text-sm">
+                    {tv("weightMax")}
+                  </p>
+                )}
+                {errors.parcels?.[index]?.weight_kg?.message && (
+                  <p role="alert" className="text-error text-sm">
+                    {tv(errors.parcels[index].weight_kg.message.replace("validation.", ""))}
+                  </p>
+                )}
+              </div>
+
+              {/* Insurance — Laveina tiers for Barcelona internal only */}
+              {deliveryMode === "internal" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor={`insurance_${index}`}>{t("insuranceOption")}</Label>
+                  <Controller
+                    name={`parcels.${index}.insurance_option_id`}
+                    control={control}
+                    render={({ field: insField }) => (
+                      <Select
+                        id={`insurance_${index}`}
+                        value={insField.value ?? ""}
+                        onChange={(e) => insField.onChange(e.target.value || null)}
                       >
-                        <span className="text-base font-semibold">{t(SIZE_LABEL_KEYS[size])}</span>
-                        <span className="text-text-muted mt-1 text-xs">
-                          {t("dimensions", {
-                            l: cfg.length_cm,
-                            w: cfg.width_cm,
-                            h: cfg.height_cm,
-                          })}
-                        </span>
-                        <span className="text-text-muted text-xs">
-                          {t("maxWeight", { weight: cfg.max_weight_kg })}
-                        </span>
-                      </button>
-                    );
-                  })}
+                        <option value="">{t("noInsurance")}</option>
+                        {insuranceOptions?.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {t("insuranceCoverage", {
+                              amount: `€${(opt.coverage_amount_cents / 100).toFixed(0)}`,
+                            })}
+                            {opt.surcharge_cents > 0
+                              ? ` — ${t("insuranceSurcharge", { amount: `€${(opt.surcharge_cents / 100).toFixed(2)}` })}`
+                              : ""}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  />
                 </div>
               )}
-            />
-            {errors.parcel_size?.message && (
-              <p role="alert" className="text-error text-sm">
-                {tv(errors.parcel_size.message.replace("validation.", ""))}
-              </p>
-            )}
-          </div>
-
-          {/* Weight */}
-          <div className="space-y-1.5">
-            <Label htmlFor="weight_kg">{t("weight")}</Label>
-            <Input
-              id="weight_kg"
-              type="number"
-              step="0.1"
-              min="0.1"
-              max={selectedSize ? getSizeConfig(selectedSize).max_weight_kg : 25}
-              placeholder={t("weightPlaceholder")}
-              hasError={!!errors.weight_kg}
-              aria-invalid={!!errors.weight_kg}
-              {...register("weight_kg", { valueAsNumber: true })}
-            />
-            {selectedSize && selectedWeight > getSizeConfig(selectedSize).max_weight_kg && (
-              <p role="alert" className="text-warning text-sm">
-                {tv("weightMax")}
-              </p>
-            )}
-            {errors.weight_kg?.message && (
-              <p role="alert" className="text-error text-sm">
-                {tv(errors.weight_kg.message.replace("validation.", ""))}
-              </p>
-            )}
-          </div>
-
-          {/* Insurance */}
-          <div className="space-y-1.5">
-            <Label htmlFor="insurance_option_id">{t("insuranceOption")}</Label>
-            <Controller
-              name="insurance_option_id"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  id="insurance_option_id"
-                  value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value || null)}
-                >
-                  <option value="">{t("noInsurance")}</option>
-                  {insuranceOptions?.map((opt) => (
-                    <option key={opt.id} value={opt.id}>
-                      {t("insuranceCoverage", {
-                        amount: `€${(opt.coverage_amount_cents / 100).toFixed(0)}`,
-                      })}
-                      {opt.surcharge_cents > 0
-                        ? ` — ${t("insuranceSurcharge", { amount: `€${(opt.surcharge_cents / 100).toFixed(2)}` })}`
-                        : ""}
-                    </option>
-                  ))}
-                </Select>
+              {deliveryMode === "sendcloud" && (
+                <p className="text-text-muted text-sm">{t("carrierInsuranceIncluded")}</p>
               )}
-            />
-          </div>
-        </CardBody>
-      </CardShell>
+
+              {/* Remove parcel button */}
+              {fields.length > 1 && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => remove(index)}
+                  className="text-error"
+                >
+                  <Trash2 className="mr-1.5 h-4 w-4" />
+                  {t("removeParcel")}
+                </Button>
+              )}
+            </CardBody>
+          </CardShell>
+        );
+      })}
+
+      {/* Add another parcel (max 20, matching API limit) */}
+      {fields.length < 20 && (
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() =>
+            append({ parcel_size: "small", weight_kg: 0.5, insurance_option_id: null })
+          }
+          className="w-full"
+        >
+          <Plus className="mr-1.5 h-4 w-4" />
+          {t("addParcel")}
+        </Button>
+      )}
 
       <div className="flex justify-between">
         <Button type="button" variant="secondary" onClick={() => setStep(3)}>

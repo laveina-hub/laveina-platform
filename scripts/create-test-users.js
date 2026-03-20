@@ -20,7 +20,7 @@ const { resolve } = require("path");
 const envPath = resolve(__dirname, "..", ".env.local");
 const envContent = readFileSync(envPath, "utf-8");
 const env = {};
-for (const line of envContent.split("\n")) {
+for (const line of envContent.replace(/\r\n/g, "\n").split("\n")) {
   const match = line.match(/^([^#=]+)=(.*)$/);
   if (match) env[match[1].trim()] = match[2].trim();
 }

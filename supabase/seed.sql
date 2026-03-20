@@ -14,7 +14,7 @@ INSERT INTO public.parcel_size_config (size, max_weight_kg, length_cm, width_cm,
   ('medium',      5,  35, 35, 24),
   ('large',       10, 40, 40, 37),
   ('extra_large', 20, 55, 55, 39),
-  ('xxl',         25, 55, 60, 39)
+  ('xxl',         25, 60, 60, 45)
 ON CONFLICT (size) DO NOTHING;
 
 
@@ -30,14 +30,22 @@ ON CONFLICT DO NOTHING;
 
 -- ─── 3. ADMIN SETTINGS ─────────────────────────────────────────────────────
 -- Defaults — admin can change from /admin/settings dashboard.
--- Mock Barcelona prices for dev. Client must provide real prices before launch.
+-- Barcelona prices confirmed by client (2026-03-20).
 INSERT INTO public.admin_settings (key, value) VALUES
-  ('sendcloud_margin_percent',        '25'),
-  ('internal_price_small_cents',      '300'),    -- €3.00
-  ('internal_price_medium_cents',     '500'),    -- €5.00
-  ('internal_price_large_cents',      '800'),    -- €8.00
-  ('internal_price_extra_large_cents','1200'),   -- €12.00
-  ('internal_price_xxl_cents',        '1800'),   -- €18.00
+  ('sendcloud_margin_percent',                '25'),
+  -- Barcelona internal: Standard prices
+  ('internal_price_small_cents',              '350'),    -- €3.50
+  ('internal_price_medium_cents',             '500'),    -- €5.00
+  ('internal_price_large_cents',              '700'),    -- €7.00
+  ('internal_price_extra_large_cents',        '1000'),   -- €10.00
+  ('internal_price_xxl_cents',                '1300'),   -- €13.00
+  -- Barcelona internal: Express 24h prices
+  ('internal_price_small_express_cents',      '550'),    -- €5.50
+  ('internal_price_medium_express_cents',     '750'),    -- €7.50
+  ('internal_price_large_express_cents',      '1000'),   -- €10.00
+  ('internal_price_extra_large_express_cents','1400'),   -- €14.00
+  ('internal_price_xxl_express_cents',        '1800'),   -- €18.00
+  -- SendCloud sender defaults
   ('sendcloud_sender_name',    'Laveina'),
   ('sendcloud_sender_address', ''),
   ('sendcloud_sender_city',    'Barcelona'),

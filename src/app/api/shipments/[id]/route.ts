@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
 import { getShipmentById, updateShipmentStatus } from "@/services/shipment.service";
-import type { ShipmentStatus } from "@/types/enums";
+import { ShipmentStatus } from "@/types/enums";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -60,8 +60,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   return NextResponse.json({ data: result.data });
 }
 
+const shipmentStatusValues = Object.values(ShipmentStatus) as [string, ...string[]];
+
 const patchBodySchema = z.object({
-  status: z.string().min(1, "Status is required"),
+  status: z.enum(shipmentStatusValues, {
+    errorMap: () => ({ message: "Invalid shipment status" }),
+  }),
 });
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -97,7 +101,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     );
   }
 
-  // SAFETY: status is validated by the DB trigger validate_status_transition()
   const result = await updateShipmentStatus(id, parsed.data.status as ShipmentStatus);
 
   if (result.error) {

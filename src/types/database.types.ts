@@ -59,36 +59,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      parcel_size_config: {
-        Row: {
-          size: Database["public"]["Enums"]["parcel_size"];
-          max_weight_kg: number;
-          length_cm: number;
-          width_cm: number;
-          height_cm: number;
-          is_active: boolean;
-          updated_at: string;
-        };
-        Insert: {
-          size: Database["public"]["Enums"]["parcel_size"];
-          max_weight_kg: number;
-          length_cm: number;
-          width_cm: number;
-          height_cm: number;
-          is_active?: boolean;
-          updated_at?: string;
-        };
-        Update: {
-          size?: Database["public"]["Enums"]["parcel_size"];
-          max_weight_kg?: number;
-          length_cm?: number;
-          width_cm?: number;
-          height_cm?: number;
-          is_active?: boolean;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
       notifications_log: {
         Row: {
           created_at: string;
@@ -164,6 +134,60 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      parcel_size_config: {
+        Row: {
+          height_cm: number;
+          is_active: boolean;
+          length_cm: number;
+          max_weight_kg: number;
+          size: Database["public"]["Enums"]["parcel_size"];
+          updated_at: string;
+          width_cm: number;
+        };
+        Insert: {
+          height_cm: number;
+          is_active?: boolean;
+          length_cm: number;
+          max_weight_kg: number;
+          size: Database["public"]["Enums"]["parcel_size"];
+          updated_at?: string;
+          width_cm: number;
+        };
+        Update: {
+          height_cm?: number;
+          is_active?: boolean;
+          length_cm?: number;
+          max_weight_kg?: number;
+          size?: Database["public"]["Enums"]["parcel_size"];
+          updated_at?: string;
+          width_cm?: number;
+        };
+        Relationships: [];
+      };
+      pending_bookings: {
+        Row: {
+          booking_data: Json;
+          created_at: string;
+          customer_id: string;
+          id: string;
+          processed: boolean;
+        };
+        Insert: {
+          booking_data: Json;
+          created_at?: string;
+          customer_id: string;
+          id?: string;
+          processed?: boolean;
+        };
+        Update: {
+          booking_data?: Json;
+          created_at?: string;
+          customer_id?: string;
+          id?: string;
+          processed?: boolean;
+        };
+        Relationships: [];
       };
       pickup_points: {
         Row: {
@@ -461,6 +485,7 @@ export type Database = {
     };
     Functions: {
       generate_tracking_id: { Args: never; Returns: string };
+      get_admin_dashboard_stats: { Args: never; Returns: Json };
       get_user_role: {
         Args: never;
         Returns: Database["public"]["Enums"]["user_role"];

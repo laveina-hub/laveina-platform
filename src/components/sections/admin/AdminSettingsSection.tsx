@@ -62,13 +62,15 @@ function formReducer(state: FormState, action: FormAction): FormState {
     case "INIT_FROM_DATA": {
       const prices: Record<string, { standard: string; express: string }> = {};
       for (const size of action.data.parcelSizes) {
+        const stdCents = action.data.settings[`internal_price_${size.size}_cents`];
+        const expCents = action.data.settings[`internal_price_${size.size}_express_cents`];
         prices[size.size] = {
-          standard: action.data.settings[`barcelona_${size.size}_standard`] ?? "",
-          express: action.data.settings[`barcelona_${size.size}_express`] ?? "",
+          standard: stdCents ? (Number(stdCents) / 100).toFixed(2) : "",
+          express: expCents ? (Number(expCents) / 100).toFixed(2) : "",
         };
       }
       return {
-        carrierMargin: action.data.settings.carrier_margin_percent ?? "25",
+        carrierMargin: action.data.settings.sendcloud_margin_percent ?? "25",
         minimumPrice: action.data.settings.minimum_price_eur ?? "4.00",
         barcelonaPrices: prices,
         insurance: action.data.insuranceOptions,
@@ -154,13 +156,15 @@ export function AdminSettingsSection() {
   const mutation = useMutation({
     mutationFn: () => {
       const settingsPayload: Record<string, string> = {
-        carrier_margin_percent: form.carrierMargin,
+        sendcloud_margin_percent: form.carrierMargin,
         minimum_price_eur: form.minimumPrice,
       };
 
       for (const [size, prices] of Object.entries(form.barcelonaPrices)) {
-        settingsPayload[`barcelona_${size}_standard`] = prices.standard;
-        settingsPayload[`barcelona_${size}_express`] = prices.express;
+        const stdCents = Math.round(parseFloat(prices.standard || "0") * 100);
+        const expCents = Math.round(parseFloat(prices.express || "0") * 100);
+        settingsPayload[`internal_price_${size}_cents`] = String(stdCents);
+        settingsPayload[`internal_price_${size}_express_cents`] = String(expCents);
       }
 
       return saveSettings({
@@ -184,17 +188,17 @@ export function AdminSettingsSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+        <h1 className="font-body text-text-primary text-2xl font-semibold">{t("title")}</h1>
+        <p className="text-text-muted mt-1 text-sm">{t("subtitle")}</p>
       </div>
 
       <div className="max-w-3xl space-y-6">
         {/* Carrier settings */}
-        <section className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="text-base font-semibold text-gray-900">{t("carrierSettings")}</h2>
+        <section className="border-border-default space-y-4 rounded-xl border bg-white p-5">
+          <h2 className="text-text-primary text-base font-semibold">{t("carrierSettings")}</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">{t("carrierMargin")}</Label>
+              <Label className="text-text-primary text-sm font-medium">{t("carrierMargin")}</Label>
               <Input
                 type="number"
                 step="0.1"
@@ -204,10 +208,10 @@ export function AdminSettingsSection() {
                 onChange={(e) => dispatch({ type: "SET_CARRIER_MARGIN", value: e.target.value })}
                 className="py-2 text-sm"
               />
-              <p className="text-xs text-gray-500">{t("carrierMarginDesc")}</p>
+              <p className="text-text-muted text-xs">{t("carrierMarginDesc")}</p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">{t("minimumPrice")}</Label>
+              <Label className="text-text-primary text-sm font-medium">{t("minimumPrice")}</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -216,21 +220,21 @@ export function AdminSettingsSection() {
                 onChange={(e) => dispatch({ type: "SET_MINIMUM_PRICE", value: e.target.value })}
                 className="py-2 text-sm"
               />
-              <p className="text-xs text-gray-500">{t("minimumPriceDesc")}</p>
+              <p className="text-text-muted text-xs">{t("minimumPriceDesc")}</p>
             </div>
           </div>
         </section>
 
         {/* Barcelona pricing */}
-        <section className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
+        <section className="border-border-default space-y-4 rounded-xl border bg-white p-5">
           <div>
-            <h2 className="text-base font-semibold text-gray-900">{t("barcelonaPricing")}</h2>
-            <p className="mt-1 text-xs text-gray-500">{t("barcelonaPricingDesc")}</p>
+            <h2 className="text-text-primary text-base font-semibold">{t("barcelonaPricing")}</h2>
+            <p className="text-text-muted mt-1 text-xs">{t("barcelonaPricingDesc")}</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase">
+                <tr className="border-border-default text-text-muted border-b text-left text-xs font-semibold uppercase">
                   <th className="py-2 pr-4">{t("size")}</th>
                   <th className="py-2 pr-4">{t("maxWeight")}</th>
                   <th className="py-2 pr-4">{t("standardPrice")}</th>
@@ -239,11 +243,11 @@ export function AdminSettingsSection() {
               </thead>
               <tbody>
                 {data.parcelSizes.map((size) => (
-                  <tr key={size.id} className="border-b border-gray-100">
-                    <td className="py-2 pr-4 font-medium text-gray-900">
+                  <tr key={size.id} className="border-border-default border-b">
+                    <td className="text-text-primary py-2 pr-4 font-medium">
                       {PARCEL_SIZE_LABELS[size.size] ?? size.size}
                     </td>
-                    <td className="py-2 pr-4 text-gray-500">{size.max_weight_kg} kg</td>
+                    <td className="text-text-muted py-2 pr-4">{size.max_weight_kg} kg</td>
                     <td className="py-2 pr-4">
                       <Input
                         type="number"
@@ -288,15 +292,15 @@ export function AdminSettingsSection() {
         </section>
 
         {/* Insurance options */}
-        <section className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
+        <section className="border-border-default space-y-4 rounded-xl border bg-white p-5">
           <div>
-            <h2 className="text-base font-semibold text-gray-900">{t("insuranceOptions")}</h2>
-            <p className="mt-1 text-xs text-gray-500">{t("insuranceDesc")}</p>
+            <h2 className="text-text-primary text-base font-semibold">{t("insuranceOptions")}</h2>
+            <p className="text-text-muted mt-1 text-xs">{t("insuranceDesc")}</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase">
+                <tr className="border-border-default text-text-muted border-b text-left text-xs font-semibold uppercase">
                   <th className="py-2 pr-4">{t("coverage")}</th>
                   <th className="py-2 pr-4">{t("surcharge")}</th>
                   <th className="py-2">{t("isActive")}</th>
@@ -304,8 +308,8 @@ export function AdminSettingsSection() {
               </thead>
               <tbody>
                 {form.insurance.map((opt, i) => (
-                  <tr key={opt.id} className="border-b border-gray-100">
-                    <td className="py-2 pr-4 font-medium text-gray-900">
+                  <tr key={opt.id} className="border-border-default border-b">
+                    <td className="text-text-primary py-2 pr-4 font-medium">
                       {(opt.coverage_amount_cents / 100).toFixed(0)}
                     </td>
                     <td className="py-2 pr-4">
@@ -335,7 +339,7 @@ export function AdminSettingsSection() {
                             is_active: e.target.checked,
                           })
                         }
-                        className="text-primary-500 focus:ring-primary-500 h-4 w-4 rounded border-gray-300"
+                        className="text-primary-500 focus:ring-primary-500 border-border-default h-4 w-4 rounded"
                       />
                     </td>
                   </tr>
@@ -359,12 +363,12 @@ export function AdminSettingsSection() {
 function SettingsSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="h-8 w-64 animate-pulse rounded bg-gray-100" />
+      <div className="bg-secondary-100 h-8 w-64 animate-pulse rounded" />
       <div className="max-w-3xl space-y-6">
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="h-48 animate-pulse rounded-xl border border-gray-200 bg-gray-50"
+            className="border-border-default bg-secondary-50 h-48 animate-pulse rounded-xl border"
           />
         ))}
       </div>

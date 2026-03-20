@@ -17,6 +17,7 @@
     "db:gen-types": "supabase gen types typescript --project-id bqwfnitptbrqpqzopmkv > src/types/database.types.ts",
     "db:migrate": "supabase db push",
     "db:reset": "supabase db reset",
+    "db:seed": "node scripts/seed-hosted.js",
     "prepare": "husky"
   },
   "dependencies": {

@@ -33,5 +33,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
 
-  return NextResponse.json(result.data);
+  return NextResponse.json({ data: result.data });
 }

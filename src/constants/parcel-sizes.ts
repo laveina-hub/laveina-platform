@@ -53,5 +53,5 @@ export const PARCEL_SIZE_FALLBACKS: Record<ParcelSize, ParcelSizeFallback> = {
   medium: { maxWeightKg: 5, lengthCm: 35, widthCm: 35, heightCm: 24 },
   large: { maxWeightKg: 10, lengthCm: 40, widthCm: 40, heightCm: 37 },
   extra_large: { maxWeightKg: 20, lengthCm: 55, widthCm: 55, heightCm: 39 },
-  xxl: { maxWeightKg: 25, lengthCm: 55, widthCm: 60, heightCm: 39 },
+  xxl: { maxWeightKg: 25, lengthCm: 60, widthCm: 60, heightCm: 45 },
 };

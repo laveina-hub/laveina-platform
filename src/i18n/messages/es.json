@@ -97,7 +97,10 @@
     "stepOrigin": "Origen",
     "stepDestination": "Destino",
     "stepParcel": "Paquete",
+    "addParcel": "Añadir otro paquete",
+    "removeParcel": "Eliminar este paquete",
     "stepSpeed": "Entrega",
+    "parcelsCount": "paquetes",
     "senderSection": "Datos del Remitente",
     "receiverSection": "Datos del Destinatario",
     "senderName": "Nombre del remitente",
@@ -125,6 +128,7 @@
     "weightPlaceholder": "0.5",
     "insuranceOption": "Opción de seguro",
     "noInsurance": "Sin seguro adicional (cobertura básica €25 incluida)",
+    "carrierInsuranceIncluded": "El seguro del transportista está incluido automáticamente en este envío.",
     "insuranceCoverage": "Cobertura: {amount}",
     "insuranceSurcharge": "+{amount} adicional",
     "deliveryStandard": "Estándar",
@@ -299,7 +303,10 @@
     "postcodes": "Códigos Postales",
     "scan": "Escanear QR",
     "verify": "Verificar Entrega",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "roleAdmin": "Administrador",
+    "rolePickupPoint": "Punto de Recogida",
+    "roleCustomer": "Cliente"
   },
   "requestDelivery": {
     "title": "Solicitar Entrega",
@@ -391,6 +398,8 @@
   "bookingSuccess": {
     "title": "¡Pago realizado!",
     "subtitle": "Tu envío ha sido registrado. Lleva el paquete al punto de recogida de origen.",
+    "subtitleMulti": "{count} paquetes han sido registrados. Llévalos al punto de recogida de origen.",
+    "parcelNumber": "Paquete #{number}",
     "trackingIdLabel": "Tu número de seguimiento",
     "qrAlt": "Código QR del envío",
     "dropOff": "Depositar en",

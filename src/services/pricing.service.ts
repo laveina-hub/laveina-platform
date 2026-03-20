@@ -2,15 +2,15 @@
 // Dual pricing engine for Laveina:
 //
 //   • Internal (Barcelona → Barcelona):
-//       Price fetched from admin_settings (key: "internal_price_<size>_cents").
-//       Always standard speed only — no express for internal routes.
+//       Standard price: admin_settings key "internal_price_<size>_cents".
+//       Express 24h price: admin_settings key "internal_price_<size>_express_cents".
 //       Insurance: Laveina-managed tiers from insurance_options table.
 //
 //   • SendCloud (rest of Spain):
 //       Carrier rates via SendCloud API. Cheapest = standard, fastest ≤24h = express.
 //       Margin applied (key: "sendcloud_margin_percent" in admin_settings, default 25).
 //       Minimum shipping price: €4.00 (400 cents) after margin.
-//       Insurance: carrier insurance surcharge from insurance_options table.
+//       Insurance: carrier insurance via SendCloud API (zero risk for Laveina).
 //
 // IVA: 21% applied uniformly on subtotal (Phase 1).
 // Base insurance coverage always included: €25 (2500 cents).
@@ -126,7 +126,9 @@ export async function getRates(input: GetRatesInput): Promise<ApiResponse<PriceB
 
   const [settings, insurance] = await Promise.all([
     fetchAdminSettings(),
-    fetchInsuranceOption(insuranceOptionId),
+    // Laveina insurance tiers only apply to internal (Barcelona) routes.
+    // SendCloud routes use carrier insurance automatically — no Laveina surcharge.
+    deliveryMode === DeliveryMode.INTERNAL ? fetchInsuranceOption(insuranceOptionId) : null,
   ]);
 
   const insuranceSurchargeCents = insurance?.surcharge_cents ?? 0;
@@ -134,10 +136,12 @@ export async function getRates(input: GetRatesInput): Promise<ApiResponse<PriceB
 
   // ─── Internal route (Barcelona) ─────────────────────────────────────────────
   if (deliveryMode === DeliveryMode.INTERNAL) {
-    const settingKey = `internal_price_${parcelSize}_cents`;
-    const shippingCents = getSettingNumber(settings, settingKey, 0);
+    const standardKey = `internal_price_${parcelSize}_cents`;
+    const expressKey = `internal_price_${parcelSize}_express_cents`;
+    const standardCents = getSettingNumber(settings, standardKey, 0);
+    const expressCents = getSettingNumber(settings, expressKey, 0);
 
-    if (shippingCents === 0) {
+    if (standardCents === 0) {
       return {
         data: null,
         error: {
@@ -149,7 +153,7 @@ export async function getRates(input: GetRatesInput): Promise<ApiResponse<PriceB
     }
 
     const standard = buildPriceOption({
-      shippingCents,
+      shippingCents: standardCents,
       carrierRateCents: 0,
       marginPercent: 0,
       insuranceSurchargeCents,
@@ -157,12 +161,24 @@ export async function getRates(input: GetRatesInput): Promise<ApiResponse<PriceB
       estimatedDays: null,
     });
 
+    const express =
+      expressCents > 0
+        ? buildPriceOption({
+            shippingCents: expressCents,
+            carrierRateCents: 0,
+            marginPercent: 0,
+            insuranceSurchargeCents,
+            shippingMethodId: null,
+            estimatedDays: "1",
+          })
+        : null;
+
     return {
       data: {
         deliveryMode: DeliveryMode.INTERNAL,
         billableWeightKg,
         standard,
-        express: null,
+        express,
         insuranceCoverageCents: BASE_INSURANCE_COVERAGE_CENTS,
       },
       error: null,

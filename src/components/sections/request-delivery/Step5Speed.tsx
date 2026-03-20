@@ -10,101 +10,15 @@ import { toast } from "sonner";
 import { Button, CardBody, CardHeader, CardShell, Divider } from "@/components/atoms";
 import { PARCEL_SIZE_FALLBACKS } from "@/constants/parcel-sizes";
 import { useBookingStore } from "@/hooks/use-booking-store";
-import { cn } from "@/lib/utils";
-import type { PriceBreakdown, PriceOption } from "@/types/shipment";
+import { bookingStepSpeedSchema, type BookingStepSpeedInput } from "@/validations/shipment.schema";
+
 import {
-  bookingStepSpeedSchema,
-  type BookingStepSpeedInput,
-  type CreateCheckoutInput,
-} from "@/validations/shipment.schema";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatCents(cents: number): string {
-  return `€${(cents / 100).toFixed(2)}`;
-}
-
-// ─── Get-rates API call ───────────────────────────────────────────────────────
-
-async function fetchRates(params: {
-  origin_postcode: string;
-  destination_postcode: string;
-  parcel_size: string;
-  weight_kg: number;
-  length_cm: number;
-  width_cm: number;
-  height_cm: number;
-  insurance_option_id: string | null;
-}): Promise<PriceBreakdown> {
-  const res = await fetch("/api/shipments/get-rates", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) {
-    const body = await res.json();
-    throw new Error(body.error ?? "Failed to get rates");
-  }
-  const json = await res.json();
-  return json.data;
-}
-
-// ─── Create-checkout API call ─────────────────────────────────────────────────
-
-async function createCheckout(payload: CreateCheckoutInput): Promise<string> {
-  const res = await fetch("/api/shipments/create-checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const body = await res.json();
-    throw new Error(body.error ?? "Failed to create checkout");
-  }
-  const json = await res.json();
-  return json.data.url;
-}
-
-// ─── Price option card ────────────────────────────────────────────────────────
-
-function PriceOptionCard({
-  speedKey,
-  option,
-  selected,
-  onSelect,
-  t,
-}: {
-  speedKey: "standard" | "express";
-  option: PriceOption;
-  selected: boolean;
-  onSelect: () => void;
-  t: ReturnType<typeof useTranslations>;
-}) {
-  const labelKey = speedKey === "express" ? "deliveryExpress" : "deliveryStandard";
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
-      className={cn(
-        "flex flex-1 flex-col rounded-xl border p-5 text-left transition-colors focus:outline-none",
-        selected
-          ? "border-primary-400 bg-primary-50"
-          : "border-border-default hover:border-primary-200 hover:bg-primary-50 bg-white"
-      )}
-    >
-      <span className="text-lg font-semibold">{t(labelKey)}</span>
-      {option.estimatedDays && (
-        <span className="text-text-muted text-sm">
-          {t("estimatedDays", { days: option.estimatedDays })}
-        </span>
-      )}
-      <span className="mt-3 text-2xl font-bold">{formatCents(option.totalCents)}</span>
-      <span className="text-text-muted text-xs">{t("iva")}</span>
-    </button>
-  );
-}
+  PriceOptionCard,
+  createCheckout,
+  fetchRates,
+  formatCents,
+  sumOption,
+} from "./Step5Helpers";
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -114,51 +28,48 @@ export function Step5Speed() {
     contact,
     origin,
     destination,
-    parcel,
-    parcelDimensions,
+    parcels,
+    parcelDimensionsList,
     deliveryMode,
     speed,
-    priceBreakdown,
+    priceBreakdowns,
     setSpeed,
-    setPriceBreakdown,
+    setPriceBreakdowns,
     setStep,
   } = useBookingStore();
 
-  // Fetch rates whenever this step is mounted (priceBreakdown is cleared by setParcel).
-  // Using a stable key derived from the parcel data so mutation doesn't re-fire on
-  // every render but does re-fire when the user goes back and changes the parcel.
-  const parcelKey = parcel
-    ? `${parcel.parcel_size}-${parcel.weight_kg}-${parcel.insurance_option_id}`
-    : null;
+  const parcelKey =
+    parcels.length > 0
+      ? parcels.map((p) => `${p.parcel_size}-${p.weight_kg}-${p.insurance_option_id}`).join("|")
+      : null;
 
   const ratesMutation = useMutation({
     mutationFn: fetchRates,
-    onSuccess: (data) => setPriceBreakdown(data),
+    onSuccess: (data) => setPriceBreakdowns(data),
     onError: () => toast.error(t("ratesError")),
   });
 
   useEffect(() => {
-    if (!origin || !destination || !parcel || !parcelKey) return;
-    // Use DB-resolved dimensions from store (set by Step4); fall back to constants
-    // only if store entry is somehow missing (e.g., after a page reload).
-    const fallback = PARCEL_SIZE_FALLBACKS[parcel.parcel_size];
-    const dims = parcelDimensions ?? {
-      lengthCm: fallback.lengthCm,
-      widthCm: fallback.widthCm,
-      heightCm: fallback.heightCm,
-    };
+    if (!origin || !destination || parcels.length === 0 || !parcelKey) return;
+
+    const parcelParams = parcels.map((p, i) => {
+      const stored = parcelDimensionsList[i];
+      const fallback = PARCEL_SIZE_FALLBACKS[p.parcel_size];
+      return {
+        parcel_size: p.parcel_size,
+        weight_kg: p.weight_kg,
+        length_cm: stored?.lengthCm ?? fallback.lengthCm,
+        width_cm: stored?.widthCm ?? fallback.widthCm,
+        height_cm: stored?.heightCm ?? fallback.heightCm,
+        insurance_option_id: p.insurance_option_id,
+      };
+    });
 
     ratesMutation.mutate({
       origin_postcode: origin.origin_postcode,
       destination_postcode: destination.destination_postcode,
-      parcel_size: parcel.parcel_size,
-      weight_kg: parcel.weight_kg,
-      length_cm: dims.lengthCm,
-      width_cm: dims.widthCm,
-      height_cm: dims.heightCm,
-      insurance_option_id: parcel.insurance_option_id,
+      parcels: parcelParams,
     });
-    // parcelKey changes when user modifies parcel in Step4 and returns here
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parcelKey]);
 
@@ -183,26 +94,33 @@ export function Step5Speed() {
   const selectedSpeed = watch("delivery_speed");
 
   async function onSubmit(data: BookingStepSpeedInput) {
-    if (!contact || !origin || !destination || !parcel || !priceBreakdown) return;
+    if (!contact || !origin || !destination || parcels.length === 0 || !priceBreakdowns) return;
     setSpeed(data);
 
     await checkoutMutation.mutateAsync({
       ...contact,
       ...origin,
       ...destination,
-      ...parcel,
+      parcels: parcels.map((p) => ({
+        parcel_size: p.parcel_size,
+        weight_kg: p.weight_kg,
+        insurance_option_id: p.insurance_option_id,
+      })),
       delivery_speed: data.delivery_speed,
     });
   }
 
-  const breakdown = priceBreakdown;
+  const breakdowns = priceBreakdowns;
   const isLoading = ratesMutation.isPending;
-  const isInternal = deliveryMode === "internal";
 
-  const selectedOption: PriceOption | null = breakdown
-    ? selectedSpeed === "express" && breakdown.express
-      ? breakdown.express
-      : breakdown.standard
+  const standardSum = breakdowns ? sumOption(breakdowns, "standard") : null;
+  const expressSum = breakdowns ? sumOption(breakdowns, "express") : null;
+  const hasExpress = expressSum?.available ?? false;
+
+  const selectedSum = breakdowns
+    ? selectedSpeed === "express" && hasExpress
+      ? expressSum
+      : standardSum
     : null;
 
   return (
@@ -210,15 +128,15 @@ export function Step5Speed() {
       <CardShell>
         <CardHeader title={t("stepSpeed")} />
         <CardBody className="space-y-6">
-          {/* Route badge */}
           <p className="text-text-muted text-sm">
-            {isInternal ? t("internalRoute") : t("sendcloudRoute")}
+            {deliveryMode === "internal" ? t("internalRoute") : t("sendcloudRoute")}
+            {parcels.length > 1 && ` · ${parcels.length} ${t("parcelsCount")}`}
           </p>
 
           {isLoading && <p className="text-text-muted text-sm">{t("loadingRates")}</p>}
 
-          {/* Speed selection (only for sendcloud) */}
-          {breakdown && !isInternal && (
+          {/* Speed selection */}
+          {standardSum && (
             <Controller
               name="delivery_speed"
               control={control}
@@ -226,15 +144,17 @@ export function Step5Speed() {
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <PriceOptionCard
                     speedKey="standard"
-                    option={breakdown.standard}
+                    totalCents={standardSum.totalCents}
+                    estimatedDays={breakdowns?.[0]?.standard.estimatedDays ?? null}
                     selected={field.value === "standard"}
                     onSelect={() => field.onChange("standard")}
                     t={t}
                   />
-                  {breakdown.express && (
+                  {hasExpress && expressSum && (
                     <PriceOptionCard
                       speedKey="express"
-                      option={breakdown.express}
+                      totalCents={expressSum.totalCents}
+                      estimatedDays={breakdowns?.[0]?.express?.estimatedDays ?? null}
                       selected={field.value === "express"}
                       onSelect={() => field.onChange("express")}
                       t={t}
@@ -245,39 +165,28 @@ export function Step5Speed() {
             />
           )}
 
-          {/* Internal: show standard price only */}
-          {breakdown && isInternal && (
-            <div className="border-border-default rounded-xl border bg-white p-5">
-              <span className="text-lg font-semibold">{t("deliveryStandard")}</span>
-              <p className="mt-3 text-2xl font-bold">
-                {formatCents(breakdown.standard.totalCents)}
-              </p>
-              <p className="text-text-muted text-xs">{t("iva")}</p>
-            </div>
-          )}
-
           {/* Price breakdown */}
-          {selectedOption && (
+          {selectedSum && (
             <>
               <Divider />
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-text-muted">{t("shippingCost")}</span>
-                  <span>{formatCents(selectedOption.shippingCents)}</span>
+                  <span>{formatCents(selectedSum.shippingCents)}</span>
                 </div>
-                {selectedOption.insuranceSurchargeCents > 0 && (
+                {selectedSum.insuranceSurchargeCents > 0 && (
                   <div className="flex justify-between">
                     <span className="text-text-muted">{t("insurance")}</span>
-                    <span>{formatCents(selectedOption.insuranceSurchargeCents)}</span>
+                    <span>{formatCents(selectedSum.insuranceSurchargeCents)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-text-muted">{t("iva")}</span>
-                  <span>{formatCents(selectedOption.ivaCents)}</span>
+                  <span>{formatCents(selectedSum.ivaCents)}</span>
                 </div>
                 <div className="flex justify-between text-base font-bold">
                   <span>{t("totalToPay")}</span>
-                  <span>{formatCents(selectedOption.totalCents)}</span>
+                  <span>{formatCents(selectedSum.totalCents)}</span>
                 </div>
               </div>
             </>
@@ -299,7 +208,7 @@ export function Step5Speed() {
           type="submit"
           variant="primary"
           size="lg"
-          disabled={!breakdown || checkoutMutation.isPending}
+          disabled={!breakdowns || checkoutMutation.isPending}
           aria-busy={checkoutMutation.isPending}
         >
           {checkoutMutation.isPending ? t("loadingRates") : t("proceedToPayment")}

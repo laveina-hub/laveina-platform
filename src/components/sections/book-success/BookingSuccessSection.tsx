@@ -30,7 +30,7 @@ export function BookingSuccessSection() {
   const sessionId = searchParams.get("session_id");
   const { reset } = useBookingStore();
 
-  const [shipment, setShipment] = useState<ShipmentConfirmation | null>(null);
+  const [shipments, setShipments] = useState<ShipmentConfirmation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -51,8 +51,8 @@ export function BookingSuccessSection() {
         const json = await res.json();
         if (cancelled) return;
 
-        if (json.data) {
-          setShipment(json.data);
+        if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+          setShipments(json.data);
           setLoading(false);
           return;
         }
@@ -64,8 +64,11 @@ export function BookingSuccessSection() {
         const res2 = await fetch(url);
         const json2 = await res2.json();
         if (cancelled) return;
-        if (json2.data) setShipment(json2.data);
-        else setError(true);
+        if (json2.data && Array.isArray(json2.data) && json2.data.length > 0) {
+          setShipments(json2.data);
+        } else {
+          setError(true);
+        }
       } catch {
         if (!cancelled) setError(true);
       } finally {
@@ -88,7 +91,7 @@ export function BookingSuccessSection() {
     );
   }
 
-  if (error || !shipment) {
+  if (error || shipments.length === 0) {
     return (
       <SectionContainer className="py-24 text-center">
         <p className="text-text-muted">{t("loadError")}</p>
@@ -98,6 +101,9 @@ export function BookingSuccessSection() {
       </SectionContainer>
     );
   }
+
+  // Use first shipment for shared info (origin/destination)
+  const first = shipments[0];
 
   return (
     <div className="bg-secondary-100 px-4 py-24 sm:px-6 lg:px-10">
@@ -124,51 +130,63 @@ export function BookingSuccessSection() {
 
           <div>
             <h1 className="font-display text-text-primary text-3xl font-bold">{t("title")}</h1>
-            <p className="text-text-muted mt-2 text-lg">{t("subtitle")}</p>
+            <p className="text-text-muted mt-2 text-lg">
+              {shipments.length > 1
+                ? t("subtitleMulti", { count: shipments.length })
+                : t("subtitle")}
+            </p>
           </div>
 
-          {/* Tracking ID card */}
+          {/* Shipment cards */}
+          {shipments.map((shipment, index) => (
+            <CardShell key={shipment.id}>
+              <CardBody className="space-y-4 text-center">
+                {shipments.length > 1 && (
+                  <p className="text-text-muted text-xs font-semibold uppercase">
+                    {t("parcelNumber", { number: index + 1 })}
+                  </p>
+                )}
+                <p className="text-text-muted text-sm">{t("trackingIdLabel")}</p>
+                <p className="font-display text-primary-600 text-2xl font-bold tracking-wider">
+                  {shipment.tracking_id}
+                </p>
+
+                {shipment.qr_code_url && (
+                  <div className="flex justify-center">
+                    <Image
+                      src={shipment.qr_code_url}
+                      alt={t("qrAlt")}
+                      width={160}
+                      height={160}
+                      className="rounded-lg"
+                    />
+                  </div>
+                )}
+              </CardBody>
+            </CardShell>
+          ))}
+
+          {/* Shared pickup info */}
           <CardShell>
-            <CardBody className="space-y-4 text-center">
-              <p className="text-text-muted text-sm">{t("trackingIdLabel")}</p>
-              <p className="font-display text-primary-600 text-2xl font-bold tracking-wider">
-                {shipment.tracking_id}
-              </p>
-
-              {/* QR code */}
-              {shipment.qr_code_url && (
-                <div className="flex justify-center">
-                  <Image
-                    src={shipment.qr_code_url}
-                    alt={t("qrAlt")}
-                    width={200}
-                    height={200}
-                    className="rounded-lg"
-                  />
-                </div>
-              )}
-
-              {/* Pickup points */}
-              <div className="mt-4 grid grid-cols-1 gap-4 text-left sm:grid-cols-2">
-                {shipment.origin_pickup_point && (
+            <CardBody>
+              <div className="grid grid-cols-1 gap-4 text-left sm:grid-cols-2">
+                {first.origin_pickup_point && (
                   <div>
                     <p className="text-text-muted text-xs font-medium tracking-wide uppercase">
                       {t("dropOff")}
                     </p>
-                    <p className="mt-1 font-medium">{shipment.origin_pickup_point.name}</p>
-                    <p className="text-text-muted text-sm">
-                      {shipment.origin_pickup_point.address}
-                    </p>
+                    <p className="mt-1 font-medium">{first.origin_pickup_point.name}</p>
+                    <p className="text-text-muted text-sm">{first.origin_pickup_point.address}</p>
                   </div>
                 )}
-                {shipment.destination_pickup_point && (
+                {first.destination_pickup_point && (
                   <div>
                     <p className="text-text-muted text-xs font-medium tracking-wide uppercase">
                       {t("pickupAt")}
                     </p>
-                    <p className="mt-1 font-medium">{shipment.destination_pickup_point.name}</p>
+                    <p className="mt-1 font-medium">{first.destination_pickup_point.name}</p>
                     <p className="text-text-muted text-sm">
-                      {shipment.destination_pickup_point.address}
+                      {first.destination_pickup_point.address}
                     </p>
                   </div>
                 )}
@@ -178,7 +196,7 @@ export function BookingSuccessSection() {
 
           {/* Actions */}
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Link href={`/tracking/${shipment.tracking_id}`}>
+            <Link href={`/tracking/${first.tracking_id}`}>
               <Button variant="primary" size="lg" className="w-full sm:w-auto">
                 {t("trackShipment")}
               </Button>

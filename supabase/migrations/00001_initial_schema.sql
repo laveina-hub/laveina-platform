@@ -242,7 +242,7 @@ CREATE TABLE public.shipments (
 
   -- Payment
   stripe_payment_intent_id    TEXT,
-  stripe_checkout_session_id  TEXT UNIQUE,
+  stripe_checkout_session_id  TEXT,          -- not UNIQUE: multi-parcel bookings share one session
 
   -- Status
   status                      public.shipment_status NOT NULL DEFAULT 'payment_confirmed',
@@ -334,6 +334,13 @@ CREATE TABLE public.otp_verifications (
 CREATE INDEX idx_otp_shipment ON public.otp_verifications(shipment_id);
 CREATE INDEX idx_otp_expires ON public.otp_verifications(expires_at);
 
+-- Prevent race condition: only one unverified OTP per shipment at a time.
+-- Expired rows are cleaned up by the application (or a future cron), so this
+-- constraint ensures no duplicate pending OTPs exist for the same shipment.
+CREATE UNIQUE INDEX idx_otp_active_per_shipment
+  ON public.otp_verifications (shipment_id)
+  WHERE verified = false;
+
 
 -- ----- ADMIN SETTINGS -----
 -- Key-value store for admin-configurable settings
@@ -385,6 +392,24 @@ CREATE TABLE public.notifications_log (
 CREATE INDEX idx_notifications_log_shipment ON public.notifications_log(shipment_id);
 CREATE INDEX idx_notifications_log_status ON public.notifications_log(status);
 
+-- Pending bookings — stores full booking data before Stripe checkout.
+-- Supports multi-parcel bookings (avoids Stripe metadata size limits).
+-- The Stripe webhook reads from this table to create shipments.
+-- Rows are marked processed=true after the webhook handles them.
+-- Cleanup: delete unprocessed rows older than 24h via pg_cron.
+
+CREATE TABLE public.pending_bookings (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  booking_data   JSONB NOT NULL,
+  processed      BOOLEAN NOT NULL DEFAULT false,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_pending_bookings_customer ON public.pending_bookings(customer_id);
+CREATE INDEX idx_pending_bookings_cleanup ON public.pending_bookings(processed, created_at)
+  WHERE NOT processed;
+
 
 -- ============================================================
 -- 4. ROW LEVEL SECURITY (RLS)
@@ -399,6 +424,7 @@ ALTER TABLE public.scan_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.otp_verifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pending_bookings ENABLE ROW LEVEL SECURITY;
 
 -- ===== PROFILES =====
 CREATE POLICY profiles_select_own ON public.profiles
@@ -493,6 +519,15 @@ CREATE POLICY notifications_log_select_own ON public.notifications_log
   FOR SELECT USING (
     shipment_id IN (SELECT id FROM public.shipments WHERE customer_id = auth.uid())
   );
+
+
+-- ===== PENDING BOOKINGS =====
+CREATE POLICY pending_bookings_insert_own ON public.pending_bookings
+  FOR INSERT WITH CHECK (auth.uid() = customer_id);
+
+CREATE POLICY pending_bookings_service_role ON public.pending_bookings
+  FOR ALL TO service_role
+  USING (true) WITH CHECK (true);
 
 
 -- ============================================================

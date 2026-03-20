@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -65,7 +65,9 @@ export async function POST(request: NextRequest) {
   // Find shipment by SendCloud parcel ID
   const { data: shipment, error: findError } = await supabase
     .from("shipments")
-    .select("*")
+    .select(
+      "id, status, tracking_id, destination_pickup_point_id, receiver_phone, receiver_name, carrier_tracking_number"
+    )
     .eq("sendcloud_parcel_id", parcel.id)
     .single();
 
@@ -163,7 +165,10 @@ function verifySignature(body: string, signature: string | null): boolean {
   }
 
   const expectedSignature = createHmac("sha256", secret).update(body).digest("hex");
-  return signature === expectedSignature;
+  const sigBuf = Buffer.from(signature, "utf-8");
+  const expectedBuf = Buffer.from(expectedSignature, "utf-8");
+  if (sigBuf.length !== expectedBuf.length) return false;
+  return timingSafeEqual(sigBuf, expectedBuf);
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────

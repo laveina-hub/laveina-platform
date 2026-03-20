@@ -97,7 +97,10 @@
     "stepOrigin": "Origin",
     "stepDestination": "Destination",
     "stepParcel": "Parcel",
+    "addParcel": "Add another parcel",
+    "removeParcel": "Remove this parcel",
     "stepSpeed": "Delivery",
+    "parcelsCount": "parcels",
     "senderSection": "Sender Info",
     "receiverSection": "Receiver Info",
     "senderName": "Sender name",
@@ -125,6 +128,7 @@
     "weightPlaceholder": "0.5",
     "insuranceOption": "Insurance option",
     "noInsurance": "No additional insurance (€25 basic coverage included)",
+    "carrierInsuranceIncluded": "Carrier insurance is automatically included in this shipment.",
     "insuranceCoverage": "Coverage: {amount}",
     "insuranceSurcharge": "+{amount} extra",
     "deliveryStandard": "Standard",
@@ -299,7 +303,10 @@
     "postcodes": "Postcodes",
     "scan": "Scan QR",
     "verify": "Verify Delivery",
-    "settings": "Settings"
+    "settings": "Settings",
+    "roleAdmin": "Admin",
+    "rolePickupPoint": "Pickup Point",
+    "roleCustomer": "Customer"
   },
   "requestDelivery": {
     "title": "Request Delivery",
@@ -391,6 +398,8 @@
   "bookingSuccess": {
     "title": "Payment confirmed!",
     "subtitle": "Your shipment has been registered. Drop the parcel off at the origin pickup point.",
+    "subtitleMulti": "{count} parcels have been registered. Drop them off at the origin pickup point.",
+    "parcelNumber": "Parcel #{number}",
     "trackingIdLabel": "Your tracking number",
     "qrAlt": "Shipment QR code",
     "dropOff": "Drop off at",
