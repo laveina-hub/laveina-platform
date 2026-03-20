@@ -9,6 +9,11 @@
 
 
 -- ============================================================
+-- 0. EXTENSIONS
+-- ============================================================
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
+-- ============================================================
 -- 1. ENUMS
 -- ============================================================
 
@@ -488,3 +493,33 @@ CREATE POLICY notifications_log_select_own ON public.notifications_log
   FOR SELECT USING (
     shipment_id IN (SELECT id FROM public.shipments WHERE customer_id = auth.uid())
   );
+
+
+-- ============================================================
+-- 5. RPC FUNCTIONS
+-- ============================================================
+
+-- Admin dashboard stats — single DB round-trip for all aggregations
+CREATE OR REPLACE FUNCTION public.get_admin_dashboard_stats()
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+AS $$
+  SELECT jsonb_build_object(
+    'total_shipments',    COUNT(*),
+    'waiting_at_origin',  COUNT(*) FILTER (WHERE status = 'waiting_at_origin'),
+    'received_at_origin', COUNT(*) FILTER (WHERE status = 'received_at_origin'),
+    'in_transit',         COUNT(*) FILTER (WHERE status = 'in_transit'),
+    'arrived_at_destination', COUNT(*) FILTER (WHERE status = 'arrived_at_destination'),
+    'ready_for_pickup',   COUNT(*) FILTER (WHERE status = 'ready_for_pickup'),
+    'delivered',          COUNT(*) FILTER (WHERE status = 'delivered'),
+    'total_revenue_cents', COALESCE(SUM(price_cents), 0),
+    'active_pickup_points', (
+      SELECT COUNT(*) FROM public.pickup_points WHERE is_active = true
+    )
+  )
+  FROM public.shipments;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_admin_dashboard_stats() TO authenticated;

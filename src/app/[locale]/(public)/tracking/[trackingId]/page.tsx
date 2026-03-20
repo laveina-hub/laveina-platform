@@ -2,6 +2,9 @@ import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 
 import { Heading, SectionContainer } from "@/components/atoms";
+
+// Tracking data changes in real-time — never cache
+export const dynamic = "force-dynamic";
 import {
   TrackingSearchSection,
   TrackingDetailsSection,

@@ -1,11 +1,22 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { z } from "zod";
 
+import { getClientIp, rateLimitResponse, scanLimiter } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { processQrScan } from "@/services/tracking.service";
 
+const scanBodySchema = z.object({
+  trackingId: z.string().min(1, "Tracking ID is required"),
+  pickupPointId: z.string().uuid("Invalid pickup point ID"),
+});
+
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rl = scanLimiter.check(ip);
+    if (!rl.success) return rateLimitResponse(rl.resetMs);
+
     const supabase = await createClient();
     const {
       data: { user },
@@ -17,17 +28,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const parsed = scanBodySchema.safeParse(body);
 
-    if (!body.trackingId || !body.pickupPointId) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "trackingId and pickupPointId are required" },
+        { error: "Invalid request", details: parsed.error.flatten() },
         { status: 400 }
       );
     }
 
     const result = await processQrScan(user.id, {
-      tracking_id: body.trackingId,
-      pickup_point_id: body.pickupPointId,
+      tracking_id: parsed.data.trackingId,
+      pickup_point_id: parsed.data.pickupPointId,
     });
 
     if (result.error) {

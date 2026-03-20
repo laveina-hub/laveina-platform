@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { env } from "@/env";
+import { getClientIp, paymentLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { getStripe } from "@/lib/stripe/client";
 import { createClient } from "@/lib/supabase/server";
 import { getRates } from "@/services/pricing.service";
@@ -21,6 +22,10 @@ import { createCheckoutSchema } from "@/validations/shipment.schema";
  */
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rl = paymentLimiter.check(ip);
+    if (!rl.success) return rateLimitResponse(rl.resetMs);
+
     // ── Auth ──────────────────────────────────────────────────────────────────
     const supabase = await createClient();
     const {

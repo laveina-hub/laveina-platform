@@ -19,5 +19,8 @@ if [ "$branch" != "main" ] && [ "$branch" != "master" ] && [ "$branch" != "HEAD"
   fi
 fi
 
+# Increase Node memory for ESLint on large changesets
+export NODE_OPTIONS="--max-old-space-size=4096"
+
 # Run lint-staged on staged files
 npx lint-staged

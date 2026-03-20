@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
+import { getClientIp, publicLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -8,7 +10,10 @@ import { createClient } from "@/lib/supabase/server";
  * Returns active insurance options ordered by coverage amount.
  * Public — no auth required (shown in booking form Step 4).
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
+  const rl = publicLimiter.check(ip);
+  if (!rl.success) return rateLimitResponse(rl.resetMs);
   try {
     const supabase = await createClient();
 

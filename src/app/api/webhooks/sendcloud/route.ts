@@ -146,9 +146,15 @@ export async function POST(request: NextRequest) {
 function verifySignature(body: string, signature: string | null): boolean {
   const secret = env.SENDCLOUD_SECRET_KEY;
 
-  // If secret is not configured, allow in development
+  // If secret is not configured, only allow in development
   if (!secret) {
-    console.warn("SendCloud webhook: SENDCLOUD_SECRET_KEY not configured, skipping verification");
+    if (process.env.NODE_ENV === "production") {
+      console.error("SendCloud webhook: SENDCLOUD_SECRET_KEY not configured in production");
+      return false;
+    }
+    console.warn(
+      "SendCloud webhook: SENDCLOUD_SECRET_KEY not configured, skipping verification (dev only)"
+    );
     return true;
   }
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
+import { getClientIp, publicLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { getRates } from "@/services/pricing.service";
 import { getDeliveryMode } from "@/services/routing.service";
 import {
@@ -32,6 +33,10 @@ const getRatesBodySchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rl = publicLimiter.check(ip);
+    if (!rl.success) return rateLimitResponse(rl.resetMs);
+
     const body = await request.json();
     const parsed = getRatesBodySchema.safeParse(body);
 
