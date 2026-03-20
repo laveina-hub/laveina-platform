@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
-import { Toaster } from "sonner";
 
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { createClient } from "@/lib/supabase/server";
@@ -35,11 +34,8 @@ export default async function DashboardLayout({ children, params }: Props) {
   const userFullName = profile?.full_name ?? user.email ?? "User";
 
   return (
-    <>
-      <DashboardShell role={role} userFullName={userFullName}>
-        {children}
-      </DashboardShell>
-      <Toaster position="top-right" richColors closeButton />
-    </>
+    <DashboardShell role={role} userFullName={userFullName}>
+      {children}
+    </DashboardShell>
   );
 }

@@ -15,3 +15,4 @@ export {
   DataTablePagination,
   DataTableEmptyState,
 } from "./DataTable";
+export { WorkingHoursEditor, type WorkingHoursEditorProps } from "./WorkingHoursEditor";

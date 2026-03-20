@@ -67,10 +67,10 @@ function determineScanAction(shipment: Shipment, pickupPointId: string): ScanDec
   }
 
   if (isDestination) {
-    // Destination scan when parcel is in transit → auto-transition to ready_for_pickup
-    // Per PARCEL_JOURNEY.md Stage 5: "in_transit → arrived_at_destination → ready_for_pickup (auto-transition)"
+    // Per PARCEL_JOURNEY.md Stage 5: destination scan transitions through
+    // arrived_at_destination → ready_for_pickup (auto-transition handled in processQrScan)
     if (currentStatus === ShipmentStatus.IN_TRANSIT) {
-      return { type: "transition", newStatus: ShipmentStatus.READY_FOR_PICKUP };
+      return { type: "transition", newStatus: ShipmentStatus.ARRIVED_AT_DESTINATION };
     }
     if (currentStatus === ShipmentStatus.ARRIVED_AT_DESTINATION) {
       return { type: "transition", newStatus: ShipmentStatus.READY_FOR_PICKUP };
@@ -142,6 +142,7 @@ export async function processQrScan(
 
   // Update shipment status if transition is valid
   let updatedShipment = shipment;
+  let finalStatus = nextStatus;
   if (nextStatus) {
     const { data: updated, error: updateError } = await adminSupabase
       .from("shipments")
@@ -158,6 +159,31 @@ export async function processQrScan(
     }
 
     updatedShipment = updated;
+
+    // Auto-transition: arrived_at_destination → ready_for_pickup
+    // Per PARCEL_JOURNEY.md: destination scan auto-transitions through both states
+    if (nextStatus === ShipmentStatus.ARRIVED_AT_DESTINATION) {
+      const { data: autoUpdated, error: autoError } = await adminSupabase
+        .from("shipments")
+        .update({ status: ShipmentStatus.READY_FOR_PICKUP })
+        .eq("id", shipment.id)
+        .select()
+        .single();
+
+      if (!autoError && autoUpdated) {
+        updatedShipment = autoUpdated;
+        finalStatus = ShipmentStatus.READY_FOR_PICKUP;
+
+        // Log the auto-transition separately for complete audit trail
+        await adminSupabase.from("scan_logs").insert({
+          shipment_id: shipment.id,
+          scanned_by: scannedBy,
+          pickup_point_id: parsed.data.pickup_point_id,
+          old_status: ShipmentStatus.ARRIVED_AT_DESTINATION,
+          new_status: ShipmentStatus.READY_FOR_PICKUP,
+        });
+      }
+    }
   }
 
   // Create scan log entry (every scan is logged, including no-change scans)
@@ -168,7 +194,7 @@ export async function processQrScan(
       scanned_by: scannedBy,
       pickup_point_id: parsed.data.pickup_point_id,
       old_status: oldStatus,
-      new_status: newStatus,
+      new_status: finalStatus ?? oldStatus,
     })
     .select()
     .single();
@@ -179,7 +205,7 @@ export async function processQrScan(
 
   // Send OTP when parcel becomes ready_for_pickup
   let otpSent = false;
-  if (nextStatus === ShipmentStatus.READY_FOR_PICKUP) {
+  if (finalStatus === ShipmentStatus.READY_FOR_PICKUP) {
     const otpResult = await generateOtp({ shipment_id: shipment.id });
     otpSent = otpResult.error === null;
   }

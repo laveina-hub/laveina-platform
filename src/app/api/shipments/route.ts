@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { createClient } from "@/lib/supabase/server";
+import { verifyAuth } from "@/lib/supabase/auth";
 import { listShipments } from "@/services/shipment.service";
 import { ShipmentStatus } from "@/types/enums";
 
@@ -15,15 +15,9 @@ const listQuerySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await verifyAuth();
+  if (auth.error) return auth.error;
+  const { user, role } = auth;
 
   const { searchParams } = new URL(request.url);
   const parsed = listQuerySchema.safeParse({
@@ -42,13 +36,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Enforce customer ID at application layer — customers can only see their own shipments
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const effectiveCustomerId = profile?.role === "admin" ? parsed.data.customerId : user.id;
+  const effectiveCustomerId = role === "admin" ? parsed.data.customerId : user.id;
 
   const result = await listShipments({
     page: parsed.data.page,

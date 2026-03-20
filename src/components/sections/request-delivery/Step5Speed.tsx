@@ -201,13 +201,12 @@ export function Step5Speed() {
       </CardShell>
 
       <div className="flex justify-between">
-        <Button type="button" variant="secondary" onClick={() => setStep(4)}>
+        <Button type="button" variant="outline" onClick={() => setStep(4)}>
           {t("back")}
         </Button>
         <Button
           type="submit"
           variant="primary"
-          size="lg"
           disabled={!breakdowns || checkoutMutation.isPending}
           aria-busy={checkoutMutation.isPending}
         >

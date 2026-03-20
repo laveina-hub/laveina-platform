@@ -76,13 +76,43 @@ const PICKUP_POINTS = [
     is_active: true,
     is_open: true,
     working_hours: {
-      monday: "09:00-14:00,16:00-20:00",
-      tuesday: "09:00-14:00,16:00-20:00",
-      wednesday: "09:00-14:00,16:00-20:00",
-      thursday: "09:00-14:00,16:00-20:00",
-      friday: "09:00-14:00,16:00-20:00",
-      saturday: "10:00-14:00",
-      sunday: "closed",
+      monday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      tuesday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      wednesday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      thursday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      friday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      saturday: { open: true, slots: [["10:00", "14:00"]] },
+      sunday: { open: false, slots: [] },
     },
     owner_email: "shop-origin@laveina-test.com",
   },
@@ -99,13 +129,43 @@ const PICKUP_POINTS = [
     is_active: true,
     is_open: true,
     working_hours: {
-      monday: "09:00-14:00,16:00-20:00",
-      tuesday: "09:00-14:00,16:00-20:00",
-      wednesday: "09:00-14:00,16:00-20:00",
-      thursday: "09:00-14:00,16:00-20:00",
-      friday: "09:00-14:00,16:00-20:00",
-      saturday: "10:00-14:00",
-      sunday: "closed",
+      monday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      tuesday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      wednesday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      thursday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      friday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      saturday: { open: true, slots: [["10:00", "14:00"]] },
+      sunday: { open: false, slots: [] },
     },
     owner_email: "shop-dest@laveina-test.com",
   },
@@ -122,13 +182,13 @@ const PICKUP_POINTS = [
     is_active: true,
     is_open: true,
     working_hours: {
-      monday: "08:00-21:00",
-      tuesday: "08:00-21:00",
-      wednesday: "08:00-21:00",
-      thursday: "08:00-21:00",
-      friday: "08:00-21:00",
-      saturday: "09:00-14:00",
-      sunday: "closed",
+      monday: { open: true, slots: [["08:00", "21:00"]] },
+      tuesday: { open: true, slots: [["08:00", "21:00"]] },
+      wednesday: { open: true, slots: [["08:00", "21:00"]] },
+      thursday: { open: true, slots: [["08:00", "21:00"]] },
+      friday: { open: true, slots: [["08:00", "21:00"]] },
+      saturday: { open: true, slots: [["09:00", "14:00"]] },
+      sunday: { open: false, slots: [] },
     },
     owner_email: null,
   },

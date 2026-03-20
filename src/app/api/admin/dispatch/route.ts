@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { isValidTransition } from "@/constants/status-transitions";
-import { createClient } from "@/lib/supabase/server";
+import { verifyAuth } from "@/lib/supabase/auth";
+import { logAuditEvent } from "@/services/audit.service";
 import { dispatchParcel } from "@/services/sendcloud.service";
 import { DeliveryMode, ShipmentStatus } from "@/types/enums";
 import { batchDispatchSchema } from "@/validations/admin.schema";
@@ -17,24 +18,12 @@ type DispatchResult = {
 };
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-
   // ── Auth: admin only ───────────────────────────────────────────────────────
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = await verifyAuth();
+  if (auth.error) return auth.error;
+  const { supabase, user, role } = auth;
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
+  if (role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -159,6 +148,19 @@ export async function POST(request: NextRequest) {
 
   const succeeded = results.filter((r) => r.success).length;
   const failed = results.filter((r) => !r.success).length;
+
+  if (succeeded > 0) {
+    void logAuditEvent({
+      actor_id: user.id,
+      action: "shipments.dispatched",
+      resource: "shipment",
+      metadata: {
+        succeeded,
+        failed,
+        tracking_ids: results.filter((r) => r.success).map((r) => r.trackingId),
+      },
+    });
+  }
 
   return NextResponse.json({
     data: {

@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { env } from "@/env";
 import { getClientIp, paymentLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { getStripe } from "@/lib/stripe/client";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getRates } from "@/services/pricing.service";
 import { getDeliveryMode } from "@/services/routing.service";
@@ -188,7 +189,9 @@ export async function POST(request: NextRequest) {
       }),
     };
 
-    const { data: pendingBooking, error: pendingError } = await supabase
+    // Use admin client to bypass RLS — user is already authenticated above
+    const adminClient = createAdminClient();
+    const { data: pendingBooking, error: pendingError } = await adminClient
       .from("pending_bookings")
       .insert({ customer_id: user.id, booking_data: bookingData })
       .select("id")
@@ -237,7 +240,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: { url: session.url } });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Error creating checkout session:", message);
-    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("Error creating checkout session:", message, stack);
+    return NextResponse.json(
+      { error: "Failed to create checkout session", detail: message },
+      { status: 500 }
+    );
   }
 }

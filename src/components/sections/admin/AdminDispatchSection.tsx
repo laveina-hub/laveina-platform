@@ -27,6 +27,7 @@ function formatDate(dateStr: string): string {
 
 export function AdminDispatchSection() {
   const t = useTranslations("adminDispatch");
+  const tCommon = useTranslations("common");
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useShipments({
@@ -128,7 +129,14 @@ export function AdminDispatchSection() {
     {
       accessorKey: "delivery_mode",
       header: t("mode"),
-      cell: ({ row }) => <DeliveryModeBadge mode={row.original.delivery_mode as DeliveryMode} />,
+      cell: ({ row }) => (
+        <DeliveryModeBadge
+          mode={row.original.delivery_mode as DeliveryMode}
+          label={tCommon(
+            `deliveryModeLabel.${row.original.delivery_mode}` as Parameters<typeof tCommon>[0]
+          )}
+        />
+      ),
     },
     {
       accessorKey: "parcel_size",
@@ -140,7 +148,7 @@ export function AdminDispatchSection() {
     {
       accessorKey: "weight_kg",
       header: t("weight"),
-      cell: ({ row }) => `${row.original.weight_kg} kg`,
+      cell: ({ row }) => tCommon("weightKg", { value: row.original.weight_kg }),
     },
     {
       accessorKey: "created_at",

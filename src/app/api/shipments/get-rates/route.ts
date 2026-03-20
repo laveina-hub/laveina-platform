@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: breakdowns });
   } catch (err) {
+    console.error("POST /api/shipments/get-rates failed:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

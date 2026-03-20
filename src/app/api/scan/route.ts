@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { getClientIp, rateLimitResponse, scanLimiter } from "@/lib/rate-limit";
-import { createClient } from "@/lib/supabase/server";
+import { verifyAuth } from "@/lib/supabase/auth";
 import { processQrScan } from "@/services/tracking.service";
 
 const scanBodySchema = z.object({
@@ -17,15 +17,9 @@ export async function POST(request: NextRequest) {
     const rl = scanLimiter.check(ip);
     if (!rl.success) return rateLimitResponse(rl.resetMs);
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyAuth();
+    if (auth.error) return auth.error;
+    const { user } = auth;
 
     const body = await request.json();
     const parsed = scanBodySchema.safeParse(body);
@@ -47,7 +41,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ data: result.data });
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  } catch (err) {
+    console.error("POST /api/scan failed:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

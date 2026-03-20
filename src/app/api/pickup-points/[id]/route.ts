@@ -1,13 +1,44 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { getPickupPointById } from "@/services/pickup-point.service";
+import { verifyAuth } from "@/lib/supabase/auth";
+import { getPickupPointById, updatePickupPoint } from "@/services/pickup-point.service";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
   const result = await getPickupPointById(id);
+
+  if (result.error) {
+    return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+  }
+
+  return NextResponse.json({ data: result.data });
+}
+
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const auth = await verifyAuth();
+  if (auth.error) return auth.error;
+  const { supabase, user, role } = auth;
+
+  const { id } = await params;
+
+  if (role !== "admin") {
+    // Verify the user owns this pickup point
+    const { data: pickupPoint } = await supabase
+      .from("pickup_points")
+      .select("owner_id")
+      .eq("id", id)
+      .single();
+
+    if (pickupPoint?.owner_id !== user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  const body = await request.json();
+  const result = await updatePickupPoint(id, body);
 
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });

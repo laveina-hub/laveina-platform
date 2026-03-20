@@ -91,7 +91,7 @@ export function Step2Origin() {
           </div>
 
           {/* Pickup point list */}
-          {isFetching && <p className="text-text-muted text-sm">{t("loadingRates")}</p>}
+          {isFetching && <p className="text-text-muted text-sm">{t("searchingPickupPoints")}</p>}
 
           {!isFetching && pickupPoints && pickupPoints.length === 0 && searchPostcode && (
             <p className="text-text-muted text-sm">{t("noPickupPoints")}</p>
@@ -137,10 +137,10 @@ export function Step2Origin() {
       </CardShell>
 
       <div className="flex justify-between">
-        <Button type="button" variant="secondary" onClick={() => setStep(1)}>
+        <Button type="button" variant="outline" onClick={() => setStep(1)}>
           {t("back")}
         </Button>
-        <Button type="submit" variant="primary" size="lg">
+        <Button type="submit" variant="primary">
           {t("next")}
         </Button>
       </div>

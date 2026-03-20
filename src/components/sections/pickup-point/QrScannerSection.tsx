@@ -202,6 +202,7 @@ export function QrScannerSection({ pickupPointId }: QrScannerSectionProps) {
                 value={manualInput}
                 onChange={(e) => setManualInput(e.target.value)}
                 placeholder={t("trackingIdPlaceholder")}
+                aria-label={t("trackingId")}
                 className="flex-1"
                 disabled={scanning}
               />
@@ -221,7 +222,7 @@ export function QrScannerSection({ pickupPointId }: QrScannerSectionProps) {
 
       {/* Error */}
       {error && (
-        <CardShell>
+        <CardShell role="alert" aria-live="assertive">
           <div className="flex items-start gap-4 px-7 py-6">
             <div className="bg-error-100 flex size-10 shrink-0 items-center justify-center rounded-full">
               <svg

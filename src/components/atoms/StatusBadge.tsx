@@ -43,13 +43,8 @@ type DeliveryModeBadgeProps = {
   className?: string;
 };
 
-const modeFallbackLabels: Record<string, string> = {
-  internal: "Barcelona",
-  sendcloud: "SendCloud",
-};
-
 export function DeliveryModeBadge({ mode, label, className }: DeliveryModeBadgeProps) {
-  const displayLabel = label ?? modeFallbackLabels[mode] ?? mode;
+  const displayLabel = label ?? mode;
 
   return (
     <span

@@ -238,10 +238,10 @@ export function Step4Parcel() {
       )}
 
       <div className="flex justify-between">
-        <Button type="button" variant="secondary" onClick={() => setStep(3)}>
+        <Button type="button" variant="outline" onClick={() => setStep(3)}>
           {t("back")}
         </Button>
-        <Button type="submit" variant="primary" size="lg">
+        <Button type="submit" variant="primary">
           {t("next")}
         </Button>
       </div>

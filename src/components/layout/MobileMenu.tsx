@@ -22,6 +22,7 @@ export function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const t = useTranslations("nav");
+  const tCommon = useTranslations("common");
   const pathname = usePathname();
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -156,7 +157,7 @@ export function MobileMenu() {
             id="mobile-nav"
             role="dialog"
             aria-modal="true"
-            aria-label="Mobile navigation"
+            aria-label={tCommon("mobileNavigation")}
             className={cn(
               "bg-bg-primary fixed top-0 right-0 z-50 flex h-full w-72 flex-col shadow-xl transition-transform duration-300 ease-out sm:w-80",
               isAnimating ? "translate-x-0" : "translate-x-full"

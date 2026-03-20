@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  BarChart3,
   Box,
   LayoutDashboard,
   MapPin,
@@ -48,10 +47,7 @@ function getNavItems(
   }
 
   // customer
-  return [
-    { label: t("overview"), href: "/customer", icon: BarChart3 },
-    { label: t("shipments"), href: "/customer/shipments", icon: Box },
-  ];
+  return [{ label: t("myShipments"), href: "/customer", icon: Box }];
 }
 
 type SidebarProps = {
@@ -63,6 +59,7 @@ type SidebarProps = {
 
 export function Sidebar({ role, userFullName, open, onClose }: SidebarProps) {
   const t = useTranslations("dashboard");
+  const tCommon = useTranslations("common");
   const pathname = usePathname();
   const navItems = getNavItems(role, t);
 
@@ -96,7 +93,8 @@ export function Sidebar({ role, userFullName, open, onClose }: SidebarProps) {
           </Link>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 lg:hidden"
+            className="focus-visible:ring-primary-500 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus-visible:ring-2 focus-visible:outline-none lg:hidden"
+            aria-label={tCommon("closeSidebar")}
           >
             <X size={20} />
           </button>

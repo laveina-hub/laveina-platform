@@ -34,6 +34,7 @@ const ALL_STATUSES = Object.values(ShipmentStatus);
 
 export function AdminShipmentsSection() {
   const t = useTranslations("adminShipments");
+  const tCommon = useTranslations("common");
   const tStatus = useTranslations("shipmentStatus");
   const router = useRouter();
 
@@ -78,7 +79,14 @@ export function AdminShipmentsSection() {
     {
       accessorKey: "delivery_mode",
       header: t("mode"),
-      cell: ({ row }) => <DeliveryModeBadge mode={row.original.delivery_mode as DeliveryMode} />,
+      cell: ({ row }) => (
+        <DeliveryModeBadge
+          mode={row.original.delivery_mode as DeliveryMode}
+          label={tCommon(
+            `deliveryModeLabel.${row.original.delivery_mode}` as Parameters<typeof tCommon>[0]
+          )}
+        />
+      ),
     },
     {
       accessorKey: "price_cents",

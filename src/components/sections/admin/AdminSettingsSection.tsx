@@ -128,18 +128,11 @@ async function saveSettings(data: {
   if (!response.ok) throw new Error("Failed to save settings");
 }
 
-const PARCEL_SIZE_LABELS: Record<string, string> = {
-  small: "Small",
-  medium: "Medium",
-  large: "Large",
-  extra_large: "Extra Large",
-  xxl: "XXL",
-};
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function AdminSettingsSection() {
   const t = useTranslations("adminSettings");
+  const tCommon = useTranslations("common");
   const queryClient = useQueryClient();
   const [form, dispatch] = useReducer(formReducer, initialFormState);
 
@@ -243,11 +236,13 @@ export function AdminSettingsSection() {
               </thead>
               <tbody>
                 {data.parcelSizes.map((size) => (
-                  <tr key={size.id} className="border-border-default border-b">
+                  <tr key={size.size} className="border-border-default border-b">
                     <td className="text-text-primary py-2 pr-4 font-medium">
-                      {PARCEL_SIZE_LABELS[size.size] ?? size.size}
+                      {tCommon(`parcelSizeLabel.${size.size}` as Parameters<typeof tCommon>[0])}
                     </td>
-                    <td className="text-text-muted py-2 pr-4">{size.max_weight_kg} kg</td>
+                    <td className="text-text-muted py-2 pr-4">
+                      {tCommon("weightKg", { value: size.max_weight_kg })}
+                    </td>
                     <td className="py-2 pr-4">
                       <Input
                         type="number"

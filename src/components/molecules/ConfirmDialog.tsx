@@ -2,6 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { AlertTriangle, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/atoms";
 import { cn } from "@/lib/utils";
@@ -24,11 +25,13 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
-  cancelLabel = "Cancel",
+  cancelLabel,
   onConfirm,
   variant = "default",
   loading = false,
 }: ConfirmDialogProps) {
+  const tCommon = useTranslations("common");
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -59,7 +62,10 @@ export function ConfirmDialog({
               </Dialog.Description>
             </div>
             <Dialog.Close asChild>
-              <button className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+              <button
+                className="focus-visible:ring-primary-500 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus-visible:ring-2 focus-visible:outline-none"
+                aria-label={tCommon("closeDialog")}
+              >
                 <X size={16} />
               </button>
             </Dialog.Close>
@@ -68,7 +74,7 @@ export function ConfirmDialog({
           <div className="mt-6 flex justify-end gap-3">
             <Dialog.Close asChild>
               <Button variant="outline" size="sm" disabled={loading}>
-                {cancelLabel}
+                {cancelLabel ?? tCommon("cancel")}
               </Button>
             </Dialog.Close>
             <Button

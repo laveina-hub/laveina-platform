@@ -28,12 +28,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata" });
 
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://laveina.co";
+
   return {
     title: {
       default: t("title"),
       template: t("titleTemplate"),
     },
     description: t("description"),
+    metadataBase: new URL(siteUrl),
+    openGraph: {
+      title: t("title"),
+      description: t("description"),
+      siteName: "Laveina",
+      locale,
+      type: "website",
+    },
   };
 }
 

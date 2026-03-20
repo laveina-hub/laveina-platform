@@ -190,7 +190,7 @@ INSERT INTO public.pickup_points (
     '+34 93 123 4567',
     'central@laveina-test.com',
     true, true,
-    '{"monday":"09:00-14:00,16:00-20:00","tuesday":"09:00-14:00,16:00-20:00","wednesday":"09:00-14:00,16:00-20:00","thursday":"09:00-14:00,16:00-20:00","friday":"09:00-14:00,16:00-20:00","saturday":"10:00-14:00","sunday":"closed"}',
+    '{"monday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"tuesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"wednesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"thursday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"friday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"saturday":{"open":true,"slots":[["10:00","14:00"]]},"sunday":{"open":false,"slots":[]}}',
     'b0000000-0000-0000-0000-000000000002'  -- owned by shop-origin@
   ),
   (
@@ -203,7 +203,7 @@ INSERT INTO public.pickup_points (
     '+34 93 234 5678',
     'sol@laveina-test.com',
     true, true,
-    '{"monday":"09:00-14:00,16:00-20:00","tuesday":"09:00-14:00,16:00-20:00","wednesday":"09:00-14:00,16:00-20:00","thursday":"09:00-14:00,16:00-20:00","friday":"09:00-14:00,16:00-20:00","saturday":"10:00-14:00","sunday":"closed"}',
+    '{"monday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"tuesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"wednesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"thursday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"friday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"saturday":{"open":true,"slots":[["10:00","14:00"]]},"sunday":{"open":false,"slots":[]}}',
     'b0000000-0000-0000-0000-000000000003'  -- owned by shop-dest@
   ),
   (
@@ -216,7 +216,7 @@ INSERT INTO public.pickup_points (
     '+34 93 345 6789',
     'marina@laveina-test.com',
     true, true,
-    '{"monday":"08:00-21:00","tuesday":"08:00-21:00","wednesday":"08:00-21:00","thursday":"08:00-21:00","friday":"08:00-21:00","saturday":"09:00-14:00","sunday":"closed"}',
+    '{"monday":{"open":true,"slots":[["08:00","21:00"]]},"tuesday":{"open":true,"slots":[["08:00","21:00"]]},"wednesday":{"open":true,"slots":[["08:00","21:00"]]},"thursday":{"open":true,"slots":[["08:00","21:00"]]},"friday":{"open":true,"slots":[["08:00","21:00"]]},"saturday":{"open":true,"slots":[["09:00","14:00"]]},"sunday":{"open":false,"slots":[]}}',
     NULL  -- unassigned shop (available for testing)
   )
 ON CONFLICT (id) DO NOTHING;

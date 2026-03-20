@@ -11,6 +11,7 @@ import {
   type OnChangeFn,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -71,13 +72,17 @@ export function DataTablePagination({
   pageSize,
   onPageChange,
 }: DataTablePaginationProps) {
+  const tCommon = useTranslations("common");
   const from = (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
 
   return (
-    <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3">
+    <div
+      className="flex items-center justify-between border-t border-gray-200 px-4 py-3"
+      aria-live="polite"
+    >
       <p className="text-sm text-gray-500">
-        {total > 0 ? `${from}–${to} of ${total}` : "No results"}
+        {total > 0 ? tCommon("paginationRange", { from, to, total }) : tCommon("noResults")}
       </p>
       <div className="flex items-center gap-1">
         <button
@@ -186,6 +191,7 @@ export function DataTable<TData>({
   emptyState,
   pagination,
 }: DataTableProps<TData>) {
+  const tCommon = useTranslations("common");
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const table = useReactTable({
@@ -236,7 +242,7 @@ export function DataTable<TData>({
                   {emptyState ? (
                     <DataTableEmptyState {...emptyState} />
                   ) : (
-                    <DataTableEmptyState title="No data found" />
+                    <DataTableEmptyState title={tCommon("noDataFound")} />
                   )}
                 </td>
               </tr>

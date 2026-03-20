@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: shipments });
   } catch (err) {
+    console.error("GET /api/shipments/by-session failed:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

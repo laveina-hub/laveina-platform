@@ -2,22 +2,16 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { createClient } from "@/lib/supabase/server";
+import { verifyAuth } from "@/lib/supabase/auth";
 import { getShipmentById, updateShipmentStatus } from "@/services/shipment.service";
 import { ShipmentStatus } from "@/types/enums";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await verifyAuth();
+  if (auth.error) return auth.error;
+  const { supabase, user, role } = auth;
 
   const { id } = await params;
   const result = await getShipmentById(id);
@@ -27,18 +21,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 
   // ── Authorization: customers can only view their own shipments ──────────
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role === "customer" && result.data.customer_id !== user.id) {
+  if (role === "customer" && result.data.customer_id !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Pickup point staff: can only see shipments routed through their shop
-  if (profile?.role === "pickup_point") {
+  if (role === "pickup_point") {
     const { data: ownedShop } = await supabase
       .from("pickup_points")
       .select("id")
@@ -69,24 +57,10 @@ const patchBodySchema = z.object({
 });
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
+  const patchAuth = await verifyAuth();
+  if (patchAuth.error) return patchAuth.error;
 
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Only admins can update shipment status
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
+  if (patchAuth.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

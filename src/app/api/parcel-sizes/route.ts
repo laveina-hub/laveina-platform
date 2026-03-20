@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data });
   } catch (err) {
+    console.error("GET /api/parcel-sizes failed:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

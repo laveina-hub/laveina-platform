@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { getClientIp, otpLimiter, rateLimitResponse } from "@/lib/rate-limit";
-import { createClient } from "@/lib/supabase/server";
+import { verifyAuth } from "@/lib/supabase/auth";
 import { generateOtp } from "@/services/otp.service";
 
 const bodySchema = z.object({
@@ -23,15 +23,9 @@ export async function POST(request: NextRequest) {
     const rl = otpLimiter.check(ip);
     if (!rl.success) return rateLimitResponse(rl.resetMs);
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await verifyAuth();
+    if (auth.error) return auth.error;
+    const { supabase, user, role } = auth;
 
     // ── Validate input ────────────────────────────────────────────────────────
     const body = await request.json();
@@ -45,18 +39,8 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Authorization: verify caller has access to this shipment ──────────────
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     // Pickup point staff: can only generate OTP for shipments destined to their shop
-    if (profile.role === "pickup_point") {
+    if (role === "pickup_point") {
       // Find which pickup point this user owns
       const { data: ownedShop } = await supabase
         .from("pickup_points")
@@ -75,7 +59,7 @@ export async function POST(request: NextRequest) {
       if (!ownedShop || !shipment || shipment.destination_pickup_point_id !== ownedShop.id) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
-    } else if (profile.role !== "admin") {
+    } else if (role !== "admin") {
       // Customers should not generate OTPs
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -87,7 +71,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ data: result.data });
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  } catch (err) {
+    console.error("POST /api/otp/generate failed:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

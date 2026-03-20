@@ -112,7 +112,7 @@ export function Step1Contact() {
       </CardShell>
 
       <div className="flex justify-end">
-        <Button type="submit" variant="primary" size="lg">
+        <Button type="submit" variant="primary">
           {t("next")}
         </Button>
       </div>

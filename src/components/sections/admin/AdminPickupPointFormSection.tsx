@@ -4,23 +4,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button, Input, Label } from "@/components/atoms";
+import { WorkingHoursEditor } from "@/components/molecules";
 import { usePickupPoint } from "@/hooks/use-pickup-points";
 import { Link, useRouter } from "@/i18n/navigation";
-
-const DAYS = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
-] as const;
+import type { WorkingHours } from "@/validations/pickup-point.schema";
+import {
+  DEFAULT_WORKING_HOURS,
+  parseWorkingHours,
+  workingHoursSchema,
+} from "@/validations/pickup-point.schema";
 
 const formSchema = z.object({
   name: z.string().min(2),
@@ -31,7 +29,7 @@ const formSchema = z.object({
   longitude: z.coerce.number().min(-180).max(180),
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
-  working_hours: z.record(z.string()).optional(),
+  working_hours: workingHoursSchema.optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -54,23 +52,26 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    values: pickupPoint
-      ? {
-          name: pickupPoint.name,
-          address: pickupPoint.address,
-          postcode: pickupPoint.postcode,
-          city: pickupPoint.city ?? "",
-          latitude: pickupPoint.latitude ?? 0,
-          longitude: pickupPoint.longitude ?? 0,
-          phone: pickupPoint.phone ?? "",
-          email: pickupPoint.email ?? "",
-          // SAFETY: working_hours is stored as a JSON object of {day: hours_string} in Supabase
-          working_hours: (pickupPoint.working_hours as Record<string, string>) ?? {},
-        }
-      : undefined,
+    defaultValues: {
+      working_hours: DEFAULT_WORKING_HOURS,
+    },
   });
 
-  const workingHours = watch("working_hours") ?? {};
+  // Populate form when pickup point data loads
+  useEffect(() => {
+    if (!pickupPoint) return;
+    setValue("name", pickupPoint.name);
+    setValue("address", pickupPoint.address);
+    setValue("postcode", pickupPoint.postcode);
+    setValue("city", pickupPoint.city ?? "");
+    setValue("latitude", pickupPoint.latitude ?? 0);
+    setValue("longitude", pickupPoint.longitude ?? 0);
+    setValue("phone", pickupPoint.phone ?? "");
+    setValue("email", pickupPoint.email ?? "");
+    setValue("working_hours", parseWorkingHours(pickupPoint.working_hours));
+  }, [pickupPoint, setValue]);
+
+  const workingHours = watch("working_hours") ?? DEFAULT_WORKING_HOURS;
 
   const mutation = useMutation({
     mutationFn: async (data: FormValues) => {
@@ -172,21 +173,11 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
         {/* Working hours */}
         <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="text-base font-semibold text-gray-900">{t("workingHours")}</h2>
-          <div className="space-y-3">
-            {DAYS.map((day) => (
-              <div key={day} className="flex items-center gap-3">
-                <Label className="w-28 shrink-0 text-sm text-gray-600">{t(day)}</Label>
-                <Input
-                  value={workingHours[day] ?? ""}
-                  onChange={(e) =>
-                    setValue("working_hours", { ...workingHours, [day]: e.target.value })
-                  }
-                  placeholder={t("closed")}
-                  className="py-2 text-sm"
-                />
-              </div>
-            ))}
-          </div>
+          <WorkingHoursEditor
+            value={workingHours as WorkingHours}
+            onChange={(hours) => setValue("working_hours", hours)}
+            t={t}
+          />
         </div>
 
         {/* Submit */}

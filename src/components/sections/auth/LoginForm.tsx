@@ -11,7 +11,14 @@ import { toast } from "sonner";
 import { Button, Input, Label, PasswordInput } from "@/components/atoms";
 import { useAuth } from "@/hooks/use-auth";
 import { Link, useRouter } from "@/i18n/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { loginSchema, type LoginInput } from "@/validations/auth.schema";
+
+const ROLE_DASHBOARD: Record<string, string> = {
+  admin: "/admin",
+  pickup_point: "/pickup-point",
+  customer: "/customer",
+};
 
 export function LoginForm() {
   const t = useTranslations("auth");
@@ -33,10 +40,23 @@ export function LoginForm() {
     setSubmitting(true);
     try {
       await signIn(data.email, data.password);
+
       // Sanitize the redirect param: must be an internal path (starts with "/",
       // no protocol) to prevent open-redirect attacks.
-      const raw = searchParams.get("redirect") ?? "/";
-      const redirectTo = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
+      const raw = searchParams.get("redirect");
+      const hasValidRedirect = raw && raw.startsWith("/") && !raw.startsWith("//");
+
+      let redirectTo: string;
+      if (hasValidRedirect) {
+        redirectTo = raw;
+      } else {
+        // No redirect param — resolve the user's role and send them to their dashboard.
+        const supabase = createClient();
+        const { data: role } = await supabase.rpc("get_user_role");
+        // SAFETY: get_user_role() RPC returns a text value from the profiles table enum
+        redirectTo = ROLE_DASHBOARD[(role as string) ?? "customer"] ?? "/customer";
+      }
+
       router.push(redirectTo);
       router.refresh();
     } catch {

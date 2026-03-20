@@ -32,6 +32,7 @@ type Props = {
 
 export function CustomerShipmentDetailSection({ shipmentId }: Props) {
   const t = useTranslations("customerDashboard");
+  const tCommon = useTranslations("common");
   const tStatus = useTranslations("shipmentStatus");
   const { data: shipment, isLoading } = useShipment(shipmentId);
 
@@ -79,7 +80,12 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
           status={shipment.status as ShipmentStatus}
           label={tStatus(shipment.status as ShipmentStatus)}
         />
-        <DeliveryModeBadge mode={shipment.delivery_mode as DeliveryMode} />
+        <DeliveryModeBadge
+          mode={shipment.delivery_mode as DeliveryMode}
+          label={tCommon(
+            `deliveryModeLabel.${shipment.delivery_mode}` as Parameters<typeof tCommon>[0]
+          )}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -90,10 +96,15 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
             <InfoRow label={t("sender")} value={shipment.sender_name} />
             <InfoRow label={t("receiver")} value={shipment.receiver_name} />
             <InfoRow label={t("size")} value={shipment.parcel_size} />
-            <InfoRow label={t("weight")} value={`${shipment.weight_kg} kg`} />
+            <InfoRow
+              label={t("weight")}
+              value={tCommon("weightKg", { value: shipment.weight_kg })}
+            />
             <InfoRow
               label={t("deliveryMode")}
-              value={shipment.delivery_mode === "internal" ? "Barcelona" : "SendCloud"}
+              value={tCommon(
+                `deliveryModeLabel.${shipment.delivery_mode}` as Parameters<typeof tCommon>[0]
+              )}
             />
             <InfoRow label={t("deliverySpeed")} value={shipment.delivery_speed} />
             <InfoRow label={t("total")} value={formatCents(shipment.price_cents)} />

@@ -1,26 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { verifyAuth } from "@/lib/supabase/auth";
 
 export async function GET() {
-  const supabase = await createClient();
+  const auth = await verifyAuth();
+  if (auth.error) return auth.error;
+  const { supabase, role } = auth;
 
-  // Verify the caller is an admin
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: { message: "Unauthorized", status: 401 } }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
+  if (role !== "admin") {
     return NextResponse.json({ error: { message: "Forbidden", status: 403 } }, { status: 403 });
   }
 

@@ -13,11 +13,15 @@ import { UserMenu } from "./UserMenu";
 
 export function NavLinks() {
   const t = useTranslations("nav");
+  const tCommon = useTranslations("common");
   const pathname = usePathname();
   const { user, loading } = useAuth();
 
   return (
-    <nav className="hidden items-center gap-6 lg:flex lg:gap-10" aria-label="Main navigation">
+    <nav
+      className="hidden items-center gap-6 lg:flex lg:gap-10"
+      aria-label={tCommon("mainNavigation")}
+    >
       {NAV_LINKS.map(({ key, href }) => {
         const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
         return (

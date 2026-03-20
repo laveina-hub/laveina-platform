@@ -7,7 +7,13 @@ import { env } from "@/env";
 import { generateAndUploadQrCode } from "@/lib/qr/generator";
 import { getStripe } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createShipment, setShipmentQrCodeUrl } from "@/services/shipment.service";
+import { logAuditEvent } from "@/services/audit.service";
+import {
+  createShipment,
+  setShipmentQrCodeUrl,
+  updateShipmentStatus,
+} from "@/services/shipment.service";
+import { ShipmentStatus } from "@/types/enums";
 import type { CreateShipmentInput } from "@/types/shipment";
 
 /**
@@ -233,6 +239,28 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     );
     return;
   }
+
+  // ── Transition shipments to waiting_at_origin ─────────────────────────────
+  // Per PARCEL_JOURNEY.md: after payment, shipments should be waiting_at_origin
+  for (const shipment of createdShipments) {
+    await updateShipmentStatus(shipment.id, ShipmentStatus.WAITING_AT_ORIGIN);
+  }
+
+  // ── Audit log: payment completed ─────────────────────────────────────────
+  void logAuditEvent({
+    actor_id: customerId,
+    action: "payment.completed",
+    resource: "shipment",
+    resource_id: pendingBookingId,
+    metadata: {
+      stripe_session_id: stripeSessionId,
+      stripe_payment_intent_id: stripePaymentIntentId,
+      parcel_count: createdShipments.length,
+      tracking_ids: createdShipments.map((s) => s.tracking_id),
+      amount_total: session.amount_total,
+      currency: session.currency,
+    },
+  });
 
   // ── Generate QR codes for all successfully created shipments ───────────────
   for (const shipment of createdShipments) {

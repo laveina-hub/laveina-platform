@@ -32,6 +32,7 @@ type Props = {
 
 export function AdminShipmentDetailSection({ shipmentId }: Props) {
   const t = useTranslations("adminShipments");
+  const tCommon = useTranslations("common");
   const tStatus = useTranslations("shipmentStatus");
   const { data: shipment, isLoading } = useShipment(shipmentId);
 
@@ -69,7 +70,12 @@ export function AdminShipmentDetailSection({ shipmentId }: Props) {
           status={shipment.status as ShipmentStatus}
           label={tStatus(shipment.status as ShipmentStatus)}
         />
-        <DeliveryModeBadge mode={shipment.delivery_mode as DeliveryMode} />
+        <DeliveryModeBadge
+          mode={shipment.delivery_mode as DeliveryMode}
+          label={tCommon(
+            `deliveryModeLabel.${shipment.delivery_mode}` as Parameters<typeof tCommon>[0]
+          )}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -124,7 +130,10 @@ export function AdminShipmentDetailSection({ shipmentId }: Props) {
             <InfoRow label={t("size")} value={shipment.parcel_size} />
             <InfoRow
               label={t("weight")}
-              value={`${shipment.weight_kg} kg (billable: ${shipment.billable_weight_kg} kg)`}
+              value={tCommon("billableWeight", {
+                weight: shipment.weight_kg,
+                billable: shipment.billable_weight_kg,
+              })}
             />
             <InfoRow label={t("deliverySpeed")} value={shipment.delivery_speed} />
             {shipment.carrier_name && (

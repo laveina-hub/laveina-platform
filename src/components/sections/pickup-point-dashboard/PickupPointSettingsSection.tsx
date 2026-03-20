@@ -6,19 +6,12 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button, Input, Label } from "@/components/atoms";
+import { WorkingHoursEditor } from "@/components/molecules";
 import { usePickupPointId } from "@/hooks/use-pickup-point-id";
 import { usePickupPoint } from "@/hooks/use-pickup-points";
 import { cn } from "@/lib/utils";
-
-const DAYS = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
-] as const;
+import type { WorkingHours } from "@/validations/pickup-point.schema";
+import { DEFAULT_WORKING_HOURS, parseWorkingHours } from "@/validations/pickup-point.schema";
 
 export function PickupPointSettingsSection() {
   const t = useTranslations("pickupPointSettings");
@@ -27,17 +20,12 @@ export function PickupPointSettingsSection() {
   const { data: pickupPoint, isLoading } = usePickupPoint(pickupPointId ?? undefined);
 
   const [isOpen, setIsOpen] = useState(true);
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [workingHours, setWorkingHours] = useState<Record<string, string>>({});
+  const [workingHours, setWorkingHours] = useState<WorkingHours>(DEFAULT_WORKING_HOURS);
 
   useEffect(() => {
     if (pickupPoint) {
       setIsOpen(pickupPoint.is_open ?? true);
-      setPhone(pickupPoint.phone ?? "");
-      setEmail(pickupPoint.email ?? "");
-      // SAFETY: working_hours is stored as a JSON object of {day: hours_string} in Supabase
-      setWorkingHours((pickupPoint.working_hours as Record<string, string>) ?? {});
+      setWorkingHours(parseWorkingHours(pickupPoint.working_hours));
     }
   }, [pickupPoint]);
 
@@ -50,8 +38,6 @@ export function PickupPointSettingsSection() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           is_open: isOpen,
-          phone,
-          email: email || undefined,
           working_hours: workingHours,
         }),
       });
@@ -96,7 +82,7 @@ export function PickupPointSettingsSection() {
             <div
               className={cn(
                 "relative h-6 w-11 rounded-full transition",
-                isOpen ? "bg-green-500" : "bg-gray-300"
+                isOpen ? "bg-success" : "bg-secondary-50"
               )}
             >
               <div
@@ -107,33 +93,36 @@ export function PickupPointSettingsSection() {
               />
             </div>
             <span
-              className={cn("text-sm font-medium", isOpen ? "text-green-700" : "text-gray-500")}
+              className={cn("text-sm font-medium", isOpen ? "text-success" : "text-text-muted")}
             >
               {isOpen ? t("shopOpen") : t("shopClosed")}
             </span>
           </button>
+          {!isOpen && <p className="text-warning mt-2 text-xs">{t("manualOverrideWarning")}</p>}
         </section>
 
-        {/* Contact info */}
+        {/* Contact info (read-only, managed by admin) */}
         <section className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="text-base font-semibold text-gray-900">{t("contactInfo")}</h2>
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">{t("contactInfo")}</h2>
+            <p className="mt-1 text-xs text-gray-500">{t("contactInfoDesc")}</p>
+          </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-gray-700">{t("phone")}</Label>
               <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="py-2 text-sm"
+                value={pickupPoint.phone ?? "-"}
+                readOnly
+                className="bg-bg-muted text-text-muted cursor-not-allowed py-2 text-sm"
               />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-gray-700">{t("email")}</Label>
               <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="py-2 text-sm"
+                value={pickupPoint.email ?? "-"}
+                readOnly
+                className="bg-bg-muted text-text-muted cursor-not-allowed py-2 text-sm"
               />
             </div>
           </div>
@@ -143,19 +132,7 @@ export function PickupPointSettingsSection() {
         <section className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="text-base font-semibold text-gray-900">{t("workingHours")}</h2>
 
-          <div className="space-y-3">
-            {DAYS.map((day) => (
-              <div key={day} className="flex items-center gap-3">
-                <Label className="w-28 shrink-0 text-sm text-gray-600">{t(day)}</Label>
-                <Input
-                  value={workingHours[day] ?? ""}
-                  onChange={(e) => setWorkingHours((prev) => ({ ...prev, [day]: e.target.value }))}
-                  placeholder={t("closed")}
-                  className="py-2 text-sm"
-                />
-              </div>
-            ))}
-          </div>
+          <WorkingHoursEditor value={workingHours} onChange={setWorkingHours} t={t} />
         </section>
 
         {/* Save */}

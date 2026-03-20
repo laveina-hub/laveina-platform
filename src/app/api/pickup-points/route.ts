@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { getClientIp, publicLimiter, rateLimitResponse } from "@/lib/rate-limit";
-import { listPickupPoints } from "@/services/pickup-point.service";
+import { verifyAuth } from "@/lib/supabase/auth";
+import { createPickupPoint, listPickupPoints } from "@/services/pickup-point.service";
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
@@ -23,4 +24,22 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({ data: result.data });
+}
+
+export async function POST(request: NextRequest) {
+  const auth = await verifyAuth();
+  if (auth.error) return auth.error;
+
+  if (auth.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await request.json();
+  const result = await createPickupPoint(body);
+
+  if (result.error) {
+    return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+  }
+
+  return NextResponse.json({ data: result.data }, { status: 201 });
 }

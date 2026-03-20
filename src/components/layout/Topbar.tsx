@@ -15,6 +15,7 @@ type TopbarProps = {
 
 export function Topbar({ userFullName, onMenuToggle }: TopbarProps) {
   const t = useTranslations("nav");
+  const tCommon = useTranslations("common");
   const pathname = usePathname();
   const router = useRouter();
 
@@ -36,8 +37,8 @@ export function Topbar({ userFullName, onMenuToggle }: TopbarProps) {
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuToggle}
-          className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 lg:hidden"
-          aria-label="Toggle menu"
+          className="focus-visible:ring-primary-500 rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-visible:ring-2 focus-visible:outline-none lg:hidden"
+          aria-label={tCommon("toggleMenu")}
         >
           <Menu size={20} />
         </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef } from "react";
 
 import { OTP_LENGTH } from "@/constants/app";
@@ -13,6 +14,7 @@ interface OtpCodeInputProps {
 }
 
 export function OtpCodeInput({ value, onChange, disabled, hasError }: OtpCodeInputProps) {
+  const tCommon = useTranslations("common");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   function handleChange(index: number, inputValue: string) {
@@ -61,7 +63,7 @@ export function OtpCodeInput({ value, onChange, disabled, hasError }: OtpCodeInp
           autoComplete="one-time-code"
           maxLength={1}
           value={digit}
-          aria-label={`Digit ${index + 1} of ${OTP_LENGTH}`}
+          aria-label={tCommon("otpDigit", { index: index + 1, total: OTP_LENGTH })}
           onChange={(e) => handleChange(index, e.target.value)}
           onKeyDown={(e) => handleKeyDown(index, e)}
           className={cn(

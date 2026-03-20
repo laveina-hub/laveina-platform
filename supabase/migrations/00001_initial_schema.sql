@@ -411,6 +411,25 @@ CREATE INDEX idx_pending_bookings_cleanup ON public.pending_bookings(processed, 
   WHERE NOT processed;
 
 
+-- ----- AUDIT LOGS -----
+-- Tracks sensitive operations for compliance and debugging.
+CREATE TABLE public.audit_logs (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id    UUID REFERENCES public.profiles(id),       -- NULL for system/webhook actions
+  action      TEXT NOT NULL,                               -- e.g. 'payment.completed', 'otp.verified', 'settings.updated'
+  resource    TEXT NOT NULL,                               -- e.g. 'shipment', 'pickup_point', 'admin_settings'
+  resource_id TEXT,                                        -- ID of the affected resource (nullable for bulk ops)
+  metadata    JSONB DEFAULT '{}'::jsonb,                   -- Additional context (amounts, old/new values, etc.)
+  ip_address  TEXT,                                        -- Client IP when available
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_audit_logs_actor ON public.audit_logs(actor_id);
+CREATE INDEX idx_audit_logs_action ON public.audit_logs(action);
+CREATE INDEX idx_audit_logs_resource ON public.audit_logs(resource, resource_id);
+CREATE INDEX idx_audit_logs_created_at ON public.audit_logs(created_at DESC);
+
+
 -- ============================================================
 -- 4. ROW LEVEL SECURITY (RLS)
 -- ============================================================
@@ -425,6 +444,7 @@ ALTER TABLE public.otp_verifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pending_bookings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- ===== PROFILES =====
 CREATE POLICY profiles_select_own ON public.profiles
@@ -520,6 +540,13 @@ CREATE POLICY notifications_log_select_own ON public.notifications_log
     shipment_id IN (SELECT id FROM public.shipments WHERE customer_id = auth.uid())
   );
 
+
+-- ===== AUDIT LOGS =====
+CREATE POLICY audit_logs_select_admin ON public.audit_logs
+  FOR SELECT USING (public.get_user_role() = 'admin');
+
+CREATE POLICY audit_logs_insert_authenticated ON public.audit_logs
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
 -- ===== PENDING BOOKINGS =====
 CREATE POLICY pending_bookings_insert_own ON public.pending_bookings

@@ -62,6 +62,7 @@ type RecentShipment = AdminStats["recentShipments"][number];
 
 export function AdminOverviewSection() {
   const t = useTranslations("adminOverview");
+  const tCommon = useTranslations("common");
   const tStatus = useTranslations("shipmentStatus");
   const { data: stats, isLoading } = useAdminStats();
 
@@ -99,7 +100,14 @@ export function AdminOverviewSection() {
     {
       accessorKey: "delivery_mode",
       header: t("mode"),
-      cell: ({ row }) => <DeliveryModeBadge mode={row.original.delivery_mode as DeliveryMode} />,
+      cell: ({ row }) => (
+        <DeliveryModeBadge
+          mode={row.original.delivery_mode as DeliveryMode}
+          label={tCommon(
+            `deliveryModeLabel.${row.original.delivery_mode}` as Parameters<typeof tCommon>[0]
+          )}
+        />
+      ),
     },
     {
       accessorKey: "price_cents",

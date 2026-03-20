@@ -1,27 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { verifyAuth } from "@/lib/supabase/auth";
+import { logAuditEvent } from "@/services/audit.service";
 import { adminSettingsUpdateSchema } from "@/validations/admin.schema";
 
-async function verifyAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  return profile?.role === "admin";
-}
-
 export async function GET() {
-  const supabase = await createClient();
+  const auth = await verifyAuth();
+  if (auth.error) return auth.error;
+  const { supabase, role } = auth;
 
-  if (!(await verifyAdmin(supabase))) {
+  if (role !== "admin") {
     return NextResponse.json({ error: { message: "Forbidden", status: 403 } }, { status: 403 });
   }
 
@@ -47,9 +35,11 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
-  const supabase = await createClient();
+  const auth = await verifyAuth();
+  if (auth.error) return auth.error;
+  const { supabase, role: putRole } = auth;
 
-  if (!(await verifyAdmin(supabase))) {
+  if (putRole !== "admin") {
     return NextResponse.json({ error: { message: "Forbidden", status: 403 } }, { status: 403 });
   }
 
@@ -105,6 +95,16 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
+
+  void logAuditEvent({
+    actor_id: auth.user.id,
+    action: "settings.updated",
+    resource: "admin_settings",
+    metadata: {
+      settings_keys: settings ? Object.keys(settings) : [],
+      insurance_options_count: insuranceOptions?.length ?? 0,
+    },
+  });
 
   return NextResponse.json({ data: { success: true } });
 }

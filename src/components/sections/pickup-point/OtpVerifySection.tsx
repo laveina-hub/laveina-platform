@@ -56,12 +56,13 @@ export function OtpVerifySection({ pickupPointId }: OtpVerifySectionProps) {
           return;
         }
 
-        if (json.status !== "ready_for_pickup") {
-          setError(t("notReadyForPickup", { status: tStatus(json.status) }));
+        const shipmentData = json.data;
+        if (shipmentData.status !== "ready_for_pickup") {
+          setError(t("notReadyForPickup", { status: tStatus(shipmentData.status) }));
           return;
         }
 
-        setShipment(json);
+        setShipment(shipmentData);
       } catch {
         setError(t("networkError"));
       } finally {
