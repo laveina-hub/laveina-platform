@@ -41,8 +41,7 @@ export function LoginForm() {
     try {
       await signIn(data.email, data.password);
 
-      // Sanitize the redirect param: must be an internal path (starts with "/",
-      // no protocol) to prevent open-redirect attacks.
+      // Prevent open-redirect: only allow internal paths
       const raw = searchParams.get("redirect");
       const hasValidRedirect = raw && raw.startsWith("/") && !raw.startsWith("//");
 
@@ -50,7 +49,6 @@ export function LoginForm() {
       if (hasValidRedirect) {
         redirectTo = raw;
       } else {
-        // No redirect param — resolve the user's role and send them to their dashboard.
         const supabase = createClient();
         const { data: role } = await supabase.rpc("get_user_role");
         // SAFETY: get_user_role() RPC returns a text value from the profiles table enum
@@ -68,7 +66,6 @@ export function LoginForm() {
 
   return (
     <div className="space-y-8">
-      {/* Mobile logo (hidden on desktop where the branding panel shows) */}
       <div className="flex justify-center lg:hidden">
         <Image
           src="/images/header/logo-laveina.svg"
@@ -81,7 +78,6 @@ export function LoginForm() {
         />
       </div>
 
-      {/* Header */}
       <div>
         <h1 className="font-display text-text-primary text-2xl font-bold sm:text-3xl">
           {t("loginTitle")}
@@ -89,9 +85,7 @@ export function LoginForm() {
         <p className="text-text-muted mt-2 text-base">{t("loginSubtitle")}</p>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
-        {/* Email */}
         <div className="space-y-1.5">
           <Label htmlFor="email">{t("email")}</Label>
           <Input
@@ -111,7 +105,6 @@ export function LoginForm() {
           )}
         </div>
 
-        {/* Password */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">{t("password")}</Label>
@@ -140,7 +133,6 @@ export function LoginForm() {
           )}
         </div>
 
-        {/* Submit */}
         <Button
           type="submit"
           size="lg"
@@ -158,7 +150,6 @@ export function LoginForm() {
           )}
         </Button>
 
-        {/* Switch to register */}
         <p className="text-text-muted text-center text-sm">
           {t("noAccount")}{" "}
           <Link

@@ -31,7 +31,6 @@ export function Step1Contact() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
-      {/* Sender */}
       <CardShell>
         <CardHeader title={t("senderSection")} />
         <CardBody className="space-y-4">
@@ -71,7 +70,6 @@ export function Step1Contact() {
         </CardBody>
       </CardShell>
 
-      {/* Receiver */}
       <CardShell>
         <CardHeader title={t("receiverSection")} />
         <CardBody className="space-y-4">

@@ -3,7 +3,6 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { PickupPointsSection } from "@/components/sections/pickup-points";
 
-// Pickup point list — revalidate every 5 minutes
 export const revalidate = 300;
 
 type Props = {

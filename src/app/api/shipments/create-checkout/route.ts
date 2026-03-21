@@ -12,22 +12,13 @@ import type { ParcelSize } from "@/types/enums";
 import type { PriceBreakdown } from "@/types/shipment";
 import { createCheckoutSchema } from "@/validations/shipment.schema";
 
-/**
- * POST /api/shipments/create-checkout
- *
- * Validates the full booking payload, recalculates prices server-side,
- * stores booking data in pending_bookings, then creates a Stripe Checkout
- * session. Supports multiple parcels per booking.
- *
- * Auth required — only authenticated customers can book.
- */
+/** Validates booking, recalculates prices server-side, creates Stripe Checkout session. */
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
     const rl = paymentLimiter.check(ip);
     if (!rl.success) return rateLimitResponse(rl.resetMs);
 
-    // ── Auth ──────────────────────────────────────────────────────────────────
     const supabase = await createClient();
     const {
       data: { user },
@@ -38,7 +29,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // ── Validate payload ──────────────────────────────────────────────────────
     const body = await request.json();
     const parsed = createCheckoutSchema.safeParse(body);
 
@@ -51,14 +41,12 @@ export async function POST(request: NextRequest) {
 
     const booking = parsed.data;
 
-    // ── Routing ───────────────────────────────────────────────────────────────
     const routing = getDeliveryMode(booking.origin_postcode, booking.destination_postcode);
 
     if (routing.mode === "blocked") {
       return NextResponse.json({ error: "routing.blocked" }, { status: 422 });
     }
 
-    // ── Fetch all size configs in parallel ───────────────────────────────────
     const uniqueSizes = [...new Set(booking.parcels.map((p) => p.parcel_size))];
     const sizeConfigResults = await Promise.all(
       uniqueSizes.map((size) =>
@@ -82,7 +70,6 @@ export async function POST(request: NextRequest) {
       sizeConfigMap.set(cfg.size, cfg);
     }
 
-    // Validate weights against size configs
     for (const parcel of booking.parcels) {
       const cfg = sizeConfigMap.get(parcel.parcel_size);
       if (!cfg || parcel.weight_kg > cfg.max_weight_kg) {
@@ -90,7 +77,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── Calculate prices for each parcel in parallel ─────────────────────────
     const rateResults = await Promise.all(
       booking.parcels.map((parcel) => {
         const cfg = sizeConfigMap.get(parcel.parcel_size)!;
@@ -147,8 +133,7 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // ── Store booking data in pending_bookings ────────────────────────────────
-    // This avoids Stripe metadata size limits and supports multi-parcel.
+    // Store in pending_bookings to avoid Stripe metadata size limits
     const bookingData = {
       customer_id: user.id,
       contact: {
@@ -189,7 +174,7 @@ export async function POST(request: NextRequest) {
       }),
     };
 
-    // Use admin client to bypass RLS — user is already authenticated above
+    // Bypass RLS — user is already authenticated above
     const adminClient = createAdminClient();
     const { data: pendingBooking, error: pendingError } = await adminClient
       .from("pending_bookings")
@@ -202,7 +187,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
     }
 
-    // ── Create Stripe Checkout session ────────────────────────────────────────
     const appUrl = env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const parcelCount = booking.parcels.length;
 

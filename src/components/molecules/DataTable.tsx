@@ -16,8 +16,6 @@ import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-// ─── Column Header (sortable) ────────────────────────────────────────────────
-
 type DataTableColumnHeaderProps<TData, TValue> = {
   column: import("@tanstack/react-table").Column<TData, TValue>;
   title: string;
@@ -54,8 +52,6 @@ export function DataTableColumnHeader<TData, TValue>({
     </button>
   );
 }
-
-// ─── Pagination ──────────────────────────────────────────────────────────────
 
 type DataTablePaginationProps = {
   page: number;
@@ -107,8 +103,6 @@ export function DataTablePagination({
   );
 }
 
-// ─── Empty State ─────────────────────────────────────────────────────────────
-
 type EmptyStateProps = {
   icon?: React.ReactNode;
   title: string;
@@ -126,8 +120,6 @@ export function DataTableEmptyState({ icon, title, description, action }: EmptyS
     </div>
   );
 }
-
-// ─── Loading Skeleton ────────────────────────────────────────────────────────
 
 function TableSkeleton({ columns, rows = 5 }: { columns: number; rows?: number }) {
   return (
@@ -158,8 +150,6 @@ function MobileCardSkeleton({ rows = 4 }: { rows?: number }) {
     </>
   );
 }
-
-// ─── Main DataTable ──────────────────────────────────────────────────────────
 
 type DataTableProps<TData> = {
   columns: ColumnDef<TData, unknown>[];
@@ -213,7 +203,6 @@ export function DataTable<TData>({
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-      {/* ─── Desktop table (hidden on mobile) ─── */}
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full text-left text-sm">
           <thead>
@@ -271,7 +260,6 @@ export function DataTable<TData>({
         </table>
       </div>
 
-      {/* ─── Mobile card view (hidden on desktop) ─── */}
       <div className="divide-y divide-gray-100 md:hidden">
         {isLoading ? (
           <MobileCardSkeleton />

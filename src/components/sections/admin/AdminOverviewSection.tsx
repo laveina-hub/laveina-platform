@@ -12,8 +12,6 @@ import { useAdminStats, type AdminStats } from "@/hooks/use-admin-stats";
 import { Link } from "@/i18n/navigation";
 import type { ShipmentStatus, DeliveryMode } from "@/types/enums";
 
-// ─── Stats Card ──────────────────────────────────────────────────────────────
-
 type StatsCardProps = {
   label: string;
   value: string | number;
@@ -36,8 +34,6 @@ function StatsCard({ label, value, icon: Icon, iconColor, iconBg }: StatsCardPro
   );
 }
 
-// ─── Format helpers ──────────────────────────────────────────────────────────
-
 function formatCents(cents: number): string {
   return new Intl.NumberFormat(undefined, {
     style: "currency",
@@ -54,11 +50,7 @@ function formatDate(dateStr: string): string {
   }).format(new Date(dateStr));
 }
 
-// ─── Recent shipment row type ────────────────────────────────────────────────
-
 type RecentShipment = AdminStats["recentShipments"][number];
-
-// ─── Main Section ────────────────────────────────────────────────────────────
 
 export function AdminOverviewSection() {
   const t = useTranslations("adminOverview");
@@ -127,13 +119,11 @@ export function AdminOverviewSection() {
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
       <div>
         <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
         <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
       </div>
 
-      {/* Stats grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           label={t("totalShipments")}
@@ -165,7 +155,6 @@ export function AdminOverviewSection() {
         />
       </div>
 
-      {/* Secondary stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
           <p className="text-2xl font-semibold text-gray-900">{stats.waitingAtOrigin}</p>
@@ -185,7 +174,6 @@ export function AdminOverviewSection() {
         </div>
       </div>
 
-      {/* Quick actions */}
       <div className="flex flex-wrap gap-3">
         <Link
           href="/admin/dispatch"
@@ -210,7 +198,6 @@ export function AdminOverviewSection() {
         </Link>
       </div>
 
-      {/* Recent shipments */}
       <div>
         <h2 className="mb-3 text-lg font-semibold text-gray-900">{t("recentShipments")}</h2>
         <DataTable
@@ -222,8 +209,6 @@ export function AdminOverviewSection() {
     </div>
   );
 }
-
-// ─── Skeleton ────────────────────────────────────────────────────────────────
 
 function OverviewSkeleton() {
   return (

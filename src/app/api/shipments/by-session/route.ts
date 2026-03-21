@@ -4,16 +4,7 @@ import type { NextRequest } from "next/server";
 import { createQrSignedUrl } from "@/lib/qr/generator";
 import { createClient } from "@/lib/supabase/server";
 
-/**
- * GET /api/shipments/by-session?session_id=<stripe_checkout_session_id>
- *
- * Returns all shipments created for a given Stripe Checkout session.
- * Supports multi-parcel bookings (one session → multiple shipments).
- * Auth required — returns only shipments belonging to the calling user.
- *
- * qr_code_url in the DB stores the storage file path (private bucket).
- * This route exchanges it for a 7-day signed URL before returning to the client.
- */
+/** Returns shipments for a Stripe session. Exchanges stored QR paths for signed URLs. */
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -45,7 +36,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Shipments not found" }, { status: 404 });
     }
 
-    // Exchange stored file paths for signed URLs (private bucket)
     const shipments = await Promise.all(
       data.map(async (shipment) => {
         let qrSignedUrl: string | null = null;
@@ -53,7 +43,7 @@ export async function GET(request: NextRequest) {
           try {
             qrSignedUrl = await createQrSignedUrl(shipment.qr_code_url);
           } catch {
-            // Non-fatal: QR may still be generating (webhook latency). Client retries.
+            // QR may still be generating due to webhook latency — client retries
           }
         }
         return { ...shipment, qr_code_url: qrSignedUrl };

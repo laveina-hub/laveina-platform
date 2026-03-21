@@ -4,15 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const QR_BUCKET = "qr-codes";
 
-// Signed URL expiry in seconds. 7 days is generous — QR is only needed at
-// drop-off/pickup moments, and the customer can always view it again from
-// their dashboard (which re-generates a fresh signed URL on each load).
 const SIGNED_URL_EXPIRY_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
-/**
- * Generates a QR code as a base64 data URL.
- * Used for preview/display before the shipment is saved.
- */
 export async function generateQrDataUrl(trackingId: string): Promise<string> {
   const dataUrl = await QRCode.toDataURL(trackingId, {
     errorCorrectionLevel: "M",
@@ -27,13 +20,7 @@ export async function generateQrDataUrl(trackingId: string): Promise<string> {
   return dataUrl;
 }
 
-/**
- * Generates a QR code PNG and uploads it to Supabase Storage (private bucket).
- * Returns the storage file path (e.g. "LAV-12345678.png"), NOT a URL.
- * Use createQrSignedUrl() to get a time-limited URL for display.
- *
- * Called by the Stripe webhook handler after a shipment is created.
- */
+/** Generates QR PNG and uploads to private bucket. Returns file path, not URL. */
 export async function generateAndUploadQrCode(trackingId: string): Promise<string> {
   const buffer = await QRCode.toBuffer(trackingId, {
     errorCorrectionLevel: "M",
@@ -57,14 +44,9 @@ export async function generateAndUploadQrCode(trackingId: string): Promise<strin
     throw new Error(`QR upload failed for ${trackingId}: ${error.message}`);
   }
 
-  // Return the path, not a URL — caller stores path in DB
   return filePath;
 }
 
-/**
- * Creates a signed URL for a QR code stored in the private bucket.
- * Call this when serving the QR to the client (API routes, server components).
- */
 export async function createQrSignedUrl(filePath: string): Promise<string> {
   const supabase = createAdminClient();
 

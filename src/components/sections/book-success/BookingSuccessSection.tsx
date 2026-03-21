@@ -102,14 +102,12 @@ export function BookingSuccessSection() {
     );
   }
 
-  // Use first shipment for shared info (origin/destination)
   const first = shipments[0];
 
   return (
     <div className="bg-secondary-100 px-4 py-24 sm:px-6 lg:px-10">
       <SectionContainer>
         <div className="mx-auto max-w-lg space-y-8 text-center">
-          {/* Success icon */}
           <div className="flex justify-center">
             <div className="bg-success-100 flex h-20 w-20 items-center justify-center rounded-full">
               <svg
@@ -137,7 +135,6 @@ export function BookingSuccessSection() {
             </p>
           </div>
 
-          {/* Shipment cards */}
           {shipments.map((shipment, index) => (
             <CardShell key={shipment.id}>
               <CardBody className="space-y-4 text-center">
@@ -166,7 +163,6 @@ export function BookingSuccessSection() {
             </CardShell>
           ))}
 
-          {/* Shared pickup info */}
           <CardShell>
             <CardBody>
               <div className="grid grid-cols-1 gap-4 text-left sm:grid-cols-2">
@@ -194,7 +190,6 @@ export function BookingSuccessSection() {
             </CardBody>
           </CardShell>
 
-          {/* Actions */}
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link href={`/tracking/${first.tracking_id}`}>
               <Button variant="primary" size="lg" className="w-full sm:w-auto">

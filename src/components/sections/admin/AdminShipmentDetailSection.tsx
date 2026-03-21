@@ -50,7 +50,6 @@ export function AdminShipmentDetailSection({ shipmentId }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Back + title */}
       <div className="flex items-center gap-3">
         <Link
           href="/admin/shipments"
@@ -64,7 +63,6 @@ export function AdminShipmentDetailSection({ shipmentId }: Props) {
         </div>
       </div>
 
-      {/* Status + mode badges */}
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge
           status={shipment.status as ShipmentStatus}
@@ -79,7 +77,6 @@ export function AdminShipmentDetailSection({ shipmentId }: Props) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Shipment info card */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="mb-4 text-base font-semibold text-gray-900">{t("shipmentInfo")}</h2>
           <dl className="space-y-3 text-sm">
@@ -96,7 +93,6 @@ export function AdminShipmentDetailSection({ shipmentId }: Props) {
           </dl>
         </div>
 
-        {/* Route info card */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="mb-4 text-base font-semibold text-gray-900">{t("routeInfo")}</h2>
           <dl className="space-y-3 text-sm">
@@ -123,7 +119,6 @@ export function AdminShipmentDetailSection({ shipmentId }: Props) {
           </dl>
         </div>
 
-        {/* Parcel info card */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="mb-4 text-base font-semibold text-gray-900">{t("parcelInfo")}</h2>
           <dl className="space-y-3 text-sm">
@@ -145,7 +140,6 @@ export function AdminShipmentDetailSection({ shipmentId }: Props) {
           </dl>
         </div>
 
-        {/* Pricing card */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="mb-4 text-base font-semibold text-gray-900">{t("pricingInfo")}</h2>
           <dl className="space-y-3 text-sm">
@@ -164,7 +158,6 @@ export function AdminShipmentDetailSection({ shipmentId }: Props) {
         </div>
       </div>
 
-      {/* Scan log timeline */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <h2 className="mb-4 text-base font-semibold text-gray-900">{t("scanLog")}</h2>
         {shipment.scan_logs && shipment.scan_logs.length > 0 ? (

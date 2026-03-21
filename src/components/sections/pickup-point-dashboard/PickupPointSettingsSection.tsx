@@ -70,7 +70,6 @@ export function PickupPointSettingsSection() {
       </div>
 
       <div className="max-w-2xl space-y-6">
-        {/* Availability toggle */}
         <section className="rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="text-base font-semibold text-gray-900">{t("availability")}</h2>
           <p className="mt-1 text-xs text-gray-500">{t("availabilityDesc")}</p>
@@ -101,7 +100,7 @@ export function PickupPointSettingsSection() {
           {!isOpen && <p className="text-warning mt-2 text-xs">{t("manualOverrideWarning")}</p>}
         </section>
 
-        {/* Contact info (read-only, managed by admin) */}
+        {/* Read-only — contact info is managed by admin */}
         <section className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
           <div>
             <h2 className="text-base font-semibold text-gray-900">{t("contactInfo")}</h2>
@@ -128,14 +127,12 @@ export function PickupPointSettingsSection() {
           </div>
         </section>
 
-        {/* Working hours */}
         <section className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="text-base font-semibold text-gray-900">{t("workingHours")}</h2>
 
           <WorkingHoursEditor value={workingHours} onChange={setWorkingHours} t={t} />
         </section>
 
-        {/* Save */}
         <div className="flex justify-end">
           <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
             {saveMutation.isPending ? t("saving") : t("save")}

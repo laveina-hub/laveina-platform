@@ -32,7 +32,6 @@ export function RequestDeliverySection() {
           {t("title")}
         </Heading>
 
-        {/* Progress bar */}
         <nav
           aria-label={t("stepOf", { current: currentStep, total: TOTAL_STEPS })}
           className="mb-10"
@@ -81,7 +80,6 @@ export function RequestDeliverySection() {
           </ol>
         </nav>
 
-        {/* Step content */}
         <div className="mx-auto max-w-2xl">
           {currentStep === 1 && <Step1Contact />}
           {currentStep === 2 && <Step2Origin />}

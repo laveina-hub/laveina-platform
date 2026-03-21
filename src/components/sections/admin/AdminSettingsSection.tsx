@@ -31,8 +31,6 @@ type SettingsData = {
   parcelSizes: ParcelSizeConfig[];
 };
 
-// ─── Form state managed atomically via useReducer ────────────────────────────
-
 type FormState = {
   carrierMargin: string;
   minimumPrice: string;
@@ -107,8 +105,6 @@ function formReducer(state: FormState, action: FormAction): FormState {
   }
 }
 
-// ─── API helpers ─────────────────────────────────────────────────────────────
-
 async function fetchSettings(): Promise<SettingsData> {
   const response = await fetch("/api/admin/settings");
   if (!response.ok) throw new Error("Failed to fetch settings");
@@ -128,8 +124,6 @@ async function saveSettings(data: {
   if (!response.ok) throw new Error("Failed to save settings");
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
 export function AdminSettingsSection() {
   const t = useTranslations("adminSettings");
   const tCommon = useTranslations("common");
@@ -141,7 +135,7 @@ export function AdminSettingsSection() {
     queryFn: fetchSettings,
   });
 
-  // Initialize form state once when data arrives — only on first load
+  // Only initialize on first load to avoid overwriting user edits
   if (data && !form.initialized) {
     dispatch({ type: "INIT_FROM_DATA", data });
   }
@@ -186,7 +180,6 @@ export function AdminSettingsSection() {
       </div>
 
       <div className="max-w-3xl space-y-6">
-        {/* Carrier settings */}
         <section className="border-border-default space-y-4 rounded-xl border bg-white p-5">
           <h2 className="text-text-primary text-base font-semibold">{t("carrierSettings")}</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -218,7 +211,6 @@ export function AdminSettingsSection() {
           </div>
         </section>
 
-        {/* Barcelona pricing */}
         <section className="border-border-default space-y-4 rounded-xl border bg-white p-5">
           <div>
             <h2 className="text-text-primary text-base font-semibold">{t("barcelonaPricing")}</h2>
@@ -286,7 +278,6 @@ export function AdminSettingsSection() {
           </div>
         </section>
 
-        {/* Insurance options */}
         <section className="border-border-default space-y-4 rounded-xl border bg-white p-5">
           <div>
             <h2 className="text-text-primary text-base font-semibold">{t("insuranceOptions")}</h2>
@@ -344,7 +335,6 @@ export function AdminSettingsSection() {
           </div>
         </section>
 
-        {/* Save */}
         <div className="flex justify-end">
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
             {mutation.isPending ? t("saving") : t("save")}

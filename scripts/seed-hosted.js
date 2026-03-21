@@ -192,6 +192,113 @@ const PICKUP_POINTS = [
     },
     owner_email: null,
   },
+  // ── Non-Barcelona pickup points (SendCloud routing) ──
+  {
+    id: "a0000000-0000-0000-0000-000000000004",
+    name: "Papelería Gran Vía",
+    address: "Gran Vía, 42",
+    postcode: "28013",
+    city: "Madrid",
+    latitude: 40.42,
+    longitude: -3.7025,
+    phone: "+34 91 123 4567",
+    email: "madrid@laveina-test.com",
+    is_active: true,
+    is_open: true,
+    working_hours: {
+      monday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      tuesday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      wednesday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      thursday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      friday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      saturday: { open: true, slots: [["10:00", "14:00"]] },
+      sunday: { open: false, slots: [] },
+    },
+    owner_email: null,
+  },
+  {
+    id: "a0000000-0000-0000-0000-000000000005",
+    name: "Librería Ruzafa",
+    address: "Carrer de Russafa, 18",
+    postcode: "46004",
+    city: "Valencia",
+    latitude: 39.463,
+    longitude: -0.374,
+    phone: "+34 96 123 4567",
+    email: "valencia@laveina-test.com",
+    is_active: true,
+    is_open: true,
+    working_hours: {
+      monday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      tuesday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      wednesday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      thursday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      friday: {
+        open: true,
+        slots: [
+          ["09:00", "14:00"],
+          ["16:00", "20:00"],
+        ],
+      },
+      saturday: { open: true, slots: [["10:00", "14:00"]] },
+      sunday: { open: false, slots: [] },
+    },
+    owner_email: null,
+  },
 ];
 
 async function main() {

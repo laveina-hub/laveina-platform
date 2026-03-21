@@ -6,13 +6,9 @@ import { cn } from "@/lib/utils";
 import type { PriceBreakdown } from "@/types/shipment";
 import type { CreateCheckoutInput } from "@/validations/shipment.schema";
 
-// ─── Formatting ──────────────────────────────────────────────────────────────
-
 export function formatCents(cents: number): string {
   return `€${(cents / 100).toFixed(2)}`;
 }
-
-// ─── API calls ───────────────────────────────────────────────────────────────
 
 export async function fetchRates(params: {
   origin_postcode: string;
@@ -52,8 +48,6 @@ export async function createCheckout(payload: CreateCheckoutInput): Promise<stri
   const json = await res.json();
   return json.data.url;
 }
-
-// ─── Price option card ──────────────────────────────────────────────────────
 
 export function PriceOptionCard({
   speedKey,
@@ -95,8 +89,6 @@ export function PriceOptionCard({
     </button>
   );
 }
-
-// ─── Aggregate helpers ──────────────────────────────────────────────────────
 
 export type PriceSummary = {
   shippingCents: number;

@@ -31,7 +31,6 @@ export function StatusBadge({ status, label, className }: StatusBadgeProps) {
   );
 }
 
-// Delivery mode badge
 const modeStyles = {
   internal: "bg-blue-50 text-blue-700 ring-blue-600/20",
   sendcloud: "bg-violet-50 text-violet-700 ring-violet-600/20",

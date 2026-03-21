@@ -12,8 +12,6 @@ import {
   createCheckoutSchema,
 } from "@/validations/shipment.schema";
 
-// ─── Auth schemas ─────────────────────────────────────────────────────────────
-
 describe("auth schemas", () => {
   describe("loginSchema", () => {
     it("accepts valid email and password", () => {
@@ -83,8 +81,6 @@ describe("auth schemas", () => {
   });
 });
 
-// ─── OTP schemas ──────────────────────────────────────────────────────────────
-
 describe("OTP schemas", () => {
   describe("generateOtpSchema", () => {
     it("accepts valid UUID", () => {
@@ -127,8 +123,6 @@ describe("OTP schemas", () => {
   });
 });
 
-// ─── Scan schema ──────────────────────────────────────────────────────────────
-
 describe("scanQrSchema", () => {
   it("accepts valid tracking ID and UUID pickup point", () => {
     const result = scanQrSchema.safeParse({
@@ -154,8 +148,6 @@ describe("scanQrSchema", () => {
     expect(result.success).toBe(false);
   });
 });
-
-// ─── Booking step schemas ─────────────────────────────────────────────────────
 
 describe("booking step schemas", () => {
   describe("bookingStepContactSchema", () => {
@@ -314,8 +306,6 @@ describe("booking step schemas", () => {
     });
   });
 });
-
-// ─── Full checkout schema ─────────────────────────────────────────────────────
 
 describe("createCheckoutSchema", () => {
   const validCheckout = {

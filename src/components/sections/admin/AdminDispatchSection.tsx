@@ -177,7 +177,6 @@ export function AdminDispatchSection() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
@@ -194,7 +193,6 @@ export function AdminDispatchSection() {
         )}
       </div>
 
-      {/* Info cards for selected items */}
       {selectedIds.length > 0 && (
         <div className="flex gap-3 text-sm">
           {(() => {
@@ -222,7 +220,6 @@ export function AdminDispatchSection() {
         </div>
       )}
 
-      {/* Table */}
       <DataTable
         columns={columns}
         data={shipments}
@@ -237,7 +234,6 @@ export function AdminDispatchSection() {
         }}
       />
 
-      {/* Confirmation dialog for batch dispatch */}
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}

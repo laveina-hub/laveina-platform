@@ -1,20 +1,9 @@
-// ─── Parcel size pure-math utilities ─────────────────────────────────────────
-// Dimensions and max weights come from the DB (parcel_size_config table).
-// This file contains only stateless calculations and compile-time fallbacks
-// used when the DB data has not yet loaded (e.g., during SSR hydration).
+// Stateless parcel-size math. DB values (parcel_size_config) take precedence at runtime.
 
 import type { ParcelSize } from "@/types/enums";
 
-// ─── Volumetric divisor ───────────────────────────────────────────────────────
-// Standard carrier volumetric-weight divisor (cm³ → kg).
-// SendCloud uses 5000; internal routes apply the same formula for consistency.
-
 const VOLUMETRIC_DIVISOR = 5000;
 
-/**
- * Calculates volumetric weight from physical dimensions.
- * Formula: (L × W × H) / 5000
- */
 export function calcVolumetricWeightKg(
   lengthCm: number,
   widthCm: number,
@@ -23,10 +12,7 @@ export function calcVolumetricWeightKg(
   return (lengthCm * widthCm * heightCm) / VOLUMETRIC_DIVISOR;
 }
 
-/**
- * Returns the billable weight: whichever is greater, actual or volumetric.
- * This is the weight used for all pricing calculations.
- */
+/** Billable weight = max(actual, volumetric). Used for pricing. */
 export function calcBillableWeightKg(
   actualWeightKg: number,
   lengthCm: number,
@@ -37,9 +23,7 @@ export function calcBillableWeightKg(
   return Math.max(actualWeightKg, volumetric);
 }
 
-// ─── Fallback defaults ────────────────────────────────────────────────────────
-// Used only when parcel_size_config rows have not yet loaded from the DB.
-// Admin-editable values in the DB take precedence over these at runtime.
+// Fallbacks until parcel_size_config loads from DB
 
 export type ParcelSizeFallback = {
   maxWeightKg: number;

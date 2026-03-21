@@ -47,7 +47,6 @@ describe("rate-limit", () => {
       expect(limiter.check("user1").success).toBe(true);
       expect(limiter.check("user1").success).toBe(false);
 
-      // Advance time past the window
       vi.advanceTimersByTime(60_001);
 
       expect(limiter.check("user1").success).toBe(true);
@@ -64,17 +63,11 @@ describe("rate-limit", () => {
     it("sliding window allows new requests as old ones expire", () => {
       const limiter = createRateLimiter({ limit: 2, windowMs: 10_000 });
 
-      // T=0: first request
       limiter.check("user1");
-
-      // T=5s: second request
       vi.advanceTimersByTime(5_000);
       limiter.check("user1");
-
-      // T=5s: third request — blocked
       expect(limiter.check("user1").success).toBe(false);
 
-      // T=10.001s: first request expired, new one allowed
       vi.advanceTimersByTime(5_001);
       expect(limiter.check("user1").success).toBe(true);
     });

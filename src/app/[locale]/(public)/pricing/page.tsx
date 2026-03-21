@@ -3,7 +3,6 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { PricingSection } from "@/components/sections/pricing";
 
-// Pricing info changes infrequently — revalidate every hour
 export const revalidate = 3600;
 
 type Props = {

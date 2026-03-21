@@ -107,7 +107,6 @@ export function AdminPickupPointsSection() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
@@ -121,7 +120,6 @@ export function AdminPickupPointsSection() {
         </Link>
       </div>
 
-      {/* Search */}
       <div className="relative max-w-xs">
         <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
         <Input
@@ -133,7 +131,6 @@ export function AdminPickupPointsSection() {
         />
       </div>
 
-      {/* Table */}
       <DataTable
         columns={columns}
         data={pickupPoints}

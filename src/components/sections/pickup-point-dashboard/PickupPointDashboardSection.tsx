@@ -35,7 +35,6 @@ export function PickupPointDashboardSection() {
   const isLoading = loadingPpId || loadingShipments;
   const allShipments = shipments?.data ?? [];
 
-  // Calculate stats
   const today = new Date().toDateString();
   const todayIncoming = allShipments.filter(
     (s) => s.status === "received_at_origin" && new Date(s.created_at).toDateString() === today
@@ -46,7 +45,7 @@ export function PickupPointDashboardSection() {
       s.status === "delivered" && new Date(s.updated_at ?? s.created_at).toDateString() === today
   ).length;
 
-  // Pending = not yet delivered
+  // Excludes delivered and payment_confirmed from the active parcels table
   const pendingParcels = allShipments.filter(
     (s) => s.status !== "delivered" && s.status !== "payment_confirmed"
   );
@@ -96,13 +95,11 @@ export function PickupPointDashboardSection() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
         <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
           label={t("todayIncoming")}
@@ -124,7 +121,6 @@ export function PickupPointDashboardSection() {
         />
       </div>
 
-      {/* Quick actions */}
       <div>
         <h2 className="mb-3 text-sm font-semibold text-gray-600">{t("quickActions")}</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -155,7 +151,6 @@ export function PickupPointDashboardSection() {
         </div>
       </div>
 
-      {/* Pending parcels table */}
       <div>
         <h2 className="mb-3 text-lg font-semibold text-gray-900">{t("pendingParcels")}</h2>
         <DataTable

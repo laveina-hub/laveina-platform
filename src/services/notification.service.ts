@@ -3,10 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { ApiResponse } from "@/types/api";
 import type { ShipmentStatus } from "@/types/enums";
 
-/**
- * Log every notification attempt to the notifications_log table for audit.
- * Uses admin client (bypasses RLS) since this runs in server-side services.
- */
+/** Logs notification attempts for audit. Uses admin client to bypass RLS. */
 async function logNotification(params: {
   shipmentId: string;
   recipientPhone: string;

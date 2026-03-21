@@ -68,8 +68,7 @@ export function useAuth() {
           data: {
             full_name: fullName,
             phone,
-            // role is NOT set here — the DB trigger always assigns 'customer'.
-            // Setting it client-side would allow anyone to register as admin.
+            // Role assigned by DB trigger, not client-side (prevents privilege escalation)
           },
           emailRedirectTo,
         },

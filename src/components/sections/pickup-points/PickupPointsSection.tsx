@@ -29,7 +29,6 @@ export function PickupPointsSection() {
             </Text>
           </div>
 
-          {/* Postcode search */}
           <div className="flex gap-3">
             <Input
               type="text"
@@ -49,7 +48,6 @@ export function PickupPointsSection() {
             </button>
           </div>
 
-          {/* Results */}
           {isFetching && (
             <div className="flex justify-center py-12">
               <span className="border-primary-200 border-t-primary-500 h-8 w-8 animate-spin rounded-full border-4" />
@@ -100,7 +98,6 @@ export function PickupPointsSection() {
             </div>
           )}
 
-          {/* CTA */}
           <div className="text-center">
             <Link
               href="/book"

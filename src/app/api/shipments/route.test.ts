@@ -1,8 +1,6 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// ─── Mocks ────────────────────────────────────────────────────────────────────
-
 const mockVerifyAuth = vi.fn();
 vi.mock("@/lib/supabase/auth", () => ({
   verifyAuth: (...args: unknown[]) => mockVerifyAuth(...args),
@@ -14,8 +12,6 @@ vi.mock("@/services/shipment.service", () => ({
 }));
 
 const { GET } = await import("./route");
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function createRequest(params: Record<string, string> = {}): NextRequest {
   const url = new URL("http://localhost/api/shipments");
@@ -42,8 +38,6 @@ function mockAuthFailure() {
 async function parseResponse(response: Response) {
   return { status: response.status, body: await response.json() };
 }
-
-// ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("GET /api/shipments", () => {
   beforeEach(() => {

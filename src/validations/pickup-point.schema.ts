@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-// ─── Working Hours Schema ─────────────────────────────────────────────────────
-
 const timeSlotSchema = z.tuple([
   z.string().regex(/^\d{2}:\d{2}$/),
   z.string().regex(/^\d{2}:\d{2}$/),
@@ -29,7 +27,6 @@ export type WorkingHours = Record<WeekDay, DaySchedule>;
 
 export const workingHoursSchema = z.record(z.enum(WEEK_DAYS), dayScheduleSchema);
 
-/** Default schedule: Mon-Fri 09-14 + 16-20, Sat 10-14, Sun closed */
 export const DEFAULT_WORKING_HOURS: WorkingHours = {
   monday: {
     open: true,
@@ -70,17 +67,13 @@ export const DEFAULT_WORKING_HOURS: WorkingHours = {
   sunday: { open: false, slots: [] },
 };
 
-/**
- * Parse legacy string-based working hours into the structured format.
- * Handles: "09:00-14:00,16:00-20:00" or "closed"
- */
+/** Parses legacy string-based working hours ("09:00-14:00,16:00-20:00" or "closed"). */
 export function parseWorkingHours(raw: unknown): WorkingHours {
   if (!raw || typeof raw !== "object") return { ...DEFAULT_WORKING_HOURS };
 
   // SAFETY: We checked `typeof raw === "object"` above, so this is a valid object cast
   const record = raw as Record<string, unknown>;
 
-  // Check if already in new format (has `open` boolean on first entry)
   const firstValue = Object.values(record)[0];
   if (firstValue && typeof firstValue === "object" && "open" in firstValue) {
     const result = { ...DEFAULT_WORKING_HOURS };
@@ -94,7 +87,6 @@ export function parseWorkingHours(raw: unknown): WorkingHours {
     return result;
   }
 
-  // Legacy string format
   const result = { ...DEFAULT_WORKING_HOURS };
   for (const day of WEEK_DAYS) {
     const value = record[day];
@@ -111,8 +103,6 @@ export function parseWorkingHours(raw: unknown): WorkingHours {
   }
   return result;
 }
-
-// ─── Pickup Point Schemas ─────────────────────────────────────────────────────
 
 export const createPickupPointSchema = z.object({
   name: z.string().min(2, "validation.nameMin"),

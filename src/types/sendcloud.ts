@@ -1,16 +1,12 @@
-// ─── SendCloud API types ──────────────────────────────────────────────────────
-// Only the fields Laveina actually uses are typed here.
-// Full SendCloud API docs: https://api.sendcloud.dev/
-
-// ─── Shipping methods (GET /shipping_methods) ─────────────────────────────────
+// Partial SendCloud API types — only fields Laveina uses.
 
 export type SendcloudShippingMethod = {
   id: number;
   name: string;
   carrier: string;
-  min_weight: number; // grams
-  max_weight: number; // grams
-  price: number; // EUR, e.g. 5.99
+  min_weight: number;
+  max_weight: number;
+  price: number;
   countries?: SendcloudCountry[];
 };
 
@@ -19,7 +15,7 @@ export type SendcloudCountry = {
   name: string;
   iso_2: string;
   iso_3: string;
-  price: number; // country-specific price in EUR
+  price: number;
   lead_time_hours: number | null;
 };
 
@@ -27,21 +23,19 @@ export type SendcloudShippingMethodsResponse = {
   shipping_methods: SendcloudShippingMethod[];
 };
 
-// ─── Parcels (POST /parcels) ──────────────────────────────────────────────────
-
 export type SendcloudParcelCreate = {
   name: string;
   address: string;
   city: string;
   postal_code: string;
-  country: string; // ISO-2, e.g. "ES"
+  country: string;
   email?: string;
   telephone?: string;
   shipment: {
-    id: number; // shipping_method_id
+    id: number;
   };
-  weight: string; // kg as string, e.g. "1.500"
-  order_number?: string; // tracking_id for reference
+  weight: string;
+  order_number?: string;
   request_label: boolean;
   apply_shipping_rules?: boolean;
 };
@@ -55,7 +49,7 @@ export type SendcloudParcel = {
   country: { iso_2: string };
   tracking_number: string | null;
   tracking_url: string | null;
-  label?: { normal_printer: string[] } | null; // PDF URLs
+  label?: { normal_printer: string[] } | null;
   status: { id: number; message: string };
   shipment: { id: number; name: string };
   weight: string;
@@ -66,10 +60,8 @@ export type SendcloudParcelResponse = {
   parcel: SendcloudParcel;
 };
 
-// ─── Webhook payload (POST /api/webhooks/sendcloud) ──────────────────────────
-
 export type SendcloudWebhookPayload = {
-  action: string; // e.g. "parcel_status_changed"
+  action: string;
   timestamp: number;
   parcel: {
     id: number;
@@ -79,12 +71,10 @@ export type SendcloudWebhookPayload = {
   };
 };
 
-// ─── Rates response (internal shape returned by pricing.service.ts) ───────────
-
 export type SendcloudRateOption = {
   shippingMethodId: number;
   name: string;
   carrier: string;
-  rateCents: number; // raw carrier price × 100 (no margin applied)
+  rateCents: number;
   estimatedDays: string | null;
 };

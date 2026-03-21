@@ -218,5 +218,32 @@ INSERT INTO public.pickup_points (
     true, true,
     '{"monday":{"open":true,"slots":[["08:00","21:00"]]},"tuesday":{"open":true,"slots":[["08:00","21:00"]]},"wednesday":{"open":true,"slots":[["08:00","21:00"]]},"thursday":{"open":true,"slots":[["08:00","21:00"]]},"friday":{"open":true,"slots":[["08:00","21:00"]]},"saturday":{"open":true,"slots":[["09:00","14:00"]]},"sunday":{"open":false,"slots":[]}}',
     NULL  -- unassigned shop (available for testing)
+  ),
+  -- ── Non-Barcelona pickup points (SendCloud routing) ──
+  (
+    'a0000000-0000-0000-0000-000000000004',
+    'Papelería Gran Vía',
+    'Gran Vía, 42',
+    '28013',
+    'Madrid',
+    40.4200, -3.7025,
+    '+34 91 123 4567',
+    'madrid@laveina-test.com',
+    true, true,
+    '{"monday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"tuesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"wednesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"thursday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"friday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"saturday":{"open":true,"slots":[["10:00","14:00"]]},"sunday":{"open":false,"slots":[]}}',
+    NULL  -- unassigned (SendCloud test)
+  ),
+  (
+    'a0000000-0000-0000-0000-000000000005',
+    'Librería Ruzafa',
+    'Carrer de Russafa, 18',
+    '46004',
+    'Valencia',
+    39.4630, -0.3740,
+    '+34 96 123 4567',
+    'valencia@laveina-test.com',
+    true, true,
+    '{"monday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"tuesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"wednesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"thursday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"friday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"saturday":{"open":true,"slots":[["10:00","14:00"]]},"sunday":{"open":false,"slots":[]}}',
+    NULL  -- unassigned (SendCloud test)
   )
 ON CONFLICT (id) DO NOTHING;

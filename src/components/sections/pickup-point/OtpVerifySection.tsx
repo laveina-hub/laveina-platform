@@ -173,7 +173,6 @@ export function OtpVerifySection({ pickupPointId }: OtpVerifySectionProps) {
 
   return (
     <div className="space-y-6">
-      {/* Step 1: Look up shipment */}
       {!shipment && (
         <CardShell>
           <CardHeader title={t("findShipment")} />
@@ -204,7 +203,6 @@ export function OtpVerifySection({ pickupPointId }: OtpVerifySectionProps) {
         </CardShell>
       )}
 
-      {/* Step 2: Send OTP */}
       {shipment && !otpSent && (
         <CardShell>
           <CardHeader title={t("shipmentFound")} />
@@ -230,7 +228,6 @@ export function OtpVerifySection({ pickupPointId }: OtpVerifySectionProps) {
         </CardShell>
       )}
 
-      {/* Step 3: Enter OTP */}
       {shipment && otpSent && (
         <CardShell>
           <CardHeader title={t("enterOtp")} />
@@ -267,7 +264,6 @@ export function OtpVerifySection({ pickupPointId }: OtpVerifySectionProps) {
         </CardShell>
       )}
 
-      {/* Error */}
       {error && (
         <div className="bg-error-50 flex items-center gap-3 rounded-xl px-5 py-4">
           <svg

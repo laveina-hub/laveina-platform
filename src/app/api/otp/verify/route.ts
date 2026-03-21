@@ -14,13 +14,7 @@ const bodySchema = z.object({
   pickupPointId: z.string().uuid("Invalid pickup point ID").optional(),
 });
 
-/**
- * POST /api/otp/verify
- *
- * Verifies a 6-digit OTP for a shipment. If valid and pickupPointId is provided,
- * also confirms delivery (final status transition).
- * Auth required. Caller must be pickup_point staff at the destination shop, or admin.
- */
+/** Verifies OTP for a shipment. If pickupPointId is provided, also confirms delivery. */
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
@@ -31,7 +25,6 @@ export async function POST(request: NextRequest) {
     if (auth.error) return auth.error;
     const { supabase, user, role } = auth;
 
-    // ── Validate input ────────────────────────────────────────────────────────
     const body = await request.json();
     const parsed = bodySchema.safeParse(body);
 
@@ -42,9 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Authorization: verify caller has access to this shipment ──────────────
     if (role === "pickup_point") {
-      // Find which pickup point this user owns
       const { data: ownedShop } = await supabase
         .from("pickup_points")
         .select("id")
@@ -66,7 +57,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // ── Verify OTP ────────────────────────────────────────────────────────────
     const result = await verifyOtp({
       shipment_id: parsed.data.shipmentId,
       otp: parsed.data.otp,
@@ -76,7 +66,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: result.error.message }, { status: result.error.status });
     }
 
-    // If OTP is verified and pickupPointId is provided, confirm delivery
     if (result.data.verified && parsed.data.pickupPointId) {
       const deliveryResult = await confirmDelivery(
         user.id,
@@ -85,8 +74,7 @@ export async function POST(request: NextRequest) {
       );
 
       if (deliveryResult.error) {
-        // OTP was valid but delivery confirmation failed — still return verified
-        // so the client knows OTP was correct, but include the delivery error
+        // OTP was valid but delivery failed — return verified so client knows OTP was correct
         return NextResponse.json({
           data: { verified: true, delivered: false, deliveryError: deliveryResult.error.message },
         });

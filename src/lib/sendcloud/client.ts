@@ -1,7 +1,4 @@
-// ─── SendCloud API client ─────────────────────────────────────────────────────
-// Thin HTTP client using Basic Auth (public_key:secret_key).
-// All callers go through sendcloud.service.ts — do not import this directly
-// outside the service.
+// Thin SendCloud HTTP client. Import via sendcloud.service.ts, not directly.
 
 import { env } from "@/env";
 import type {
@@ -44,8 +41,6 @@ async function sendcloudFetch<T>(path: string, options: RequestInit = {}): Promi
   // SAFETY: caller is responsible for passing the correct generic type T
   return res.json() as Promise<T>;
 }
-
-// ─── Public API methods ───────────────────────────────────────────────────────
 
 export async function fetchShippingMethods(
   fromCountry = "ES",

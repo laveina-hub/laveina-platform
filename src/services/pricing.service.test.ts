@@ -1,19 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-/**
- * Tests for pricing calculation logic.
- *
- * The pricing service (pricing.service.ts) depends on Supabase and SendCloud,
- * so we test the pure calculation formulas directly rather than mocking.
- * These mirror the exact formulas used in buildPriceOption() and applyMargin().
- */
-
-// ─── Constants from pricing.service.ts ───────────────────────────────────────
 const IVA_RATE = 0.21;
-const MINIMUM_SHIPPING_CENTS = 400; // €4.00
+const MINIMUM_SHIPPING_CENTS = 400;
 const DEFAULT_MARGIN_PERCENT = 25;
-
-// ─── Pure formulas extracted from pricing.service.ts ─────────────────────────
 
 function buildPriceOption({
   shippingCents,
@@ -39,8 +28,6 @@ function getSettingNumber(settings: Record<string, string>, key: string, fallbac
   const parsed = Number(raw);
   return isNaN(parsed) ? fallback : parsed;
 }
-
-// ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe("pricing calculations", () => {
   describe("IVA calculation (21%)", () => {
@@ -176,7 +163,6 @@ describe("pricing calculations", () => {
     });
 
     it("handles empty string as 0 (Number('') === 0)", () => {
-      // Empty string coerces to 0 via Number(), which is valid — not NaN
       expect(getSettingNumber({ key: "" }, "key", 50)).toBe(0);
     });
   });

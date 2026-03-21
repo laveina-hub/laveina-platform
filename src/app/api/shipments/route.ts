@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Enforce customer ID at application layer — customers can only see their own shipments
+  // Customers can only see their own shipments
   const effectiveCustomerId = role === "admin" ? parsed.data.customerId : user.id;
 
   const result = await listShipments({

@@ -87,10 +87,8 @@ function DayRow({ day, schedule, onChange, t }: DayRowProps) {
 
   return (
     <div className="flex items-start gap-3">
-      {/* Day label */}
       <Label className="text-text-primary w-24 shrink-0 pt-2 text-sm font-medium">{t(day)}</Label>
 
-      {/* Toggle */}
       <button
         type="button"
         onClick={toggleOpen}
@@ -112,7 +110,6 @@ function DayRow({ day, schedule, onChange, t }: DayRowProps) {
         </div>
       </button>
 
-      {/* Slots or closed label */}
       {schedule.open ? (
         <div className="flex flex-1 flex-wrap items-start gap-2">
           {schedule.slots.map((slot, i) => (

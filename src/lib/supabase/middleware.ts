@@ -27,8 +27,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Read role from the profiles table (server-controlled, protected by RLS).
-  // Never trust user_metadata.role — users can write it via updateUser().
+  // Role from profiles table, not user_metadata (users can write metadata)
   let role: string | null = null;
   if (user) {
     const { data } = await supabase.rpc("get_user_role");

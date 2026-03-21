@@ -1,8 +1,6 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// ─── Mocks ────────────────────────────────────────────────────────────────────
-
 vi.mock("@/lib/rate-limit", () => ({
   scanLimiter: {
     check: vi.fn(() => ({ success: true, remaining: 29, resetMs: 60000 })),
@@ -29,8 +27,6 @@ vi.mock("@/services/tracking.service", () => ({
 
 const { POST } = await import("./route");
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function createRequest(body: Record<string, unknown>): NextRequest {
   return new NextRequest("http://localhost/api/scan", {
     method: "POST",
@@ -56,8 +52,6 @@ function mockAuthFailure(status = 401) {
 async function parseResponse(response: Response) {
   return { status: response.status, body: await response.json() };
 }
-
-// ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("POST /api/scan", () => {
   beforeEach(() => {

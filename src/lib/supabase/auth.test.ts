@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// ─── Mocks ────────────────────────────────────────────────────────────────────
-
 const mockSingle = vi.fn();
 // SAFETY: Supabase query builder chain requires recursive typing — using `any` for test mocks only
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,10 +18,7 @@ vi.mock("./server", () => ({
   ),
 }));
 
-// Import after mocks are set up
 const { verifyAuth } = await import("./auth");
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function mockAuthenticatedUser(id = "user-1") {
   mockGetUser.mockResolvedValue({
@@ -36,12 +31,9 @@ function mockProfile(role: string) {
   mockSingle.mockResolvedValue({ data: { role }, error: null });
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
-
 describe("verifyAuth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: chained query builder returns single()
     mockEq.mockReturnValue({ eq: mockEq, single: mockSingle });
   });
 

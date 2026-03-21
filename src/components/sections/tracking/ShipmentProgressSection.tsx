@@ -27,7 +27,6 @@ interface ShipmentProgressSectionProps {
 
 const ICON_SIZE = 56;
 
-/** Find the date a particular status was reached from scan logs. */
 function findStatusDate(scanLogs: ScanLogEntry[], status: string): string | undefined {
   const entry = scanLogs.find((log) => log.new_status === status);
   if (!entry) return undefined;
@@ -46,7 +45,6 @@ export function ShipmentProgressSection({
 }: ShipmentProgressSectionProps) {
   const t = useTranslations("tracking");
 
-  // Build dates from scan logs if available
   const stepDates = {
     orderReceived:
       findStatusDate(scanLogs, ShipmentStatus.WAITING_AT_ORIGIN) ??
@@ -95,7 +93,6 @@ export function ShipmentProgressSection({
     },
   ];
 
-  // Use status prop to compute step if provided, otherwise use currentStep
   const activeStep = status ? computeStepFromStatus(status) : currentStep;
 
   return (
@@ -104,7 +101,7 @@ export function ShipmentProgressSection({
 
       <div className="px-6 py-8 md:px-9">
         <div className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-0">
-          {/* Vertical line (mobile) */}
+          {/* Mobile: vertical progress line */}
           <div
             className="bg-border-default absolute left-9.5 w-2 rounded-3xl lg:hidden"
             style={{ top: 42, bottom: 42 }}
@@ -117,7 +114,7 @@ export function ShipmentProgressSection({
             }}
           />
 
-          {/* Horizontal line (desktop) */}
+          {/* Desktop: horizontal progress line */}
           <div className="bg-border-default absolute top-9.5 right-0 left-0 hidden h-2 rounded-3xl lg:block" />
           <div
             className="bg-primary-500 absolute top-9.5 left-0 hidden h-2 rounded-3xl transition-all duration-500 lg:block"

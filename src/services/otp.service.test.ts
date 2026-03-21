@@ -2,26 +2,10 @@ import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
-/**
- * Tests for OTP pure logic.
- *
- * The OTP service depends on Supabase for storage, so we test:
- * - OTP code generation (format, length)
- * - SHA-256 hashing (consistency, irreversibility)
- * - Expiry calculation
- *
- * These mirror the exact functions in otp.service.ts.
- */
-
-// ─── Constants from app.ts ───────────────────────────────────────────────────
 const OTP_LENGTH = 6;
 const OTP_EXPIRY_MINUTES = 10;
 
-// ─── Pure functions extracted from otp.service.ts ────────────────────────────
-
 function generateOtpCode(length: number): string {
-  // Simplified version — uses Math.random instead of crypto.randomInt
-  // (crypto.randomInt is tested in Node.js core, not our concern)
   let otp = "";
   for (let i = 0; i < length; i++) {
     otp += Math.floor(Math.random() * 10).toString();
@@ -32,8 +16,6 @@ function generateOtpCode(length: number): string {
 function hashOtp(otp: string): string {
   return createHash("sha256").update(otp).digest("hex");
 }
-
-// ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe("OTP logic", () => {
   describe("generateOtpCode", () => {
@@ -54,7 +36,6 @@ describe("OTP logic", () => {
       for (let i = 0; i < 50; i++) {
         codes.add(generateOtpCode(OTP_LENGTH));
       }
-      // With 10^6 possibilities and 50 samples, collisions should be extremely rare
       expect(codes.size).toBeGreaterThan(40);
     });
 
@@ -90,7 +71,6 @@ describe("OTP logic", () => {
     });
 
     it("produces the correct known hash for 123456", () => {
-      // SHA-256("123456") is a well-known value
       const expected = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
       expect(hashOtp("123456")).toBe(expected);
     });

@@ -15,7 +15,6 @@ export default function DashboardError({ error, reset }: Props) {
   const t = useTranslations("errors");
 
   useEffect(() => {
-    // Log to error reporting service in production
     console.error("Dashboard error:", error);
   }, [error]);
 

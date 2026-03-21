@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-// ─── Batch Dispatch ──────────────────────────────────────────────────────────
-
 export const batchDispatchSchema = z.object({
   shipmentIds: z
     .array(z.string().uuid())
@@ -10,8 +8,6 @@ export const batchDispatchSchema = z.object({
 });
 
 export type BatchDispatchInput = z.infer<typeof batchDispatchSchema>;
-
-// ─── Admin Settings Update ───────────────────────────────────────────────────
 
 const settingsValueSchema = z.record(z.string(), z.string());
 

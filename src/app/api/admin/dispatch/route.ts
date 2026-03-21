@@ -18,7 +18,6 @@ type DispatchResult = {
 };
 
 export async function POST(request: NextRequest) {
-  // ── Auth: admin only ───────────────────────────────────────────────────────
   const auth = await verifyAuth();
   if (auth.error) return auth.error;
   const { supabase, user, role } = auth;
@@ -27,7 +26,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // ── Validate input with Zod ────────────────────────────────────────────────
   const body = await request.json();
   const parsed = batchDispatchSchema.safeParse(body);
 
@@ -37,7 +35,6 @@ export async function POST(request: NextRequest) {
 
   const { shipmentIds } = parsed.data;
 
-  // ── Fetch all shipments with their details ─────────────────────────────────
   const { data: shipments, error: fetchError } = await supabase
     .from("shipments")
     .select(
@@ -49,7 +46,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch shipments" }, { status: 500 });
   }
 
-  // ── Process each shipment with dual delivery logic ─────────────────────────
   const results: DispatchResult[] = [];
 
   for (const shipment of shipments) {
@@ -59,7 +55,6 @@ export async function POST(request: NextRequest) {
       success: false,
     };
 
-    // Validate status transition: must be received_at_origin → in_transit
     if (!isValidTransition(shipment.status, ShipmentStatus.IN_TRANSIT)) {
       result.error = `Invalid status transition: ${shipment.status} → in_transit`;
       results.push(result);
@@ -70,9 +65,8 @@ export async function POST(request: NextRequest) {
     const mode = shipment.delivery_mode as string;
 
     if (mode === DeliveryMode.SENDCLOUD) {
-      // ── Path B: SendCloud — create parcel, get label + tracking ───────────
-      // SAFETY: destination_pickup_point is loaded via FK join — Supabase returns
-      // an array for joins, but .single()-style select returns the first match.
+      // SAFETY: Supabase FK joins return an array; we need the first match
+
       const destPointRaw = shipment.destination_pickup_point;
       const destPoint = Array.isArray(destPointRaw) ? destPointRaw[0] : destPointRaw;
 
@@ -96,7 +90,6 @@ export async function POST(request: NextRequest) {
       const parcel = parcelResult.data;
       const labelUrl = parcel.label?.normal_printer?.[0] ?? null;
 
-      // Update shipment with carrier data + status
       const { error: updateError } = await supabase
         .from("shipments")
         .update({
@@ -119,7 +112,7 @@ export async function POST(request: NextRequest) {
       result.carrierTrackingNumber = parcel.tracking_number ?? undefined;
       result.labelUrl = labelUrl ?? undefined;
     } else {
-      // ── Path A: Barcelona internal — status change only, no label ─────────
+      // Barcelona internal delivery — no carrier label needed
       const { error: updateError } = await supabase
         .from("shipments")
         .update({ status: ShipmentStatus.IN_TRANSIT })
@@ -134,13 +127,12 @@ export async function POST(request: NextRequest) {
       result.success = true;
     }
 
-    // ── Create scan_log audit trail entry ──────────────────────────────────
     await supabase.from("scan_logs").insert({
       shipment_id: shipment.id,
       old_status: shipment.status,
       new_status: ShipmentStatus.IN_TRANSIT,
       scanned_by: user.id,
-      // pickup_point_id is null for admin dispatch (happens from central office)
+      // null: admin dispatch happens from central office, not a pickup point
     });
 
     results.push(result);

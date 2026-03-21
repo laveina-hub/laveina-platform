@@ -21,22 +21,12 @@ type ScanDecision =
   | { type: "error"; message: string; code: string }
   | { type: "no_change" };
 
-/**
- * Determines the next shipment status based on which pickup point scanned
- * the QR code and the shipment's current status.
- *
- * Business rules (per PARCEL_JOURNEY.md):
- * - Origin shop scan: waiting_at_origin → received_at_origin
- * - Destination shop scan: in_transit → ready_for_pickup (auto-transition through arrived_at_destination)
- * - Wrong shop → explicit error
- * - Wrong status → explicit error
- */
+// Rules: origin scan → received_at_origin, destination scan → ready_for_pickup (via arrived_at_destination)
 function determineScanAction(shipment: Shipment, pickupPointId: string): ScanDecision {
   const currentStatus = shipment.status as ShipmentStatus;
   const isOrigin = pickupPointId === shipment.origin_pickup_point_id;
   const isDestination = pickupPointId === shipment.destination_pickup_point_id;
 
-  // Reject scans from unrelated shops
   if (!isOrigin && !isDestination) {
     return {
       type: "error",
@@ -67,8 +57,6 @@ function determineScanAction(shipment: Shipment, pickupPointId: string): ScanDec
   }
 
   if (isDestination) {
-    // Per PARCEL_JOURNEY.md Stage 5: destination scan transitions through
-    // arrived_at_destination → ready_for_pickup (auto-transition handled in processQrScan)
     if (currentStatus === ShipmentStatus.IN_TRANSIT) {
       return { type: "transition", newStatus: ShipmentStatus.ARRIVED_AT_DESTINATION };
     }
@@ -76,7 +64,7 @@ function determineScanAction(shipment: Shipment, pickupPointId: string): ScanDec
       return { type: "transition", newStatus: ShipmentStatus.READY_FOR_PICKUP };
     }
     if (currentStatus === ShipmentStatus.READY_FOR_PICKUP) {
-      return { type: "no_change" }; // Already ready — just re-show the verify page
+      return { type: "no_change" };
     }
     return {
       type: "error",
@@ -103,8 +91,6 @@ export async function processQrScan(
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
 
-  // Full row needed: determineScanAction uses multiple fields, and the updated
-  // shipment is returned to the caller as ScanResult.shipment
   const { data: shipment, error: shipmentError } = await supabase
     .from("shipments")
     .select("*")
@@ -118,7 +104,6 @@ export async function processQrScan(
     };
   }
 
-  // Check if shipment is already delivered
   if (shipment.status === ShipmentStatus.DELIVERED) {
     return {
       data: null,
@@ -126,7 +111,6 @@ export async function processQrScan(
     };
   }
 
-  // Determine action based on shop + current status
   const decision = determineScanAction(shipment, parsed.data.pickup_point_id);
 
   if (decision.type === "error") {
@@ -140,7 +124,6 @@ export async function processQrScan(
   const nextStatus = decision.type === "transition" ? decision.newStatus : null;
   const newStatus = nextStatus ?? oldStatus;
 
-  // Update shipment status if transition is valid
   let updatedShipment = shipment;
   let finalStatus = nextStatus;
   if (nextStatus) {
@@ -161,7 +144,6 @@ export async function processQrScan(
     updatedShipment = updated;
 
     // Auto-transition: arrived_at_destination → ready_for_pickup
-    // Per PARCEL_JOURNEY.md: destination scan auto-transitions through both states
     if (nextStatus === ShipmentStatus.ARRIVED_AT_DESTINATION) {
       const { data: autoUpdated, error: autoError } = await adminSupabase
         .from("shipments")
@@ -174,7 +156,6 @@ export async function processQrScan(
         updatedShipment = autoUpdated;
         finalStatus = ShipmentStatus.READY_FOR_PICKUP;
 
-        // Log the auto-transition separately for complete audit trail
         await adminSupabase.from("scan_logs").insert({
           shipment_id: shipment.id,
           scanned_by: scannedBy,
@@ -186,7 +167,6 @@ export async function processQrScan(
     }
   }
 
-  // Create scan log entry (every scan is logged, including no-change scans)
   const { data: scanLog, error: scanError } = await adminSupabase
     .from("scan_logs")
     .insert({
@@ -203,14 +183,12 @@ export async function processQrScan(
     return { data: null, error: { message: "Failed to log scan", status: 500 } };
   }
 
-  // Send OTP when parcel becomes ready_for_pickup
   let otpSent = false;
   if (finalStatus === ShipmentStatus.READY_FOR_PICKUP) {
     const otpResult = await generateOtp({ shipment_id: shipment.id });
     otpSent = otpResult.error === null;
   }
 
-  // Send status update notification (best-effort, don't fail the scan)
   if (nextStatus) {
     void sendStatusUpdate({
       shipmentId: shipment.id,
@@ -219,22 +197,13 @@ export async function processQrScan(
       trackingId: shipment.tracking_id,
       oldStatus,
       newStatus,
-    }).catch(() => {
-      // Notification failure should not affect scan result
-    });
+    }).catch(() => {});
   }
 
   return { data: { shipment: updatedShipment, scanLog, otpSent }, error: null };
 }
 
-/**
- * Confirms delivery after OTP verification. Transitions the shipment from
- * ready_for_pickup → delivered. Called from the OTP verify API, not from
- * a QR scan — this is a distinct code path.
- *
- * Authorization: verifies the pickup point matches the shipment's
- * destination before allowing delivery confirmation.
- */
+/** Confirms delivery after OTP verification (ready_for_pickup → delivered). */
 export async function confirmDelivery(
   confirmedBy: string,
   shipmentId: string,
@@ -255,7 +224,6 @@ export async function confirmDelivery(
     };
   }
 
-  // Verify the pickup point is the destination shop for this shipment
   if (shipment.destination_pickup_point_id !== pickupPointId) {
     return {
       data: null,
@@ -278,7 +246,6 @@ export async function confirmDelivery(
     };
   }
 
-  // Transition to delivered
   const { data: updated, error: updateError } = await adminSupabase
     .from("shipments")
     .update({ status: ShipmentStatus.DELIVERED })
@@ -293,7 +260,6 @@ export async function confirmDelivery(
     };
   }
 
-  // Create scan log
   const { data: scanLog, error: scanError } = await adminSupabase
     .from("scan_logs")
     .insert({
@@ -310,16 +276,13 @@ export async function confirmDelivery(
     return { data: null, error: { message: "Failed to log delivery", status: 500 } };
   }
 
-  // Send delivery confirmation notification (best-effort)
   void sendStatusUpdate({
     phone: shipment.receiver_phone,
     recipientName: shipment.receiver_name,
     trackingId: shipment.tracking_id,
     oldStatus: ShipmentStatus.READY_FOR_PICKUP,
     newStatus: ShipmentStatus.DELIVERED,
-  }).catch(() => {
-    // Notification failure should not block delivery confirmation
-  });
+  }).catch(() => {});
 
   return { data: { shipment: updated, scanLog }, error: null };
 }

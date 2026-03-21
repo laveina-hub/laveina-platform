@@ -26,13 +26,7 @@ const getRatesBodySchema = z.object({
   parcels: z.array(parcelRateItemSchema).min(1).max(20),
 });
 
-/**
- * POST /api/shipments/get-rates
- *
- * Calculates shipping rates for one or more parcels.
- * Returns an array of PriceBreakdown objects (one per parcel).
- * Called by the booking form Step 4→5 transition.
- */
+/** Calculates shipping rates for one or more parcels. Called during booking step 4→5. */
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);

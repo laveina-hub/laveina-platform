@@ -3,11 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Heading, SectionContainer, Text } from "@/components/atoms";
 import { Link } from "@/i18n/navigation";
 
-/**
- * Public pricing page.
- * Explains the dual pricing model (internal Barcelona + SendCloud Spain-wide).
- * Exact prices depend on admin_settings — displayed as a general guide here.
- */
+// Prices shown are a general guide — exact prices depend on admin_settings.
 export async function PricingSection() {
   const t = await getTranslations("pricing");
 
@@ -24,9 +20,7 @@ export async function PricingSection() {
             </Text>
           </div>
 
-          {/* Dual model explanation */}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            {/* Barcelona internal */}
             <div className="border-border-default space-y-3 rounded-2xl border bg-white p-8">
               <div className="flex items-center gap-3">
                 <span className="bg-primary-100 text-primary-700 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase">
@@ -46,7 +40,6 @@ export async function PricingSection() {
               </ul>
             </div>
 
-            {/* Spain-wide SendCloud */}
             <div className="border-border-default space-y-3 rounded-2xl border bg-white p-8">
               <div className="flex items-center gap-3">
                 <span className="bg-tertiary-100 text-tertiary-700 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase">
@@ -67,7 +60,6 @@ export async function PricingSection() {
             </div>
           </div>
 
-          {/* IVA + insurance note */}
           <div className="border-border-default space-y-3 rounded-2xl border bg-white p-8 text-center">
             <Heading variant="card" as="h2">
               {t("additionalTitle")}
@@ -80,7 +72,6 @@ export async function PricingSection() {
             </Text>
           </div>
 
-          {/* CTA */}
           <div className="text-center">
             <Link
               href="/book"

@@ -54,10 +54,8 @@ export function Step2Origin() {
       <CardShell>
         <CardHeader title={t("stepOrigin")} />
         <CardBody className="space-y-4">
-          {/* Hidden field for postcode — registered into form */}
           <input type="hidden" {...register("origin_postcode")} value={postcodeInput} />
 
-          {/* Postcode search */}
           <div className="space-y-1.5">
             <Label htmlFor="origin_postcode">{t("originPostcode")}</Label>
             <div className="flex gap-2">
@@ -90,7 +88,6 @@ export function Step2Origin() {
             )}
           </div>
 
-          {/* Pickup point list */}
           {isFetching && <p className="text-text-muted text-sm">{t("searchingPickupPoints")}</p>}
 
           {!isFetching && pickupPoints && pickupPoints.length === 0 && searchPostcode && (
@@ -131,7 +128,6 @@ export function Step2Origin() {
             </div>
           )}
 
-          {/* Hidden registered field */}
           <input type="hidden" {...register("origin_pickup_point_id")} />
         </CardBody>
       </CardShell>

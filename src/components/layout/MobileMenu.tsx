@@ -138,10 +138,8 @@ export function MobileMenu() {
         )}
       </button>
 
-      {/* Overlay + Slide-in panel */}
       {isOpen && (
         <>
-          {/* Backdrop overlay */}
           <div
             className={cn(
               "bg-text-primary/40 fixed inset-0 z-40 transition-opacity duration-300",
@@ -151,7 +149,6 @@ export function MobileMenu() {
             onClick={close}
           />
 
-          {/* Slide-in nav panel */}
           <nav
             ref={panelRef}
             id="mobile-nav"
@@ -163,7 +160,6 @@ export function MobileMenu() {
               isAnimating ? "translate-x-0" : "translate-x-full"
             )}
           >
-            {/* Panel header */}
             <div className="border-border-default flex h-19 shrink-0 items-center justify-between border-b px-6">
               <Image
                 src="/images/header/logo-laveina.svg"
@@ -182,7 +178,6 @@ export function MobileMenu() {
               </button>
             </div>
 
-            {/* User info (when logged in) */}
             {user && (
               <div className="border-border-default flex items-center gap-3 border-b px-6 py-4">
                 <span className="bg-primary-500 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white">
@@ -195,7 +190,6 @@ export function MobileMenu() {
               </div>
             )}
 
-            {/* Navigation links */}
             <ul className="flex-1 overflow-y-auto px-4 py-4">
               {NAV_LINKS.map(({ key, href }) => {
                 const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
@@ -216,7 +210,6 @@ export function MobileMenu() {
                 );
               })}
 
-              {/* Dashboard link (when logged in) */}
               {user && (
                 <li>
                   <Link
@@ -229,7 +222,6 @@ export function MobileMenu() {
               )}
             </ul>
 
-            {/* Language switcher + Auth action */}
             <div className="border-border-default shrink-0 space-y-3 border-t p-4">
               <LocaleSwitcherMobile />
 

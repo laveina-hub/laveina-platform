@@ -1,18 +1,10 @@
-// ─── SendCloud service ────────────────────────────────────────────────────────
-// Wraps the SendCloud API client with business logic:
-//   • getAvailableRates() — fetch shipping methods filtered for Spain, return
-//     standard (cheapest) and express (fastest ≤24h) options.
-//   • dispatchParcel()   — create a parcel for a shipment and return label URL
-//     + tracking number.
-
 import { env } from "@/env";
 import { fetchShippingMethods, createParcel } from "@/lib/sendcloud/client";
 import type { ApiResponse } from "@/types/api";
 import type { SendcloudRateOption } from "@/types/sendcloud";
 import type { SendcloudParcel } from "@/types/sendcloud";
 
-// SendCloud method IDs for express 24h carriers vary by account.
-// Lead time ≤24h is used as the heuristic.
+// Express = any carrier with lead time ≤24h
 const EXPRESS_MAX_LEAD_HOURS = 24;
 
 export type SendcloudRates = {
@@ -20,12 +12,8 @@ export type SendcloudRates = {
   express: SendcloudRateOption | null;
 };
 
-// ─── Mock rates (used when SendCloud keys are not configured) ─────────────────
-// Realistic placeholder values — pricing engine still applies margin + IVA on top.
-// Replace with real API call once SENDCLOUD_PUBLIC_KEY + SENDCLOUD_SECRET_KEY are set.
-
+// Mock rates for local dev without SendCloud credentials
 function getMockRates(weightKg: number): SendcloudRates {
-  // Base rate scales slightly with weight (mock only)
   const baseRateCents = Math.max(400, Math.round(weightKg * 80 + 320));
   const expressRateCents = Math.round(baseRateCents * 1.4);
 
@@ -48,17 +36,8 @@ function getMockRates(weightKg: number): SendcloudRates {
   return { standard, express };
 }
 
-/**
- * Fetches Spain→Spain shipping methods and extracts the cheapest (standard)
- * and fastest ≤24h (express) options for the given weight.
- *
- * Falls back to mock rates when SendCloud credentials are not configured,
- * so the booking flow can be tested locally without real API keys.
- *
- * @param weightKg — billable weight in kg
- */
+/** Fetches cheapest (standard) and fastest ≤24h (express) Spain→Spain rates. Falls back to mocks without credentials. */
 export async function getAvailableRates(weightKg: number): Promise<ApiResponse<SendcloudRates>> {
-  // ── Mock mode: no credentials configured ─────────────────────────────────
   if (!env.SENDCLOUD_PUBLIC_KEY || !env.SENDCLOUD_SECRET_KEY) {
     console.warn("[sendcloud] No API keys configured — returning mock rates");
     return { data: getMockRates(weightKg), error: null };
@@ -69,7 +48,6 @@ export async function getAvailableRates(weightKg: number): Promise<ApiResponse<S
 
     const weightGrams = Math.ceil(weightKg * 1000);
 
-    // Filter methods that can carry this weight
     const eligible = shipping_methods.filter(
       (m) => m.min_weight <= weightGrams && m.max_weight >= weightGrams
     );
@@ -81,7 +59,6 @@ export async function getAvailableRates(weightKg: number): Promise<ApiResponse<S
       };
     }
 
-    // Standard: cheapest eligible method
     const sorted = [...eligible].sort((a, b) => a.price - b.price);
     const cheapest = sorted[0]!;
 
@@ -90,10 +67,9 @@ export async function getAvailableRates(weightKg: number): Promise<ApiResponse<S
       name: cheapest.name,
       carrier: cheapest.carrier,
       rateCents: Math.round(cheapest.price * 100),
-      estimatedDays: null, // populated via lead_time if available
+      estimatedDays: null,
     };
 
-    // Express: fastest method with lead_time ≤ 24h (if any)
     const expressMethods = eligible.filter((m) => {
       const country = m.countries?.find((c) => c.iso_2 === "ES");
       return country?.lead_time_hours != null && country.lead_time_hours <= EXPRESS_MAX_LEAD_HOURS;
@@ -102,7 +78,6 @@ export async function getAvailableRates(weightKg: number): Promise<ApiResponse<S
     let express: SendcloudRateOption | null = null;
 
     if (expressMethods.length > 0) {
-      // Among express candidates, pick the cheapest
       const fastestCheapest = expressMethods.sort((a, b) => a.price - b.price)[0]!;
       express = {
         shippingMethodId: fastestCheapest.id,
@@ -120,13 +95,7 @@ export async function getAvailableRates(weightKg: number): Promise<ApiResponse<S
   }
 }
 
-/**
- * Creates a parcel via SendCloud and returns the parcel record (includes label
- * PDF URLs and carrier tracking number once generated).
- *
- * In mock mode (no credentials), returns a fake parcel record so the dispatch
- * flow can be tested end-to-end without real API keys.
- */
+/** Creates a SendCloud parcel. Returns mock data in dev without credentials. */
 export async function dispatchParcel(params: {
   shippingMethodId: number;
   receiverName: string;
@@ -137,7 +106,6 @@ export async function dispatchParcel(params: {
   weightKg: number;
   trackingId: string;
 }): Promise<ApiResponse<SendcloudParcel>> {
-  // ── Mock mode ─────────────────────────────────────────────────────────────
   if (!env.SENDCLOUD_PUBLIC_KEY || !env.SENDCLOUD_SECRET_KEY) {
     console.warn("[sendcloud] No API keys configured — returning mock parcel");
     const mockParcel: SendcloudParcel = {

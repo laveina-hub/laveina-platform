@@ -25,7 +25,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
 
   if (role !== "admin") {
-    // Verify the user owns this pickup point
     const { data: pickupPoint } = await supabase
       .from("pickup_points")
       .select("owner_id")

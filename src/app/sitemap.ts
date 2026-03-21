@@ -25,7 +25,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternates[locale] = `${BASE_URL}${prefix}${route === "/" ? "" : route}`;
     }
 
-    // Use the default locale URL as the primary
     const defaultPrefix = "";
     const url = `${BASE_URL}${defaultPrefix}${route === "/" ? "" : route}`;
 

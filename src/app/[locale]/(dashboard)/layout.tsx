@@ -23,7 +23,6 @@ export default async function DashboardLayout({ children, params }: Props) {
     redirect(`/${locale}/auth/login`);
   }
 
-  // Get role from profiles table (server-controlled, not user_metadata)
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, full_name")

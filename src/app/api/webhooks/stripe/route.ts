@@ -16,16 +16,7 @@ import {
 import { ShipmentStatus } from "@/types/enums";
 import type { CreateShipmentInput } from "@/types/shipment";
 
-/**
- * POST /api/webhooks/stripe
- *
- * Handles Stripe webhook events. On checkout.session.completed:
- *   1. Reads full booking data from pending_bookings table.
- *   2. Creates one shipment per parcel (each with own tracking ID + QR code).
- *   3. Marks the pending booking as processed.
- *
- * Supports multi-parcel bookings (one payment, multiple shipments).
- */
+/** Stripe webhook. On checkout complete: reads pending_bookings, creates shipments, generates QR codes. */
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
@@ -58,8 +49,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ received: true });
 }
-
-// ─── Zod schema for pending booking data validation ─────────────────────────
 
 const pendingBookingDataSchema = z.object({
   customer_id: z.string().uuid(),
@@ -119,7 +108,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // ── Read booking data from pending_bookings ────────────────────────────────
   const supabase = createAdminClient();
 
   if (!pendingBookingId) {
@@ -138,7 +126,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // Validate booking_data shape with Zod instead of unsafe cast
   const parsed = pendingBookingDataSchema.safeParse(pendingBooking.booking_data);
 
   if (!parsed.success) {
@@ -152,8 +139,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const bookingData: PendingBookingData = parsed.data;
 
-  // ── Atomically claim the booking to prevent duplicate processing ──────────
-  // If two webhook deliveries race, only one will succeed at this update.
+  // Atomic claim: if two webhook deliveries race, only one succeeds
   const { data: claimed } = await supabase
     .from("pending_bookings")
     .update({ processed: true })
@@ -170,10 +156,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // ── Create one shipment per parcel ─────────────────────────────────────────
-  // All parcels must succeed. If any fails, roll back by unclaiming the
-  // pending booking so Stripe can retry the webhook.
-
+  // If any parcel fails, unclaim the booking so Stripe can retry
   const createdShipments: Array<{ id: string; tracking_id: string }> = [];
   let creationFailed = false;
 
@@ -223,13 +206,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     });
   }
 
-  // If any parcel failed, roll back: delete created shipments and unclaim booking
   if (creationFailed) {
     for (const shipment of createdShipments) {
       await supabase.from("shipments").delete().eq("id", shipment.id);
     }
 
-    // Unclaim the pending booking so the webhook can be retried by Stripe
     await supabase.from("pending_bookings").update({ processed: false }).eq("id", pendingBookingId);
 
     console.error(
@@ -240,13 +221,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // ── Transition shipments to waiting_at_origin ─────────────────────────────
-  // Per PARCEL_JOURNEY.md: after payment, shipments should be waiting_at_origin
+  // Per PARCEL_JOURNEY.md: payment → waiting_at_origin
   for (const shipment of createdShipments) {
     await updateShipmentStatus(shipment.id, ShipmentStatus.WAITING_AT_ORIGIN);
   }
 
-  // ── Audit log: payment completed ─────────────────────────────────────────
   void logAuditEvent({
     actor_id: customerId,
     action: "payment.completed",
@@ -262,7 +241,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     },
   });
 
-  // ── Generate QR codes for all successfully created shipments ───────────────
   for (const shipment of createdShipments) {
     try {
       const qrUrl = await generateAndUploadQrCode(shipment.tracking_id);
@@ -271,6 +249,4 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       console.error(`Stripe webhook: QR code generation failed for ${shipment.tracking_id}`, err);
     }
   }
-
-  // Note: pending booking was already marked processed via atomic claim above.
 }

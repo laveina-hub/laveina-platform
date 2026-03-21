@@ -139,7 +139,6 @@ export function QrScannerSection({ pickupPointId }: QrScannerSectionProps) {
 
   return (
     <div className="space-y-6">
-      {/* Camera Scanner */}
       <CardShell>
         <CardHeader title={t("scanQrCode")} />
         <CardBody>
@@ -191,7 +190,6 @@ export function QrScannerSection({ pickupPointId }: QrScannerSectionProps) {
         </CardBody>
       </CardShell>
 
-      {/* Manual Entry */}
       {!result && (
         <CardShell>
           <CardHeader title={t("manualEntry")} />
@@ -220,7 +218,6 @@ export function QrScannerSection({ pickupPointId }: QrScannerSectionProps) {
         </CardShell>
       )}
 
-      {/* Error */}
       {error && (
         <CardShell role="alert" aria-live="assertive">
           <div className="flex items-start gap-4 px-7 py-6">
@@ -249,7 +246,6 @@ export function QrScannerSection({ pickupPointId }: QrScannerSectionProps) {
         </CardShell>
       )}
 
-      {/* Result */}
       {result && <ScanResultCard result={result} onScanAnother={handleReset} />}
     </div>
   );

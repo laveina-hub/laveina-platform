@@ -1,19 +1,5 @@
-// ─── Pricing service ──────────────────────────────────────────────────────────
-// Dual pricing engine for Laveina:
-//
-//   • Internal (Barcelona → Barcelona):
-//       Standard price: admin_settings key "internal_price_<size>_cents".
-//       Express 24h price: admin_settings key "internal_price_<size>_express_cents".
-//       Insurance: Laveina-managed tiers from insurance_options table.
-//
-//   • SendCloud (rest of Spain):
-//       Carrier rates via SendCloud API. Cheapest = standard, fastest ≤24h = express.
-//       Margin applied (key: "sendcloud_margin_percent" in admin_settings, default 25).
-//       Minimum shipping price: €4.00 (400 cents) after margin.
-//       Insurance: carrier insurance via SendCloud API (zero risk for Laveina).
-//
-// IVA: 21% applied uniformly on subtotal (Phase 1).
-// Base insurance coverage always included: €25 (2500 cents).
+// Dual pricing: internal (Barcelona, fixed prices) vs SendCloud (carrier rates + margin).
+// IVA 21% on subtotal. Base insurance €25 always included.
 
 import { calcBillableWeightKg } from "@/constants/parcel-sizes";
 import { createClient } from "@/lib/supabase/server";
@@ -23,14 +9,10 @@ import { DeliveryMode } from "@/types/enums";
 import type { ParcelSize } from "@/types/enums";
 import type { PriceBreakdown, PriceOption } from "@/types/shipment";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const IVA_RATE = 0.21;
-const MINIMUM_SHIPPING_CENTS = 400; // €4.00
-const BASE_INSURANCE_COVERAGE_CENTS = 2500; // €25 always included
+const MINIMUM_SHIPPING_CENTS = 400;
+const BASE_INSURANCE_COVERAGE_CENTS = 2500;
 const DEFAULT_MARGIN_PERCENT = 25;
-
-// ─── Admin settings helpers ───────────────────────────────────────────────────
 
 type AdminSettings = Record<string, string>;
 
@@ -47,8 +29,6 @@ function getSettingNumber(settings: AdminSettings, key: string, fallback: number
   const parsed = Number(raw);
   return isNaN(parsed) ? fallback : parsed;
 }
-
-// ─── Insurance helpers ────────────────────────────────────────────────────────
 
 type InsuranceOption = {
   id: string;
@@ -69,8 +49,6 @@ async function fetchInsuranceOption(
     .single();
   return data ?? null;
 }
-
-// ─── Price option builder ─────────────────────────────────────────────────────
 
 function buildPriceOption({
   shippingCents,
@@ -104,8 +82,6 @@ function buildPriceOption({
   };
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
-
 export type GetRatesInput = {
   deliveryMode: "internal" | "sendcloud";
   parcelSize: ParcelSize;
@@ -116,25 +92,19 @@ export type GetRatesInput = {
   insuranceOptionId: string | null;
 };
 
-/**
- * Calculates the full price breakdown for a shipment.
- * Called by POST /api/shipments/get-rates.
- */
 export async function getRates(input: GetRatesInput): Promise<ApiResponse<PriceBreakdown>> {
   const { deliveryMode, parcelSize, weightKg, lengthCm, widthCm, heightCm, insuranceOptionId } =
     input;
 
   const [settings, insurance] = await Promise.all([
     fetchAdminSettings(),
-    // Laveina insurance tiers only apply to internal (Barcelona) routes.
-    // SendCloud routes use carrier insurance automatically — no Laveina surcharge.
+    // Laveina insurance only applies to internal routes; SendCloud uses carrier insurance
     deliveryMode === DeliveryMode.INTERNAL ? fetchInsuranceOption(insuranceOptionId) : null,
   ]);
 
   const insuranceSurchargeCents = insurance?.surcharge_cents ?? 0;
   const billableWeightKg = calcBillableWeightKg(weightKg, lengthCm, widthCm, heightCm);
 
-  // ─── Internal route (Barcelona) ─────────────────────────────────────────────
   if (deliveryMode === DeliveryMode.INTERNAL) {
     const standardKey = `internal_price_${parcelSize}_cents`;
     const expressKey = `internal_price_${parcelSize}_express_cents`;
@@ -185,7 +155,6 @@ export async function getRates(input: GetRatesInput): Promise<ApiResponse<PriceB
     };
   }
 
-  // ─── SendCloud route (rest of Spain) ────────────────────────────────────────
   const ratesResult = await getAvailableRates(billableWeightKg);
 
   if (ratesResult.error) {

@@ -10,13 +10,7 @@ const bodySchema = z.object({
   shipmentId: z.string().uuid("Invalid shipment ID"),
 });
 
-/**
- * POST /api/otp/generate
- *
- * Generates a 6-digit OTP for a shipment and sends it via WhatsApp.
- * Auth required. Caller must be a pickup_point staff member whose shop
- * is the destination for this shipment.
- */
+/** Generates a 6-digit OTP for a shipment. Pickup point staff only (destination shop). */
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
@@ -27,7 +21,6 @@ export async function POST(request: NextRequest) {
     if (auth.error) return auth.error;
     const { supabase, user, role } = auth;
 
-    // ── Validate input ────────────────────────────────────────────────────────
     const body = await request.json();
     const parsed = bodySchema.safeParse(body);
 
@@ -38,10 +31,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Authorization: verify caller has access to this shipment ──────────────
-    // Pickup point staff: can only generate OTP for shipments destined to their shop
+    // Pickup point staff can only generate OTP for shipments at their shop
     if (role === "pickup_point") {
-      // Find which pickup point this user owns
       const { data: ownedShop } = await supabase
         .from("pickup_points")
         .select("id")
@@ -60,7 +51,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     } else if (role !== "admin") {
-      // Customers should not generate OTPs
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

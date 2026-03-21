@@ -11,8 +11,7 @@ export async function GET() {
     return NextResponse.json({ error: { message: "Forbidden", status: 403 } }, { status: 403 });
   }
 
-  // Single DB round-trip for all aggregate stats via RPC function.
-  // Falls back to individual queries if the function hasn't been deployed yet.
+  // Falls back to individual queries if the RPC function hasn't been deployed yet
   const [statsResult, recentResult] = await Promise.all([
     supabase.rpc("get_admin_dashboard_stats"),
     supabase
@@ -25,7 +24,6 @@ export async function GET() {
   ]);
 
   if (statsResult.error || !statsResult.data) {
-    // Fallback: RPC not deployed yet — use individual count queries
     const [totalResult, pickupPointsResult] = await Promise.all([
       supabase.from("shipments").select("status, price_cents"),
       supabase

@@ -57,7 +57,6 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
     },
   });
 
-  // Populate form when pickup point data loads
   useEffect(() => {
     if (!pickupPoint) return;
     setValue("name", pickupPoint.name);
@@ -105,7 +104,6 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <Link
           href="/admin/pickup-points"
@@ -122,7 +120,6 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
         onSubmit={handleSubmit((data) => mutation.mutate(data))}
         className="max-w-2xl space-y-6"
       >
-        {/* Basic info */}
         <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
           <Field label={t("name")} error={errors.name?.message}>
             <Input {...register("name")} hasError={!!errors.name} />
@@ -170,7 +167,6 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
           </div>
         </div>
 
-        {/* Working hours */}
         <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="text-base font-semibold text-gray-900">{t("workingHours")}</h2>
           <WorkingHoursEditor
@@ -180,7 +176,6 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
           />
         </div>
 
-        {/* Submit */}
         <div className="flex justify-end">
           <Button type="submit" disabled={mutation.isPending}>
             {isEditMode ? t("save") : t("create")}

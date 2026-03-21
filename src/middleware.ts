@@ -64,7 +64,6 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!user) {
-    // Preserve the locale prefix so next-intl keeps the user in the same locale.
     const segments = pathname.split("/").filter(Boolean);
     // SAFETY: routing.locales is typed as readonly ('en' | 'es' | 'ca')[] — widened for .includes() compatibility
     const locales = routing.locales as readonly string[];

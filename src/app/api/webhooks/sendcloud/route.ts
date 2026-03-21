@@ -9,35 +9,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendStatusUpdate } from "@/services/notification.service";
 import type { ShipmentStatus } from "@/types/enums";
 
-/**
- * POST /api/webhooks/sendcloud
- *
- * Handles SendCloud webhook notifications for parcel status updates.
- *
- * Flow:
- *   1. Verify HMAC signature using SENDCLOUD_SECRET_KEY.
- *   2. Map SendCloud status to Laveina ShipmentStatus.
- *   3. Update shipment row if a valid mapping exists.
- *   4. Log the event in scan_logs.
- *   5. Send WhatsApp notification (best-effort).
- *
- * SendCloud webhook payload structure:
- * {
- *   "action": "parcel_status_changed",
- *   "timestamp": 1234567890,
- *   "parcel": {
- *     "id": 12345,
- *     "tracking_number": "...",
- *     "status": { "id": 3, "message": "At sorting center" },
- *     ...
- *   }
- * }
- */
+/** Handles SendCloud parcel status webhooks. Verifies HMAC, maps status, updates shipment. */
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const signature = request.headers.get("sendcloud-signature");
 
-  // Verify webhook signature
   if (!verifySignature(body, signature)) {
     console.error("SendCloud webhook: invalid signature");
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
@@ -50,7 +26,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Only process parcel status changes
   if (payload.action !== "parcel_status_changed") {
     return NextResponse.json({ received: true });
   }
@@ -62,7 +37,6 @@ export async function POST(request: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // Find shipment by SendCloud parcel ID
   const { data: shipment, error: findError } = await supabase
     .from("shipments")
     .select(
@@ -72,21 +46,18 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (findError || !shipment) {
-    // Parcel not found — may be from a different system or already deleted
     console.warn(`SendCloud webhook: no shipment for parcel ${parcel.id}`);
     return NextResponse.json({ received: true });
   }
 
-  // Map SendCloud status to Laveina status
   const newStatus = mapSendcloudStatus(parcel.status.id);
   const oldStatus = shipment.status as ShipmentStatus;
 
-  // Idempotency: if the status hasn't changed, acknowledge without re-processing
   if (!newStatus || newStatus === oldStatus) {
     return NextResponse.json({ received: true });
   }
 
-  // Check for duplicate webhook (same shipment + same new_status in scan_logs)
+  // Deduplicate: check if this transition was already processed
   const { data: existingLog } = await supabase
     .from("scan_logs")
     .select("id")
@@ -97,20 +68,17 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (existingLog) {
-    // Already processed this transition from a webhook — idempotent
     return NextResponse.json({ received: true });
   }
 
-  // Log the webhook event in scan_logs
   await supabase.from("scan_logs").insert({
     shipment_id: shipment.id,
-    scanned_by: null, // webhook — no human scanner
+    scanned_by: null, // webhook, not a human scan
     pickup_point_id: shipment.destination_pickup_point_id,
     old_status: oldStatus,
     new_status: newStatus,
   });
 
-  // Update shipment status
   if (newStatus !== oldStatus) {
     const { error: updateError } = await supabase
       .from("shipments")
@@ -125,7 +93,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Status update failed" }, { status: 500 });
     }
 
-    // Send notification (best-effort)
     void sendStatusUpdate({
       phone: shipment.receiver_phone,
       recipientName: shipment.receiver_name,
@@ -140,15 +107,10 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-/**
- * Verify the SendCloud webhook HMAC-SHA256 signature.
- * If SENDCLOUD_SECRET_KEY is not configured, skip verification
- * (development mode).
- */
+/** Verifies HMAC-SHA256 signature. Skips verification in dev if secret is missing. */
 function verifySignature(body: string, signature: string | null): boolean {
   const secret = env.SENDCLOUD_SECRET_KEY;
 
-  // If secret is not configured, only allow in development
   if (!secret) {
     if (process.env.NODE_ENV === "production") {
       console.error("SendCloud webhook: SENDCLOUD_SECRET_KEY not configured in production");
@@ -170,8 +132,6 @@ function verifySignature(body: string, signature: string | null): boolean {
   if (sigBuf.length !== expectedBuf.length) return false;
   return timingSafeEqual(sigBuf, expectedBuf);
 }
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface SendCloudWebhookPayload {
   action: string;

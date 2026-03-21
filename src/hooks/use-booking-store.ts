@@ -11,37 +11,21 @@ import type {
   ParcelItemInput,
 } from "@/validations/shipment.schema";
 
-// ─── Step index ───────────────────────────────────────────────────────────────
-
 export type BookingStep = 1 | 2 | 3 | 4 | 5;
-
-// ─── Per-parcel dimensions resolved from DB ──────────────────────────────────
 
 export type ParcelDimensions = { lengthCm: number; widthCm: number; heightCm: number };
 
-// ─── State ────────────────────────────────────────────────────────────────────
-
 type BookingState = {
   currentStep: BookingStep;
-  /** Step 1 — sender + receiver contact info */
   contact: BookingStepContactInput | null;
-  /** Step 2 — origin postcode + pickup point */
   origin: BookingStepOriginInput | null;
-  /** Step 3 — destination postcode + pickup point */
   destination: BookingStepDestinationInput | null;
-  /** Step 4 — one or more parcels (each with size, weight, insurance) */
   parcels: ParcelItemInput[];
-  /** DB-resolved dimensions per parcel (same order as parcels array) */
   parcelDimensionsList: ParcelDimensions[];
-  /** Step 5 — delivery speed (standard or express), shared for all parcels */
   speed: BookingStepSpeedInput | null;
-  /** Detected after steps 2+3 are completed */
   deliveryMode: DeliveryMode | null;
-  /** Returned by POST /api/shipments/get-rates after step 4 — per-parcel breakdown */
   priceBreakdowns: PriceBreakdown[] | null;
 };
-
-// ─── Actions ──────────────────────────────────────────────────────────────────
 
 type BookingActions = {
   setStep: (step: BookingStep) => void;
@@ -55,8 +39,6 @@ type BookingActions = {
   reset: () => void;
 };
 
-// ─── Initial state ────────────────────────────────────────────────────────────
-
 const initialState: BookingState = {
   currentStep: 1,
   contact: null,
@@ -68,8 +50,6 @@ const initialState: BookingState = {
   deliveryMode: null,
   priceBreakdowns: null,
 };
-
-// ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useBookingStore = create<BookingState & BookingActions>()(
   persist(
@@ -92,8 +72,7 @@ export const useBookingStore = create<BookingState & BookingActions>()(
       setDeliveryMode: (mode) =>
         set({
           deliveryMode: mode,
-          // Clear speed selection when mode changes so user re-selects
-          speed: null,
+          speed: null, // reset so user re-selects for new mode
         }),
 
       setPriceBreakdowns: (breakdowns) => set({ priceBreakdowns: breakdowns }),
@@ -104,8 +83,6 @@ export const useBookingStore = create<BookingState & BookingActions>()(
       name: "laveina-booking",
       version: 2,
       migrate: () => {
-        // v1 → v2: parcel → parcels[], priceBreakdown → priceBreakdowns[]
-        // Simply reset to initial state — in-progress bookings are transient
         return initialState;
       },
     }

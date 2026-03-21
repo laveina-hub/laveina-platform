@@ -20,8 +20,6 @@ import {
   sumOption,
 } from "./Step5Helpers";
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
 export function Step5Speed() {
   const t = useTranslations("booking");
   const {
@@ -135,7 +133,6 @@ export function Step5Speed() {
 
           {isLoading && <p className="text-text-muted text-sm">{t("loadingRates")}</p>}
 
-          {/* Speed selection */}
           {standardSum && (
             <Controller
               name="delivery_speed"
@@ -165,7 +162,6 @@ export function Step5Speed() {
             />
           )}
 
-          {/* Price breakdown */}
           {selectedSum && (
             <>
               <Divider />

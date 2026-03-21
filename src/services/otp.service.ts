@@ -51,9 +51,7 @@ export async function generateOtp(
     return { data: { expires_at: existingOtp.expires_at }, error: null };
   }
 
-  // Expire any old unverified OTP for this shipment before inserting a new one.
-  // The unique index (idx_otp_active_per_shipment) only allows one unverified
-  // OTP per shipment, so we must clear the expired one first.
+  // Unique index only allows one unverified OTP per shipment — clear expired ones first
   await supabase
     .from("otp_verifications")
     .update({ verified: true })
@@ -64,9 +62,7 @@ export async function generateOtp(
   const otp = generateOtpCode(OTP_LENGTH);
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
-  // Store hashed OTP in database — plain text never persisted.
-  // If a concurrent request races past the check above, the unique index
-  // will reject this insert and we return an error gracefully.
+  // Only the hash is stored; concurrent races are caught by the unique index
   const { error } = await supabase.from("otp_verifications").insert({
     shipment_id: parsed.data.shipment_id,
     otp_hash: hashOtp(otp),
@@ -78,7 +74,6 @@ export async function generateOtp(
     return { data: null, error: { message: error.message, status: 500 } };
   }
 
-  // Get shipment to find receiver phone
   const { data: shipment } = await supabase
     .from("shipments")
     .select("receiver_phone")
@@ -86,7 +81,6 @@ export async function generateOtp(
     .single();
 
   if (shipment?.receiver_phone) {
-    // Send plain text OTP via WhatsApp — only the hash is stored in DB
     await sendOtpMessage(shipment.receiver_phone, otp, parsed.data.shipment_id);
   }
 
@@ -106,7 +100,6 @@ export async function verifyOtp(
 
   const supabase = await createClient();
 
-  // Hash the submitted OTP and compare against stored hash
   const otpHash = hashOtp(parsed.data.otp);
 
   const { data, error } = await supabase
@@ -124,7 +117,6 @@ export async function verifyOtp(
     return { data: { verified: false }, error: null };
   }
 
-  // Mark OTP as verified
   await supabase.from("otp_verifications").update({ verified: true }).eq("id", data.id);
 
   return { data: { verified: true }, error: null };

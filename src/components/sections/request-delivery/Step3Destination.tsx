@@ -41,7 +41,7 @@ export function Step3Destination() {
   const selectedPointId = watch("destination_pickup_point_id");
 
   function onSubmit(data: BookingStepDestinationInput) {
-    // Detect delivery mode from postcodes using the shared routing service
+    // Determine delivery mode (internal vs sendcloud) based on origin+destination postcodes
     const originPostcode = origin?.origin_postcode ?? "";
     const routing = getDeliveryMode(originPostcode, data.destination_postcode);
     if (routing.mode !== "blocked") {
@@ -63,7 +63,6 @@ export function Step3Destination() {
         <CardBody className="space-y-4">
           <input type="hidden" {...register("destination_postcode")} value={postcodeInput} />
 
-          {/* Postcode search */}
           <div className="space-y-1.5">
             <Label htmlFor="destination_postcode">{t("destinationPostcode")}</Label>
             <div className="flex gap-2">

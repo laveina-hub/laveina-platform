@@ -20,12 +20,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
 
-  // ── Authorization: customers can only view their own shipments ──────────
   if (role === "customer" && result.data.customer_id !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Pickup point staff: can only see shipments routed through their shop
   if (role === "pickup_point") {
     const { data: ownedShop } = await supabase
       .from("pickup_points")

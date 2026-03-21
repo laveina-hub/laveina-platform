@@ -35,7 +35,6 @@ export function ScanResultCard({ result, onScanAnother }: ScanResultCardProps) {
       <CardHeader title={t("scanResult")} />
       <CardBody>
         <div className="space-y-6">
-          {/* Status transition indicator */}
           <div
             className={cn(
               "flex items-center gap-3 rounded-xl px-5 py-4",
@@ -99,7 +98,6 @@ export function ScanResultCard({ result, onScanAnother }: ScanResultCardProps) {
             </div>
           </div>
 
-          {/* OTP notification */}
           {result.otpSent && (
             <div className="bg-primary-50 flex items-center gap-3 rounded-xl px-5 py-4">
               <div className="bg-primary-100 flex size-10 shrink-0 items-center justify-center rounded-full">
@@ -118,7 +116,6 @@ export function ScanResultCard({ result, onScanAnother }: ScanResultCardProps) {
             </div>
           )}
 
-          {/* Shipment details */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <DetailRow label={t("trackingId")} value={result.shipment.tracking_id} />
             <DetailRow label={t("parcelSize")} value={result.shipment.parcel_size} />

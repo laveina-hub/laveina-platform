@@ -19,7 +19,6 @@ export async function GET() {
     supabase.from("parcel_size_config").select("*").order("max_weight_kg"),
   ]);
 
-  // Build settings map
   const settingsMap: Record<string, string> = {};
   for (const row of settingsResult.data ?? []) {
     settingsMap[row.key] = row.value;
@@ -56,7 +55,6 @@ export async function PUT(request: NextRequest) {
   const { settings, insuranceOptions } = parsed.data;
   const errors: string[] = [];
 
-  // Update admin_settings key/value pairs
   if (settings && typeof settings === "object") {
     for (const [key, value] of Object.entries(settings)) {
       const { error } = await supabase
@@ -69,7 +67,6 @@ export async function PUT(request: NextRequest) {
     }
   }
 
-  // Update insurance options
   if (Array.isArray(insuranceOptions)) {
     for (const option of insuranceOptions) {
       if (option.id) {

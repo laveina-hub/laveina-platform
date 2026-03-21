@@ -102,13 +102,11 @@ export function AdminShipmentsSection() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
         <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 sm:max-w-xs">
           <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
@@ -141,7 +139,6 @@ export function AdminShipmentsSection() {
         </select>
       </div>
 
-      {/* Table */}
       <DataTable
         columns={columns}
         data={data?.data ?? []}

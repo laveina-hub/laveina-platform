@@ -40,7 +40,6 @@ export function LocaleSwitcherMobile() {
               isActive ? "bg-white shadow-sm" : "hover:bg-white/50"
             )}
           >
-            {/* Circle badge */}
             <span
               className={cn(
                 "flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold tracking-wider transition-all duration-200",
@@ -49,7 +48,6 @@ export function LocaleSwitcherMobile() {
             >
               {config?.code ?? loc.toUpperCase()}
             </span>
-            {/* Language name */}
             <span
               className={cn(
                 "text-[11px] font-semibold transition-colors",
@@ -58,7 +56,6 @@ export function LocaleSwitcherMobile() {
             >
               {config?.native ?? t(loc)}
             </span>
-            {/* Active dot indicator */}
             <span
               className={cn(
                 "absolute -bottom-0.5 h-1 w-1 rounded-full transition-all duration-200",

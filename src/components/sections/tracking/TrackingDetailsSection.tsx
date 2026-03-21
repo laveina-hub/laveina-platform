@@ -67,7 +67,7 @@ export function TrackingDetailsSection({
         </div>
       </div>
 
-      {/* Carrier tracking info for SendCloud shipments */}
+      {/* Only shown for SendCloud shipments */}
       {carrierName && carrierTrackingNumber && (
         <div className="border-border-muted border-t px-7 py-5 md:px-8">
           <div className="flex flex-wrap items-center gap-3">

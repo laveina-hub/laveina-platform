@@ -3,9 +3,7 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
-// ─── Security headers ─────────────────────────────────────────────────────────
-// Applied to all routes. CSP allows Supabase, Stripe, and inline styles
-// (required by Next.js / Tailwind). The QR scanner needs camera access.
+// CSP allows Supabase, Stripe, inline styles (Next.js/Tailwind), and camera for QR scanner
 const securityHeaders = [
   {
     key: "X-DNS-Prefetch-Control",
@@ -67,7 +65,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Apply security headers to all routes
         source: "/(.*)",
         headers: securityHeaders,
       },

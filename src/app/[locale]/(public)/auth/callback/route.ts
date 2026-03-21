@@ -51,7 +51,7 @@ export async function GET(
 
     console.error("[auth/callback] Code exchange failed:", error.message);
 
-    // Code already used (double-hit) — check if user already has a session
+    // Code already used — check if user has a session anyway
     const {
       data: { user },
     } = await supabase.auth.getUser();

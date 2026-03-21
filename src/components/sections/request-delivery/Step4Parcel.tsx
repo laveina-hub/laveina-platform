@@ -17,8 +17,6 @@ import {
 
 import { ParcelSizeGrid } from "./ParcelSizeGrid";
 
-// ─── Data fetchers ────────────────────────────────────────────────────────────
-
 type ParcelSizeConfig = {
   size: ParcelSize;
   max_weight_kg: number;
@@ -47,8 +45,6 @@ async function fetchInsuranceOptions(): Promise<InsuranceOption[]> {
   const json = await res.json();
   return json.data;
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export function Step4Parcel() {
   const t = useTranslations("booking");
@@ -124,7 +120,6 @@ export function Step4Parcel() {
               title={fields.length > 1 ? `${t("stepParcel")} #${index + 1}` : t("stepParcel")}
             />
             <CardBody className="space-y-6">
-              {/* Parcel size grid */}
               <div className="space-y-2">
                 <Label>{t("parcelSize")}</Label>
                 <Controller
@@ -145,7 +140,6 @@ export function Step4Parcel() {
                 )}
               </div>
 
-              {/* Weight */}
               <div className="space-y-1.5">
                 <Label htmlFor={`weight_kg_${index}`}>{t("weight")}</Label>
                 <Input
@@ -171,7 +165,7 @@ export function Step4Parcel() {
                 )}
               </div>
 
-              {/* Insurance — Laveina tiers for Barcelona internal only */}
+              {/* Insurance tiers only available for Barcelona internal routes */}
               {deliveryMode === "internal" && (
                 <div className="space-y-1.5">
                   <Label htmlFor={`insurance_${index}`}>{t("insuranceOption")}</Label>
@@ -204,7 +198,6 @@ export function Step4Parcel() {
                 <p className="text-text-muted text-sm">{t("carrierInsuranceIncluded")}</p>
               )}
 
-              {/* Remove parcel button */}
               {fields.length > 1 && (
                 <Button
                   type="button"
@@ -222,7 +215,7 @@ export function Step4Parcel() {
         );
       })}
 
-      {/* Add another parcel (max 20, matching API limit) */}
+      {/* Max 20 parcels to match API limit */}
       {fields.length < 20 && (
         <Button
           type="button"

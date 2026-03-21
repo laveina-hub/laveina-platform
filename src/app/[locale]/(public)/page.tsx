@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
-// Homepage content is mostly static — revalidate every hour
 export const revalidate = 3600;
 
 import {
