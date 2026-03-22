@@ -36,6 +36,7 @@ export function usePickupPoints(postcode?: string) {
   return useQuery({
     queryKey: ["pickup-points", postcode],
     queryFn: () => fetchPickupPoints(postcode),
+    enabled: !!postcode,
   });
 }
 

@@ -10,7 +10,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "pages" });
-  return { title: t("forgotPassword") };
+  return { title: t("resetPassword") };
 }
 
 export default async function ResetPasswordPage({ params }: Props) {

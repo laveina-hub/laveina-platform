@@ -32,8 +32,7 @@ export function RegisterForm() {
   async function onSubmit(data: RegisterInput) {
     setSubmitting(true);
     try {
-      // Build a robust callback URL using the current locale from next-intl.
-      // Avoids fragile string-replace on window.location.pathname.
+      // Use the current locale for the callback URL instead of parsing pathname
       const callbackUrl = `${window.location.origin}/${locale}/auth/callback?next=/customer`;
       const result = await signUp({
         email: data.email,
@@ -58,11 +57,10 @@ export function RegisterForm() {
   if (emailSent) {
     return (
       <div className="space-y-8">
-        {/* Mobile logo */}
         <div className="flex justify-center lg:hidden">
           <Image
             src="/images/header/logo-laveina.svg"
-            alt="Laveina"
+            alt={t("logoAlt")}
             width={148}
             height={43}
             priority
@@ -94,11 +92,10 @@ export function RegisterForm() {
 
   return (
     <div className="space-y-8">
-      {/* Mobile logo */}
       <div className="flex justify-center lg:hidden">
         <Image
           src="/images/header/logo-laveina.svg"
-          alt="Laveina"
+          alt={t("logoAlt")}
           width={148}
           height={43}
           priority
@@ -107,7 +104,6 @@ export function RegisterForm() {
         />
       </div>
 
-      {/* Header */}
       <div>
         <h1 className="font-display text-text-primary text-2xl font-bold sm:text-3xl">
           {t("registerTitle")}
@@ -115,9 +111,7 @@ export function RegisterForm() {
         <p className="text-text-muted mt-2 text-base">{t("registerSubtitle")}</p>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
-        {/* Full Name */}
         <div className="space-y-1.5">
           <Label htmlFor="full_name">{t("fullName")}</Label>
           <Input
@@ -137,7 +131,6 @@ export function RegisterForm() {
           )}
         </div>
 
-        {/* Email */}
         <div className="space-y-1.5">
           <Label htmlFor="email">{t("email")}</Label>
           <Input
@@ -157,7 +150,6 @@ export function RegisterForm() {
           )}
         </div>
 
-        {/* Password */}
         <div className="space-y-1.5">
           <Label htmlFor="password">{t("password")}</Label>
           <PasswordInput
@@ -178,7 +170,6 @@ export function RegisterForm() {
           )}
         </div>
 
-        {/* Confirm Password */}
         <div className="space-y-1.5">
           <Label htmlFor="confirm_password">{t("confirmPassword")}</Label>
           <PasswordInput
@@ -199,7 +190,6 @@ export function RegisterForm() {
           )}
         </div>
 
-        {/* Submit */}
         <Button
           type="submit"
           size="lg"
@@ -217,7 +207,6 @@ export function RegisterForm() {
           )}
         </Button>
 
-        {/* Switch to login */}
         <p className="text-text-muted text-center text-sm">
           {t("hasAccount")}{" "}
           <Link

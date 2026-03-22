@@ -53,11 +53,10 @@ export function ResetPasswordForm() {
 
   return (
     <div className="space-y-8">
-      {/* Mobile logo */}
       <div className="flex justify-center lg:hidden">
         <Image
           src="/images/header/logo-laveina.svg"
-          alt="Laveina"
+          alt={t("logoAlt")}
           width={148}
           height={43}
           priority
@@ -66,7 +65,6 @@ export function ResetPasswordForm() {
         />
       </div>
 
-      {/* Header */}
       <div>
         <h1 className="font-display text-text-primary text-2xl font-bold sm:text-3xl">
           {t("resetPasswordTitle")}
@@ -74,9 +72,7 @@ export function ResetPasswordForm() {
         <p className="text-text-muted mt-2 text-base">{t("resetPasswordSubtitle")}</p>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
-        {/* New Password */}
         <div className="space-y-1.5">
           <Label htmlFor="password">{t("newPassword")}</Label>
           <PasswordInput
@@ -97,7 +93,6 @@ export function ResetPasswordForm() {
           )}
         </div>
 
-        {/* Confirm Password */}
         <div className="space-y-1.5">
           <Label htmlFor="confirm_password">{t("confirmPassword")}</Label>
           <PasswordInput

@@ -1,60 +1,54 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import type { DeliveryMode, ParcelSize } from "@/types/enums";
 import type { PriceBreakdown } from "@/types/shipment";
+import type {
+  BookingStepContactInput,
+  BookingStepOriginInput,
+  BookingStepDestinationInput,
+  BookingStepSpeedInput,
+  ParcelItemInput,
+} from "@/validations/shipment.schema";
 
-type SenderInfo = {
-  name: string;
-  phone: string;
-  email?: string;
-};
+export type BookingStep = 1 | 2 | 3 | 4 | 5;
 
-type ReceiverInfo = {
-  name: string;
-  phone: string;
-  email?: string;
-};
-
-type SelectedPickupPoints = {
-  originId: string;
-  destinationId: string;
-  originPostcode: string;
-  destinationPostcode: string;
-};
-
-type ParcelDetails = {
-  weightKg: number;
-  description?: string;
-};
-
-type BookingStep = 1 | 2 | 3 | 4 | 5;
+export type ParcelDimensions = { lengthCm: number; widthCm: number; heightCm: number };
 
 type BookingState = {
   currentStep: BookingStep;
-  senderInfo: SenderInfo | null;
-  receiverInfo: ReceiverInfo | null;
-  selectedPickupPoints: SelectedPickupPoints | null;
-  parcelDetails: ParcelDetails | null;
-  priceBreakdown: PriceBreakdown | null;
+  contact: BookingStepContactInput | null;
+  origin: BookingStepOriginInput | null;
+  destination: BookingStepDestinationInput | null;
+  parcels: ParcelItemInput[];
+  parcelDimensionsList: ParcelDimensions[];
+  speed: BookingStepSpeedInput | null;
+  deliveryMode: DeliveryMode | null;
+  priceBreakdowns: PriceBreakdown[] | null;
 };
 
 type BookingActions = {
   setStep: (step: BookingStep) => void;
-  setSenderInfo: (info: SenderInfo) => void;
-  setReceiverInfo: (info: ReceiverInfo) => void;
-  setPickupPoints: (points: SelectedPickupPoints) => void;
-  setParcelDetails: (details: ParcelDetails) => void;
-  setPriceBreakdown: (breakdown: PriceBreakdown) => void;
+  setContact: (data: BookingStepContactInput) => void;
+  setOrigin: (data: BookingStepOriginInput) => void;
+  setDestination: (data: BookingStepDestinationInput) => void;
+  setParcels: (parcels: ParcelItemInput[], dimensions: ParcelDimensions[]) => void;
+  setSpeed: (data: BookingStepSpeedInput) => void;
+  setDeliveryMode: (mode: DeliveryMode) => void;
+  setPriceBreakdowns: (breakdowns: PriceBreakdown[]) => void;
   reset: () => void;
 };
 
 const initialState: BookingState = {
   currentStep: 1,
-  senderInfo: null,
-  receiverInfo: null,
-  selectedPickupPoints: null,
-  parcelDetails: null,
-  priceBreakdown: null,
+  contact: null,
+  origin: null,
+  destination: null,
+  parcels: [],
+  parcelDimensionsList: [],
+  speed: null,
+  deliveryMode: null,
+  priceBreakdowns: null,
 };
 
 export const useBookingStore = create<BookingState & BookingActions>()(
@@ -64,20 +58,33 @@ export const useBookingStore = create<BookingState & BookingActions>()(
 
       setStep: (step) => set({ currentStep: step }),
 
-      setSenderInfo: (info) => set({ senderInfo: info, currentStep: 2 }),
+      setContact: (data) => set({ contact: data, currentStep: 2 }),
 
-      setReceiverInfo: (info) => set({ receiverInfo: info, currentStep: 3 }),
+      setOrigin: (data) => set({ origin: data, currentStep: 3 }),
 
-      setPickupPoints: (points) => set({ selectedPickupPoints: points, currentStep: 4 }),
+      setDestination: (data) => set({ destination: data, currentStep: 4 }),
 
-      setParcelDetails: (details) => set({ parcelDetails: details, currentStep: 5 }),
+      setParcels: (parcels, dimensions) =>
+        set({ parcels, parcelDimensionsList: dimensions, currentStep: 5, priceBreakdowns: null }),
 
-      setPriceBreakdown: (breakdown) => set({ priceBreakdown: breakdown }),
+      setSpeed: (data) => set({ speed: data }),
+
+      setDeliveryMode: (mode) =>
+        set({
+          deliveryMode: mode,
+          speed: null, // reset so user re-selects for new mode
+        }),
+
+      setPriceBreakdowns: (breakdowns) => set({ priceBreakdowns: breakdowns }),
 
       reset: () => set(initialState),
     }),
     {
       name: "laveina-booking",
+      version: 2,
+      migrate: () => {
+        return initialState;
+      },
     }
   )
 );

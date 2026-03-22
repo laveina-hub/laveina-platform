@@ -15,6 +15,7 @@ const rolePaths: Record<string, string[]> = {
 
 function isPublicPath(pathname: string): boolean {
   const segments = pathname.split("/").filter(Boolean);
+  // SAFETY: routing.locales is typed as readonly ('en' | 'es' | 'ca')[] — widened for .includes() compatibility
   const locales = routing.locales as readonly string[];
   const pathWithoutLocale =
     segments.length > 0 && locales.includes(segments[0])
@@ -29,6 +30,7 @@ function isPublicPath(pathname: string): boolean {
 
 function getRequiredRole(pathname: string): string[] | null {
   const segments = pathname.split("/").filter(Boolean);
+  // SAFETY: routing.locales is typed as readonly ('en' | 'es' | 'ca')[] — widened for .includes() compatibility
   const locales = routing.locales as readonly string[];
   const pathWithoutLocale =
     segments.length > 0 && locales.includes(segments[0])
@@ -62,8 +64,8 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!user) {
-    // Preserve the locale prefix so next-intl keeps the user in the same locale.
     const segments = pathname.split("/").filter(Boolean);
+    // SAFETY: routing.locales is typed as readonly ('en' | 'es' | 'ca')[] — widened for .includes() compatibility
     const locales = routing.locales as readonly string[];
     const locale =
       segments.length > 0 && locales.includes(segments[0]) ? segments[0] : routing.defaultLocale;

@@ -32,7 +32,8 @@ async function fetchShipments(filters: ShipmentFilters): Promise<PaginatedRespon
     throw new Error(error.error?.message ?? "Failed to fetch shipments");
   }
 
-  return response.json();
+  const result = await response.json();
+  return result.data;
 }
 
 async function fetchShipment(id: string): Promise<ShipmentWithRelations> {

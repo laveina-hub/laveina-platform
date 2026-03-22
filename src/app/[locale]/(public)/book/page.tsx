@@ -1,10 +1,17 @@
-import { setRequestLocale } from "next-intl/server";
+import type { Metadata } from "next";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { RequestDeliverySection } from "@/components/sections/request-delivery";
 
 type Props = {
   params: Promise<{ locale: string }>;
 };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "booking" });
+  return { title: t("title") };
+}
 
 export default async function BookPage({ params }: Props) {
   const { locale } = await params;

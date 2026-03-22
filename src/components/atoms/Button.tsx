@@ -15,7 +15,7 @@ const variantStyles = {
 
 const sizeStyles = {
   sm: "rounded-lg px-6 py-2 text-sm",
-  md: "rounded-lg px-6 py-3 text-base",
+  md: "rounded-lg px-5 py-2.5 text-sm",
   lg: "rounded-xl px-7 py-4 text-base sm:px-8 sm:py-5 sm:text-2xl",
   xl: "rounded-md px-6 py-3 text-base 2xl:px-10 2xl:py-7 2xl:text-2xl",
   nav: "rounded-lg px-6 py-2 text-base xl:px-10 xl:py-4 xl:text-2xl",

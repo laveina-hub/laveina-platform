@@ -1,33 +1,54 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { z } from "zod";
 
-import { createClient } from "@/lib/supabase/server";
+import { verifyAuth } from "@/lib/supabase/auth";
 import { listShipments } from "@/services/shipment.service";
-import type { ShipmentStatus } from "@/types/enums";
+import { ShipmentStatus } from "@/types/enums";
+
+const listQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(20),
+  status: z.enum(Object.values(ShipmentStatus) as [string, ...string[]]).optional(),
+  customerId: z.string().uuid().optional(),
+  search: z.string().optional(),
+});
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await verifyAuth();
+  if (auth.error) return auth.error;
+  const { user, role } = auth;
 
   const { searchParams } = new URL(request.url);
-  const result = await listShipments({
-    page: Number(searchParams.get("page") ?? "1"),
-    pageSize: Number(searchParams.get("pageSize") ?? "20"),
-    status: (searchParams.get("status") as ShipmentStatus) ?? undefined,
-    customer_id: searchParams.get("customerId") ?? undefined,
+  const parsed = listQuerySchema.safeParse({
+    page: searchParams.get("page") ?? undefined,
+    pageSize: searchParams.get("pageSize") ?? undefined,
+    status: searchParams.get("status") ?? undefined,
+    customerId: searchParams.get("customerId") ?? undefined,
     search: searchParams.get("search") ?? undefined,
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid query parameters", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  // Customers can only see their own shipments
+  const effectiveCustomerId = role === "admin" ? parsed.data.customerId : user.id;
+
+  const result = await listShipments({
+    page: parsed.data.page,
+    pageSize: parsed.data.pageSize,
+    status: parsed.data.status as (typeof ShipmentStatus)[keyof typeof ShipmentStatus] | undefined,
+    customer_id: effectiveCustomerId,
+    search: parsed.data.search,
   });
 
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
 
-  return NextResponse.json(result.data);
+  return NextResponse.json({ data: result.data });
 }

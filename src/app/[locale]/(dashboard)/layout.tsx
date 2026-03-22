@@ -1,7 +1,9 @@
+import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Topbar } from "@/components/layout/Topbar";
+import { DashboardShell } from "@/components/layout/DashboardShell";
+import { createClient } from "@/lib/supabase/server";
+import type { UserRole } from "@/types/enums";
 
 type Props = {
   children: React.ReactNode;
@@ -12,14 +14,27 @@ export default async function DashboardLayout({ children, params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar />
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-6">{children}</main>
-      </div>
-    </div>
+  if (!user) {
+    redirect(`/${locale}/auth/login`);
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, full_name")
+    .eq("id", user.id)
+    .single();
+
+  const role = (profile?.role as UserRole) ?? "customer";
+  const userFullName = profile?.full_name ?? user.email ?? "User";
+
+  return (
+    <DashboardShell role={role} userFullName={userFullName}>
+      {children}
+    </DashboardShell>
   );
 }

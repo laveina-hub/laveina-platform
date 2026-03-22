@@ -78,7 +78,6 @@ export function PickupPointsNetworkSection() {
   );
 }
 
-/** Props shared by both card variants. */
 interface PickupCardProps {
   name: string;
   status: string;

@@ -17,6 +17,7 @@
     "db:gen-types": "supabase gen types typescript --project-id bqwfnitptbrqpqzopmkv > src/types/database.types.ts",
     "db:migrate": "supabase db push",
     "db:reset": "supabase db reset",
+    "db:seed": "node scripts/seed-hosted.js",
     "prepare": "husky"
   },
   "dependencies": {
@@ -39,6 +40,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "html5-qrcode": "^2.3.8",
+    "lucide-react": "^0.577.0",
     "next": "^15.1.0",
     "next-intl": "^3.26.0",
     "qrcode": "^1.5.4",
@@ -67,6 +69,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.31.0",
     "husky": "^9.1.7",
+    "jsdom": "^29.0.0",
     "lint-staged": "^16.3.3",
     "postcss": "^8.4.49",
     "prettier": "^3.4.2",

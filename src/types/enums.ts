@@ -18,11 +18,26 @@ export const UserRole = {
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
-export const ZoneType = {
-  A: "A",
-  B: "B",
-  C: "C",
-  D: "D",
+export const DeliveryMode = {
+  INTERNAL: "internal",
+  SENDCLOUD: "sendcloud",
 } as const;
 
-export type ZoneType = (typeof ZoneType)[keyof typeof ZoneType];
+export type DeliveryMode = (typeof DeliveryMode)[keyof typeof DeliveryMode];
+
+export const DeliverySpeed = {
+  STANDARD: "standard",
+  EXPRESS: "express",
+} as const;
+
+export type DeliverySpeed = (typeof DeliverySpeed)[keyof typeof DeliverySpeed];
+
+export const ParcelSize = {
+  SMALL: "small",
+  MEDIUM: "medium",
+  LARGE: "large",
+  EXTRA_LARGE: "extra_large",
+  XXL: "xxl",
+} as const;
+
+export type ParcelSize = (typeof ParcelSize)[keyof typeof ParcelSize];

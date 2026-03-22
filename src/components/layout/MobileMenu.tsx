@@ -13,16 +13,16 @@ import { cn } from "@/lib/utils";
 
 import { LocaleSwitcherMobile } from "./LocaleSwitcherMobile";
 
-function getDashboardPath(role?: string): string {
-  if (role === "admin") return "/admin";
-  if (role === "pickup_point") return "/pickup-point";
-  return "/customer";
-}
+const DASHBOARD_PATHS: Record<string, string> = {
+  admin: "/admin",
+  pickup_point: "/pickup-point",
+};
 
 export function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const t = useTranslations("nav");
+  const tCommon = useTranslations("common");
   const pathname = usePathname();
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -77,19 +77,15 @@ export function MobileMenu() {
 
   useEffect(() => {
     if (!isOpen || !panelRef.current) return;
-
     const panel = panelRef.current;
-    const focusableSelector = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
     function handleTabTrap(event: KeyboardEvent) {
       if (event.key !== "Tab") return;
-
-      const focusable = panel.querySelectorAll<HTMLElement>(focusableSelector);
+      const focusable = panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
       if (focusable.length === 0) return;
-
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
@@ -98,11 +94,11 @@ export function MobileMenu() {
         first.focus();
       }
     }
-
     document.addEventListener("keydown", handleTabTrap);
     return () => document.removeEventListener("keydown", handleTabTrap);
   }, [isOpen]);
 
+  // SAFETY: role comes from Supabase user metadata which is always string | undefined
   const role = user?.user_metadata?.role as string | undefined;
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "";
   const initials = displayName
@@ -118,7 +114,6 @@ export function MobileMenu() {
     router.push("/");
     router.refresh();
   }
-
   return (
     <div className="lg:hidden">
       <button
@@ -143,10 +138,8 @@ export function MobileMenu() {
         )}
       </button>
 
-      {/* Overlay + Slide-in panel */}
       {isOpen && (
         <>
-          {/* Backdrop overlay */}
           <div
             className={cn(
               "bg-text-primary/40 fixed inset-0 z-40 transition-opacity duration-300",
@@ -156,23 +149,21 @@ export function MobileMenu() {
             onClick={close}
           />
 
-          {/* Slide-in nav panel */}
           <nav
             ref={panelRef}
             id="mobile-nav"
             role="dialog"
             aria-modal="true"
-            aria-label="Mobile navigation"
+            aria-label={tCommon("mobileNavigation")}
             className={cn(
               "bg-bg-primary fixed top-0 right-0 z-50 flex h-full w-72 flex-col shadow-xl transition-transform duration-300 ease-out sm:w-80",
               isAnimating ? "translate-x-0" : "translate-x-full"
             )}
           >
-            {/* Panel header */}
             <div className="border-border-default flex h-19 shrink-0 items-center justify-between border-b px-6">
               <Image
                 src="/images/header/logo-laveina.svg"
-                alt="Laveina"
+                alt={t("home")}
                 width={120}
                 height={35}
                 unoptimized
@@ -187,7 +178,6 @@ export function MobileMenu() {
               </button>
             </div>
 
-            {/* User info (when logged in) */}
             {user && (
               <div className="border-border-default flex items-center gap-3 border-b px-6 py-4">
                 <span className="bg-primary-500 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white">
@@ -200,7 +190,6 @@ export function MobileMenu() {
               </div>
             )}
 
-            {/* Navigation links */}
             <ul className="flex-1 overflow-y-auto px-4 py-4">
               {NAV_LINKS.map(({ key, href }) => {
                 const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
@@ -221,11 +210,10 @@ export function MobileMenu() {
                 );
               })}
 
-              {/* Dashboard link (when logged in) */}
               {user && (
                 <li>
                   <Link
-                    href={getDashboardPath(role)}
+                    href={DASHBOARD_PATHS[role ?? ""] ?? "/customer"}
                     className="text-text-primary hover:bg-bg-muted hover:text-primary-500 flex items-center rounded-lg px-3 py-3 text-sm font-medium transition-colors"
                   >
                     {t("dashboard")}
@@ -234,7 +222,6 @@ export function MobileMenu() {
               )}
             </ul>
 
-            {/* Language switcher + Auth action */}
             <div className="border-border-default shrink-0 space-y-3 border-t p-4">
               <LocaleSwitcherMobile />
 

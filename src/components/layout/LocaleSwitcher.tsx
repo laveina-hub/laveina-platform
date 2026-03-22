@@ -41,7 +41,6 @@ export function LocaleSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -54,7 +53,6 @@ export function LocaleSwitcher() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isOpen]);
 
-  // Close on Escape
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setIsOpen(false);
@@ -67,7 +65,6 @@ export function LocaleSwitcher() {
 
   return (
     <div ref={containerRef} className="relative">
-      {/* Trigger */}
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
@@ -106,7 +103,6 @@ export function LocaleSwitcher() {
         </svg>
       </button>
 
-      {/* Dropdown panel */}
       <div
         className={cn(
           "absolute right-0 z-50 mt-3 w-48 origin-top-right transition-all duration-200",
@@ -150,7 +146,6 @@ export function LocaleSwitcher() {
                       {loc}
                     </span>
                   </div>
-                  {/* Active check */}
                   <div
                     className={cn(
                       "flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-all",

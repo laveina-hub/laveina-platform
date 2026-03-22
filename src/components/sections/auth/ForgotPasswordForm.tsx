@@ -53,11 +53,10 @@ export function ForgotPasswordForm() {
   if (emailSent) {
     return (
       <div className="space-y-8">
-        {/* Mobile logo */}
         <div className="flex justify-center lg:hidden">
           <Image
             src="/images/header/logo-laveina.svg"
-            alt="Laveina"
+            alt={t("logoAlt")}
             width={148}
             height={43}
             priority
@@ -89,11 +88,10 @@ export function ForgotPasswordForm() {
 
   return (
     <div className="space-y-8">
-      {/* Mobile logo */}
       <div className="flex justify-center lg:hidden">
         <Image
           src="/images/header/logo-laveina.svg"
-          alt="Laveina"
+          alt={t("logoAlt")}
           width={148}
           height={43}
           priority
@@ -102,7 +100,6 @@ export function ForgotPasswordForm() {
         />
       </div>
 
-      {/* Header */}
       <div>
         <h1 className="font-display text-text-primary text-2xl font-bold sm:text-3xl">
           {t("forgotPasswordTitle")}
@@ -110,7 +107,6 @@ export function ForgotPasswordForm() {
         <p className="text-text-muted mt-2 text-base">{t("forgotPasswordSubtitle")}</p>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
         <div className="space-y-1.5">
           <Label htmlFor="email">{t("email")}</Label>

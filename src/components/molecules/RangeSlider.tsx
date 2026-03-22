@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useId } from "react";
 
 import { ArrowIcon } from "@/components/icons";
@@ -27,10 +28,13 @@ function RangeSlider({
   step = 1,
   unit,
   ariaLabel,
-  decreaseLabel = "Decrease",
-  increaseLabel = "Increase",
+  decreaseLabel,
+  increaseLabel,
   className,
 }: RangeSliderProps) {
+  const tCommon = useTranslations("common");
+  const resolvedDecreaseLabel = decreaseLabel ?? tCommon("decrease");
+  const resolvedIncreaseLabel = increaseLabel ?? tCommon("increase");
   const sliderId = useId();
 
   const decrease = () => onChange(Math.max(min, parseFloat((value - step).toFixed(1))));
@@ -63,7 +67,7 @@ function RangeSlider({
               <button
                 type="button"
                 onClick={decrease}
-                aria-label={decreaseLabel}
+                aria-label={resolvedDecreaseLabel}
                 tabIndex={-1}
                 className="text-text-muted hover:text-primary-500 flex h-5 w-4 items-center justify-center text-xs transition-colors focus:outline-none"
               >
@@ -75,7 +79,7 @@ function RangeSlider({
               <button
                 type="button"
                 onClick={increase}
-                aria-label={increaseLabel}
+                aria-label={resolvedIncreaseLabel}
                 tabIndex={-1}
                 className="text-text-muted hover:text-primary-500 flex h-5 w-4 items-center justify-center text-xs transition-colors focus:outline-none"
               >

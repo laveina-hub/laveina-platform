@@ -9,6 +9,11 @@
 
 
 -- ============================================================
+-- 0. EXTENSIONS
+-- ============================================================
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
+-- ============================================================
 -- 1. ENUMS
 -- ============================================================
 
@@ -237,7 +242,7 @@ CREATE TABLE public.shipments (
 
   -- Payment
   stripe_payment_intent_id    TEXT,
-  stripe_checkout_session_id  TEXT,
+  stripe_checkout_session_id  TEXT,          -- not UNIQUE: multi-parcel bookings share one session
 
   -- Status
   status                      public.shipment_status NOT NULL DEFAULT 'payment_confirmed',
@@ -329,6 +334,13 @@ CREATE TABLE public.otp_verifications (
 CREATE INDEX idx_otp_shipment ON public.otp_verifications(shipment_id);
 CREATE INDEX idx_otp_expires ON public.otp_verifications(expires_at);
 
+-- Prevent race condition: only one unverified OTP per shipment at a time.
+-- Expired rows are cleaned up by the application (or a future cron), so this
+-- constraint ensures no duplicate pending OTPs exist for the same shipment.
+CREATE UNIQUE INDEX idx_otp_active_per_shipment
+  ON public.otp_verifications (shipment_id)
+  WHERE verified = false;
+
 
 -- ----- ADMIN SETTINGS -----
 -- Key-value store for admin-configurable settings
@@ -342,6 +354,25 @@ CREATE TABLE public.admin_settings (
 
 CREATE TRIGGER set_admin_settings_updated_at
   BEFORE UPDATE ON public.admin_settings
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+-- ----- PARCEL SIZE CONFIG -----
+-- Physical dimensions and weight limits per parcel size (admin-editable).
+-- The 5 size keys are fixed by the parcel_size enum above.
+-- Admin can update dimensions/max weight from /admin/settings.
+CREATE TABLE public.parcel_size_config (
+  size          public.parcel_size PRIMARY KEY,
+  max_weight_kg NUMERIC(5,2)  NOT NULL CHECK (max_weight_kg > 0),
+  length_cm     INTEGER       NOT NULL CHECK (length_cm > 0),
+  width_cm      INTEGER       NOT NULL CHECK (width_cm > 0),
+  height_cm     INTEGER       NOT NULL CHECK (height_cm > 0),
+  is_active     BOOLEAN       NOT NULL DEFAULT true,
+  updated_at    TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+
+CREATE TRIGGER set_parcel_size_config_updated_at
+  BEFORE UPDATE ON public.parcel_size_config
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
@@ -361,6 +392,43 @@ CREATE TABLE public.notifications_log (
 CREATE INDEX idx_notifications_log_shipment ON public.notifications_log(shipment_id);
 CREATE INDEX idx_notifications_log_status ON public.notifications_log(status);
 
+-- Pending bookings — stores full booking data before Stripe checkout.
+-- Supports multi-parcel bookings (avoids Stripe metadata size limits).
+-- The Stripe webhook reads from this table to create shipments.
+-- Rows are marked processed=true after the webhook handles them.
+-- Cleanup: delete unprocessed rows older than 24h via pg_cron.
+
+CREATE TABLE public.pending_bookings (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  booking_data   JSONB NOT NULL,
+  processed      BOOLEAN NOT NULL DEFAULT false,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_pending_bookings_customer ON public.pending_bookings(customer_id);
+CREATE INDEX idx_pending_bookings_cleanup ON public.pending_bookings(processed, created_at)
+  WHERE NOT processed;
+
+
+-- ----- AUDIT LOGS -----
+-- Tracks sensitive operations for compliance and debugging.
+CREATE TABLE public.audit_logs (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id    UUID REFERENCES public.profiles(id),       -- NULL for system/webhook actions
+  action      TEXT NOT NULL,                               -- e.g. 'payment.completed', 'otp.verified', 'settings.updated'
+  resource    TEXT NOT NULL,                               -- e.g. 'shipment', 'pickup_point', 'admin_settings'
+  resource_id TEXT,                                        -- ID of the affected resource (nullable for bulk ops)
+  metadata    JSONB DEFAULT '{}'::jsonb,                   -- Additional context (amounts, old/new values, etc.)
+  ip_address  TEXT,                                        -- Client IP when available
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_audit_logs_actor ON public.audit_logs(actor_id);
+CREATE INDEX idx_audit_logs_action ON public.audit_logs(action);
+CREATE INDEX idx_audit_logs_resource ON public.audit_logs(resource, resource_id);
+CREATE INDEX idx_audit_logs_created_at ON public.audit_logs(created_at DESC);
+
 
 -- ============================================================
 -- 4. ROW LEVEL SECURITY (RLS)
@@ -369,11 +437,14 @@ CREATE INDEX idx_notifications_log_status ON public.notifications_log(status);
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pickup_points ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.insurance_options ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.parcel_size_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shipments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.scan_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.otp_verifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pending_bookings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- ===== PROFILES =====
 CREATE POLICY profiles_select_own ON public.profiles
@@ -406,6 +477,15 @@ CREATE POLICY insurance_options_select_active ON public.insurance_options
 
 CREATE POLICY insurance_options_admin_all ON public.insurance_options
   FOR ALL USING (public.get_user_role() = 'admin');
+
+-- ===== PARCEL SIZE CONFIG =====
+-- Everyone can read (needed for booking form + pricing page)
+-- Only admin can update dimensions/weights
+CREATE POLICY parcel_size_config_select_all ON public.parcel_size_config
+  FOR SELECT USING (true);
+
+CREATE POLICY parcel_size_config_admin_update ON public.parcel_size_config
+  FOR UPDATE USING (public.get_user_role() = 'admin');
 
 -- ===== SHIPMENTS =====
 CREATE POLICY shipments_select_own ON public.shipments
@@ -459,3 +539,49 @@ CREATE POLICY notifications_log_select_own ON public.notifications_log
   FOR SELECT USING (
     shipment_id IN (SELECT id FROM public.shipments WHERE customer_id = auth.uid())
   );
+
+
+-- ===== AUDIT LOGS =====
+CREATE POLICY audit_logs_select_admin ON public.audit_logs
+  FOR SELECT USING (public.get_user_role() = 'admin');
+
+CREATE POLICY audit_logs_insert_authenticated ON public.audit_logs
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+-- ===== PENDING BOOKINGS =====
+CREATE POLICY pending_bookings_insert_own ON public.pending_bookings
+  FOR INSERT WITH CHECK (auth.uid() = customer_id);
+
+CREATE POLICY pending_bookings_service_role ON public.pending_bookings
+  FOR ALL TO service_role
+  USING (true) WITH CHECK (true);
+
+
+-- ============================================================
+-- 5. RPC FUNCTIONS
+-- ============================================================
+
+-- Admin dashboard stats — single DB round-trip for all aggregations
+CREATE OR REPLACE FUNCTION public.get_admin_dashboard_stats()
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+AS $$
+  SELECT jsonb_build_object(
+    'total_shipments',    COUNT(*),
+    'waiting_at_origin',  COUNT(*) FILTER (WHERE status = 'waiting_at_origin'),
+    'received_at_origin', COUNT(*) FILTER (WHERE status = 'received_at_origin'),
+    'in_transit',         COUNT(*) FILTER (WHERE status = 'in_transit'),
+    'arrived_at_destination', COUNT(*) FILTER (WHERE status = 'arrived_at_destination'),
+    'ready_for_pickup',   COUNT(*) FILTER (WHERE status = 'ready_for_pickup'),
+    'delivered',          COUNT(*) FILTER (WHERE status = 'delivered'),
+    'total_revenue_cents', COALESCE(SUM(price_cents), 0),
+    'active_pickup_points', (
+      SELECT COUNT(*) FROM public.pickup_points WHERE is_active = true
+    )
+  )
+  FROM public.shipments;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_admin_dashboard_stats() TO authenticated;

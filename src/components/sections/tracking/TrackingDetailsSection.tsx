@@ -1,19 +1,44 @@
+"use client";
+
 import { useTranslations } from "next-intl";
 
-import { Button, CardHeader, CardShell, Text } from "@/components/atoms";
+import { CardHeader, CardShell, Text } from "@/components/atoms";
 
 interface TrackingDetailsSectionProps {
   trackingId: string;
+  bookingDate?: string;
+  originName?: string;
+  destinationName?: string;
+  status?: string;
+  carrierName?: string | null;
+  carrierTrackingNumber?: string | null;
 }
 
-export function TrackingDetailsSection({ trackingId }: TrackingDetailsSectionProps) {
+export function TrackingDetailsSection({
+  trackingId,
+  bookingDate,
+  originName,
+  destinationName,
+  status,
+  carrierName,
+  carrierTrackingNumber,
+}: TrackingDetailsSectionProps) {
   const t = useTranslations("tracking");
+  const tStatus = useTranslations("tracking.status");
+
+  const formattedDate = bookingDate
+    ? new Intl.DateTimeFormat(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }).format(new Date(bookingDate))
+    : "—";
 
   const fields = [
-    { label: t("orderId"), value: t("maskedValue") },
-    { label: t("bookingDate"), value: t("maskedValue") },
-    { label: t("from"), value: t("maskedValue") },
-    { label: t("to"), value: t("maskedValue") },
+    { label: t("orderId"), value: trackingId },
+    { label: t("bookingDate"), value: formattedDate },
+    { label: t("from"), value: originName ?? "—" },
+    { label: t("to"), value: destinationName ?? "—" },
   ];
 
   return (
@@ -34,16 +59,27 @@ export function TrackingDetailsSection({ trackingId }: TrackingDetailsSectionPro
           ))}
         </div>
         <div className="mt-4 flex justify-end">
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            className="font-body h-fit w-full shrink-0 px-4 py-3 text-base font-medium md:w-32 md:text-xl lg:py-5"
-          >
-            {t("help")}
-          </Button>
+          {status && (
+            <div className="font-body bg-primary-50 text-primary-700 flex h-fit items-center rounded-lg px-4 py-3 text-base font-medium md:text-xl lg:py-5">
+              {tStatus(status)}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Only shown for SendCloud shipments */}
+      {carrierName && carrierTrackingNumber && (
+        <div className="border-border-muted border-t px-7 py-5 md:px-8">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-body text-text-muted text-base">{t("carrier")}:</span>
+            <span className="font-body text-text-primary text-base font-medium">{carrierName}</span>
+            <span className="font-body text-text-muted text-base">—</span>
+            <span className="font-body text-text-primary text-base font-medium">
+              {carrierTrackingNumber}
+            </span>
+          </div>
+        </div>
+      )}
     </CardShell>
   );
 }
