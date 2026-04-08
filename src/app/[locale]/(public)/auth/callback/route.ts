@@ -18,7 +18,7 @@ export async function GET(
   const localePrefix =
     locale && (routing.locales as readonly string[]).includes(locale) ? `/${locale}` : "";
 
-  const redirectPath = next.startsWith("/auth") ? `${localePrefix}${next}` : next;
+  const redirectPath = next.startsWith(localePrefix) ? next : `${localePrefix}${next}`;
   const successUrl = `${origin}${redirectPath}`;
 
   if (code) {
