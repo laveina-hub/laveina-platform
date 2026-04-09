@@ -1,8 +1,9 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { useTransition } from "react";
 
-import { Link, usePathname } from "@/i18n/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
@@ -12,29 +13,37 @@ const LOCALE_NAMES: Record<string, { native: string; code: string }> = {
   ca: { native: "Catala", code: "CA" },
 };
 
-/** Polished mobile/footer locale switcher — segmented control with sliding indicator feel. */
 export function LocaleSwitcherMobile() {
   const t = useTranslations("localeSwitcher");
   const locale = useLocale();
   const pathname = usePathname();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   return (
     <div
       role="radiogroup"
       aria-label={t("ariaLabel")}
-      className="border-border-default bg-bg-secondary flex gap-0.5 rounded-xl border p-1"
+      className={cn(
+        "border-border-default bg-bg-secondary flex gap-0.5 rounded-xl border p-1 transition-opacity",
+        isPending && "pointer-events-none opacity-60"
+      )}
     >
       {routing.locales.map((loc) => {
         const isActive = loc === locale;
         const config = LOCALE_NAMES[loc];
         return (
-          <Link
+          <button
             key={loc}
-            href={pathname}
-            locale={loc}
-            scroll={false}
+            type="button"
+            onClick={() => {
+              startTransition(() => {
+                router.replace({ pathname }, { locale: loc });
+              });
+            }}
             role="radio"
             aria-checked={isActive}
+            disabled={isPending}
             className={cn(
               "relative flex flex-1 flex-col items-center gap-0.5 rounded-lg px-2 py-2.5 transition-all duration-200",
               isActive ? "bg-white shadow-sm" : "hover:bg-white/50"
@@ -62,7 +71,7 @@ export function LocaleSwitcherMobile() {
                 isActive ? "bg-primary-500 scale-100 opacity-100" : "scale-0 opacity-0"
               )}
             />
-          </Link>
+          </button>
         );
       })}
     </div>

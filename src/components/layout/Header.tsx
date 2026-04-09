@@ -11,7 +11,7 @@ export function Header() {
 
   return (
     <header className="bg-primary-100 sticky top-0 z-50">
-      <div className="max-w-container mx-auto flex items-center justify-between px-6 py-4 lg:px-10 lg:py-7">
+      <div className="max-w-container mx-auto flex items-center justify-between px-6 py-3 lg:px-8 lg:py-4 xl:px-10 xl:py-5">
         <Link href="/" className="shrink-0" aria-label={t("logoAriaLabel")}>
           <Image
             src="/images/header/logo-laveina.svg"

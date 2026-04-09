@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+import {
+  MAX_LONGEST_SIDE_CM,
+  MAX_TOTAL_DIMENSIONS_CM,
+  MAX_WEIGHT_KG,
+} from "@/constants/parcel-sizes";
+
 export const bookingStepContactSchema = z.object({
   sender_name: z.string().min(2, "validation.nameMin"),
   sender_phone: z.string().regex(/^\+?[\d\s\-]{9,15}$/, "validation.phoneInvalid"),
@@ -17,16 +23,26 @@ export const bookingStepDestinationSchema = z.object({
   destination_pickup_point_id: z.string().uuid("validation.pickupPointRequired"),
 });
 
-export const parcelItemSchema = z.object({
-  parcel_size: z.enum(["small", "medium", "large", "extra_large", "xxl"], {
-    errorMap: () => ({ message: "validation.parcelSizeRequired" }),
-  }),
-  weight_kg: z
-    .number({ invalid_type_error: "validation.weightRequired" })
-    .positive("validation.weightPositive")
-    .max(25, "validation.weightMax"),
-  insurance_option_id: z.string().uuid("validation.required").nullable(),
-});
+const dimensionField = z
+  .number({ invalid_type_error: "validation.dimensionRequired" })
+  .positive("validation.dimensionPositive")
+  .max(MAX_LONGEST_SIDE_CM, "validation.longestSideExceeded");
+
+export const parcelItemSchema = z
+  .object({
+    length_cm: dimensionField,
+    width_cm: dimensionField,
+    height_cm: dimensionField,
+    weight_kg: z
+      .number({ invalid_type_error: "validation.weightRequired" })
+      .positive("validation.weightPositive")
+      .max(MAX_WEIGHT_KG, "validation.weightMax"),
+    insurance_option_id: z.string().uuid("validation.required").nullable(),
+  })
+  .refine((data) => data.length_cm + data.width_cm + data.height_cm <= MAX_TOTAL_DIMENSIONS_CM, {
+    message: "validation.totalDimensionsExceeded",
+    path: ["length_cm"],
+  });
 
 export const bookingStepParcelSchema = z.object({
   parcels: z.array(parcelItemSchema).min(1, "validation.atLeastOneParcel"),
@@ -48,11 +64,18 @@ export const createCheckoutSchema = z.object({
   destination_pickup_point_id: z.string().uuid(),
   parcels: z
     .array(
-      z.object({
-        parcel_size: z.enum(["small", "medium", "large", "extra_large", "xxl"]),
-        weight_kg: z.number().positive().max(25),
-        insurance_option_id: z.string().uuid().nullable(),
-      })
+      z
+        .object({
+          length_cm: z.number().positive().max(MAX_LONGEST_SIDE_CM),
+          width_cm: z.number().positive().max(MAX_LONGEST_SIDE_CM),
+          height_cm: z.number().positive().max(MAX_LONGEST_SIDE_CM),
+          weight_kg: z.number().positive().max(MAX_WEIGHT_KG),
+          insurance_option_id: z.string().uuid().nullable(),
+        })
+        .refine(
+          (data) => data.length_cm + data.width_cm + data.height_cm <= MAX_TOTAL_DIMENSIONS_CM,
+          { message: "validation.totalDimensionsExceeded", path: ["length_cm"] }
+        )
     )
     .min(1),
   delivery_speed: z.enum(["standard", "express"]),

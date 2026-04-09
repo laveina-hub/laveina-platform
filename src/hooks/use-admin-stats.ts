@@ -39,6 +39,6 @@ export function useAdminStats() {
   return useQuery({
     queryKey: ["admin", "stats"],
     queryFn: fetchAdminStats,
-    staleTime: 30_000,
+    staleTime: 2 * 60 * 1000,
   });
 }

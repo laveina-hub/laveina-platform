@@ -29,6 +29,47 @@ export type Database = {
         };
         Relationships: [];
       };
+      audit_logs: {
+        Row: {
+          action: string;
+          actor_id: string | null;
+          created_at: string;
+          id: string;
+          ip_address: string | null;
+          metadata: Json | null;
+          resource: string;
+          resource_id: string | null;
+        };
+        Insert: {
+          action: string;
+          actor_id?: string | null;
+          created_at?: string;
+          id?: string;
+          ip_address?: string | null;
+          metadata?: Json | null;
+          resource: string;
+          resource_id?: string | null;
+        };
+        Update: {
+          action?: string;
+          actor_id?: string | null;
+          created_at?: string;
+          id?: string;
+          ip_address?: string | null;
+          metadata?: Json | null;
+          resource?: string;
+          resource_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       insurance_options: {
         Row: {
           coverage_amount_cents: number;
@@ -137,31 +178,25 @@ export type Database = {
       };
       parcel_size_config: {
         Row: {
-          height_cm: number;
           is_active: boolean;
-          length_cm: number;
+          min_weight_kg: number;
           max_weight_kg: number;
           size: Database["public"]["Enums"]["parcel_size"];
           updated_at: string;
-          width_cm: number;
         };
         Insert: {
-          height_cm: number;
           is_active?: boolean;
-          length_cm: number;
+          min_weight_kg: number;
           max_weight_kg: number;
           size: Database["public"]["Enums"]["parcel_size"];
           updated_at?: string;
-          width_cm: number;
         };
         Update: {
-          height_cm?: number;
           is_active?: boolean;
-          length_cm?: number;
+          min_weight_kg?: number;
           max_weight_kg?: number;
           size?: Database["public"]["Enums"]["parcel_size"];
           updated_at?: string;
-          width_cm?: number;
         };
         Relationships: [];
       };
@@ -486,6 +521,7 @@ export type Database = {
     Functions: {
       generate_tracking_id: { Args: never; Returns: string };
       get_admin_dashboard_stats: { Args: never; Returns: Json };
+      get_total_revenue_cents: { Args: never; Returns: number };
       get_user_role: {
         Args: never;
         Returns: Database["public"]["Enums"]["user_role"];
@@ -494,7 +530,7 @@ export type Database = {
     Enums: {
       delivery_mode: "internal" | "sendcloud";
       delivery_speed: "standard" | "express";
-      parcel_size: "small" | "medium" | "large" | "extra_large" | "xxl";
+      parcel_size: "tier_1" | "tier_2" | "tier_3" | "tier_4" | "tier_5" | "tier_6";
       shipment_status:
         | "payment_confirmed"
         | "waiting_at_origin"
@@ -631,7 +667,7 @@ export const Constants = {
     Enums: {
       delivery_mode: ["internal", "sendcloud"],
       delivery_speed: ["standard", "express"],
-      parcel_size: ["small", "medium", "large", "extra_large", "xxl"],
+      parcel_size: ["tier_1", "tier_2", "tier_3", "tier_4", "tier_5", "tier_6"],
       shipment_status: [
         "payment_confirmed",
         "waiting_at_origin",

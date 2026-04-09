@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import { env } from "@/env";
 
-/** Bypasses RLS — use only in server-side code (API routes, webhooks, background jobs). */
+/** Bypasses RLS — server-side only. */
 export function createAdminClient() {
   return createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: {

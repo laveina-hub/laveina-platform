@@ -2,13 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { ArrowLeft, CreditCard } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button, CardBody, CardHeader, CardShell, Divider } from "@/components/atoms";
-import { PARCEL_SIZE_FALLBACKS } from "@/constants/parcel-sizes";
 import { useBookingStore } from "@/hooks/use-booking-store";
 import { bookingStepSpeedSchema, type BookingStepSpeedInput } from "@/validations/shipment.schema";
 
@@ -27,7 +27,6 @@ export function Step5Speed() {
     origin,
     destination,
     parcels,
-    parcelDimensionsList,
     deliveryMode,
     speed,
     priceBreakdowns,
@@ -38,7 +37,12 @@ export function Step5Speed() {
 
   const parcelKey =
     parcels.length > 0
-      ? parcels.map((p) => `${p.parcel_size}-${p.weight_kg}-${p.insurance_option_id}`).join("|")
+      ? parcels
+          .map(
+            (p) =>
+              `${p.length_cm}-${p.width_cm}-${p.height_cm}-${p.weight_kg}-${p.insurance_option_id}`
+          )
+          .join("|")
       : null;
 
   const ratesMutation = useMutation({
@@ -50,23 +54,16 @@ export function Step5Speed() {
   useEffect(() => {
     if (!origin || !destination || parcels.length === 0 || !parcelKey) return;
 
-    const parcelParams = parcels.map((p, i) => {
-      const stored = parcelDimensionsList[i];
-      const fallback = PARCEL_SIZE_FALLBACKS[p.parcel_size];
-      return {
-        parcel_size: p.parcel_size,
-        weight_kg: p.weight_kg,
-        length_cm: stored?.lengthCm ?? fallback.lengthCm,
-        width_cm: stored?.widthCm ?? fallback.widthCm,
-        height_cm: stored?.heightCm ?? fallback.heightCm,
-        insurance_option_id: p.insurance_option_id,
-      };
-    });
-
     ratesMutation.mutate({
       origin_postcode: origin.origin_postcode,
       destination_postcode: destination.destination_postcode,
-      parcels: parcelParams,
+      parcels: parcels.map((p) => ({
+        weight_kg: p.weight_kg,
+        length_cm: p.length_cm,
+        width_cm: p.width_cm,
+        height_cm: p.height_cm,
+        insurance_option_id: p.insurance_option_id,
+      })),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parcelKey]);
@@ -100,8 +97,10 @@ export function Step5Speed() {
       ...origin,
       ...destination,
       parcels: parcels.map((p) => ({
-        parcel_size: p.parcel_size,
         weight_kg: p.weight_kg,
+        length_cm: p.length_cm,
+        width_cm: p.width_cm,
+        height_cm: p.height_cm,
         insurance_option_id: p.insurance_option_id,
       })),
       delivery_speed: data.delivery_speed,
@@ -123,7 +122,7 @@ export function Step5Speed() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
-      <CardShell>
+      <CardShell className="animate-fade-in-up border-border-muted border shadow-md transition-shadow hover:shadow-lg">
         <CardHeader title={t("stepSpeed")} />
         <CardBody className="space-y-6">
           <p className="text-text-muted text-sm">
@@ -131,7 +130,12 @@ export function Step5Speed() {
             {parcels.length > 1 && ` · ${parcels.length} ${t("parcelsCount")}`}
           </p>
 
-          {isLoading && <p className="text-text-muted text-sm">{t("loadingRates")}</p>}
+          {isLoading && (
+            <div className="flex items-center justify-center gap-3 py-8">
+              <div className="border-primary-500 h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
+              <p className="text-text-muted text-sm">{t("loadingRates")}</p>
+            </div>
+          )}
 
           {standardSum && (
             <Controller
@@ -165,24 +169,27 @@ export function Step5Speed() {
           {selectedSum && (
             <>
               <Divider />
-              <div className="space-y-2 text-sm">
+              <div className="animate-fade-in space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-text-muted">{t("shippingCost")}</span>
-                  <span>{formatCents(selectedSum.shippingCents)}</span>
+                  <span className="font-medium">{formatCents(selectedSum.shippingCents)}</span>
                 </div>
                 {selectedSum.insuranceSurchargeCents > 0 && (
                   <div className="flex justify-between">
                     <span className="text-text-muted">{t("insurance")}</span>
-                    <span>{formatCents(selectedSum.insuranceSurchargeCents)}</span>
+                    <span className="font-medium">
+                      {formatCents(selectedSum.insuranceSurchargeCents)}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-text-muted">{t("iva")}</span>
-                  <span>{formatCents(selectedSum.ivaCents)}</span>
+                  <span className="font-medium">{formatCents(selectedSum.ivaCents)}</span>
                 </div>
-                <div className="flex justify-between text-base font-bold">
+                <Divider />
+                <div className="flex justify-between text-lg font-bold">
                   <span>{t("totalToPay")}</span>
-                  <span>{formatCents(selectedSum.totalCents)}</span>
+                  <span className="text-primary-600">{formatCents(selectedSum.totalCents)}</span>
                 </div>
               </div>
             </>
@@ -196,17 +203,36 @@ export function Step5Speed() {
         </CardBody>
       </CardShell>
 
-      <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={() => setStep(4)}>
+      <div className="flex justify-between pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          onClick={() => setStep(4)}
+          className="group gap-2"
+        >
+          <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
           {t("back")}
         </Button>
         <Button
           type="submit"
           variant="primary"
+          size="lg"
           disabled={!breakdowns || checkoutMutation.isPending}
           aria-busy={checkoutMutation.isPending}
+          className="group gap-2"
         >
-          {checkoutMutation.isPending ? t("loadingRates") : t("proceedToPayment")}
+          {checkoutMutation.isPending ? (
+            <>
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              {t("loadingRates")}
+            </>
+          ) : (
+            <>
+              <CreditCard className="h-5 w-5" />
+              {t("proceedToPayment")}
+            </>
+          )}
         </Button>
       </div>
     </form>

@@ -19,7 +19,7 @@ export function NavLinks() {
 
   return (
     <nav
-      className="hidden items-center gap-6 lg:flex lg:gap-10"
+      className="hidden items-center gap-3 lg:flex xl:gap-6"
       aria-label={tCommon("mainNavigation")}
     >
       {NAV_LINKS.map(({ key, href }) => {
@@ -28,8 +28,9 @@ export function NavLinks() {
           <Link
             key={key}
             href={href}
+            prefetch={true}
             className={cn(
-              "text-base font-medium transition-colors xl:text-xl",
+              "text-sm font-medium whitespace-nowrap transition-colors xl:text-base",
               isActive ? "text-primary-500" : "text-text-primary hover:text-primary-500"
             )}
           >
@@ -41,7 +42,7 @@ export function NavLinks() {
       <LocaleSwitcher />
 
       {loading ? (
-        <div className="bg-primary-200 h-10 w-24 animate-pulse rounded-lg xl:h-14 xl:w-32" />
+        <div className="bg-primary-200 h-9 w-20 animate-pulse rounded-lg xl:h-11 xl:w-28" />
       ) : user ? (
         <UserMenu />
       ) : (
@@ -49,7 +50,7 @@ export function NavLinks() {
           href="/auth/login"
           variant="primary"
           size="nav"
-          className="text-base xl:text-xl"
+          className="text-sm whitespace-nowrap xl:text-base"
         >
           {t("signIn")}
         </ButtonLink>

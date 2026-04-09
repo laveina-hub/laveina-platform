@@ -1,9 +1,9 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
-import { Link, usePathname } from "@/i18n/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
@@ -13,10 +13,6 @@ const LOCALE_CONFIG: Record<string, { flag: string; label: string }> = {
   ca: { flag: "CA", label: "CA" },
 };
 
-/**
- * Renders a circle with 2-letter country code styled to feel like a flag badge.
- * Pure CSS — no emoji rendering issues across platforms.
- */
 function LocaleFlag({ code, isActive }: { code: string; isActive: boolean }) {
   return (
     <span
@@ -32,11 +28,12 @@ function LocaleFlag({ code, isActive }: { code: string; isActive: boolean }) {
   );
 }
 
-/** Desktop locale dropdown with smooth animation and polished hover states. */
 export function LocaleSwitcher() {
   const t = useTranslations("localeSwitcher");
   const locale = useLocale();
   const pathname = usePathname();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -75,7 +72,8 @@ export function LocaleSwitcher() {
           "group flex items-center gap-2 rounded-full border px-2 py-1.5 transition-all duration-200 xl:px-2.5 xl:py-2",
           isOpen
             ? "border-primary-300 bg-white shadow-sm"
-            : "hover:border-primary-200 border-transparent hover:bg-white/80"
+            : "hover:border-primary-200 border-transparent hover:bg-white/80",
+          isPending && "pointer-events-none opacity-60"
         )}
       >
         <LocaleFlag code={locale} isActive />
@@ -120,13 +118,17 @@ export function LocaleSwitcher() {
             const isActive = loc === locale;
             return (
               <li key={loc}>
-                <Link
-                  href={pathname}
-                  locale={loc}
-                  scroll={false}
-                  onClick={() => setIsOpen(false)}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    startTransition(() => {
+                      router.replace({ pathname }, { locale: loc });
+                    });
+                  }}
                   role="option"
                   aria-selected={isActive}
+                  disabled={isPending && isActive}
                   className={cn(
                     "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-150",
                     isActive ? "bg-primary-50" : "hover:bg-bg-muted"
@@ -162,7 +164,7 @@ export function LocaleSwitcher() {
                       />
                     </svg>
                   </div>
-                </Link>
+                </button>
               </li>
             );
           })}

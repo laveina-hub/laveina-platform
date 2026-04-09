@@ -246,7 +246,15 @@ export function DataTable<TData>({
                     onRowClick && "cursor-pointer hover:bg-gray-50",
                     row.getIsSelected() && "bg-primary-50/50"
                   )}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  role={onRowClick ? "button" : undefined}
                   onClick={() => onRowClick?.(row.original)}
+                  onKeyDown={(e) => {
+                    if (onRowClick && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      onRowClick(row.original);
+                    }
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-4 py-3 whitespace-nowrap text-gray-700">
@@ -267,7 +275,7 @@ export function DataTable<TData>({
           emptyState ? (
             <DataTableEmptyState {...emptyState} />
           ) : (
-            <DataTableEmptyState title="No data found" />
+            <DataTableEmptyState title={tCommon("noDataFound")} />
           )
         ) : (
           table.getRowModel().rows.map((row) => (
@@ -278,7 +286,15 @@ export function DataTable<TData>({
                 onRowClick && "cursor-pointer active:bg-gray-50",
                 row.getIsSelected() && "bg-primary-50/50"
               )}
+              tabIndex={onRowClick ? 0 : undefined}
+              role={onRowClick ? "button" : undefined}
               onClick={() => onRowClick?.(row.original)}
+              onKeyDown={(e) => {
+                if (onRowClick && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  onRowClick(row.original);
+                }
+              }}
             >
               {row.getVisibleCells().map((cell) => {
                 const header = cell.column.columnDef.header;

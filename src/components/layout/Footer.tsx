@@ -1,7 +1,7 @@
 import Image from "next/image";
+import Script from "next/script";
 import { getTranslations } from "next-intl/server";
 
-import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
 export async function Footer() {
@@ -19,15 +19,33 @@ export async function Footer() {
             aria-label={t("legalNav")}
             className="text-text-muted flex items-center gap-3 text-sm md:text-lg"
           >
-            <Link href="/terms" className="hover:text-text-primary transition-colors">
+            <a
+              href="https://www.iubenda.com/condiciones-de-uso/82074357"
+              className="iubenda-white iubenda-noiframe iubenda-embed hover:text-text-primary transition-colors"
+              title={t("terms")}
+            >
               {t("terms")}
-            </Link>
+            </a>
             <span aria-hidden="true" className="text-border-default select-none">
               |
             </span>
-            <Link href="/privacy" className="hover:text-text-primary transition-colors">
+            <a
+              href="https://www.iubenda.com/privacy-policy/82074357"
+              className="iubenda-white iubenda-noiframe iubenda-embed hover:text-text-primary transition-colors"
+              title={t("privacy")}
+            >
               {t("privacy")}
-            </Link>
+            </a>
+            <span aria-hidden="true" className="text-border-default select-none">
+              |
+            </span>
+            <a
+              href="https://www.iubenda.com/privacy-policy/82074357/cookie-policy"
+              className="iubenda-white iubenda-noiframe iubenda-embed hover:text-text-primary transition-colors"
+              title={t("cookiePolicy")}
+            >
+              {t("cookiePolicy")}
+            </a>
           </nav>
         </div>
       </div>
@@ -42,6 +60,25 @@ export async function Footer() {
           className="h-auto w-full"
         />
       </div>
+      <Script
+        id="iubenda-embed"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function (w, d) {
+              var loader = function () {
+                var s = d.createElement("script"),
+                  tag = d.getElementsByTagName("script")[0];
+                s.src = "https://cdn.iubenda.com/iubenda.js";
+                tag.parentNode.insertBefore(s, tag);
+              };
+              if (w.addEventListener) { w.addEventListener("load", loader, false); }
+              else if (w.attachEvent) { w.attachEvent("onload", loader); }
+              else { w.onload = loader; }
+            })(window, document);
+          `,
+        }}
+      />
     </footer>
   );
 }

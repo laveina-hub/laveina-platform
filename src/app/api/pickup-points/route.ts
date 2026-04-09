@@ -23,7 +23,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
 
-  return NextResponse.json({ data: result.data });
+  return NextResponse.json(
+    { data: result.data },
+    {
+      headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
+    }
+  );
 }
 
 export async function POST(request: NextRequest) {

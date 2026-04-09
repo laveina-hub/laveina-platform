@@ -16,7 +16,6 @@ import {
 import { ShipmentStatus } from "@/types/enums";
 import type { CreateShipmentInput } from "@/types/shipment";
 
-/** Stripe webhook. On checkout complete: reads pending_bookings, creates shipments, generates QR codes. */
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
@@ -40,7 +39,10 @@ export async function POST(request: NextRequest) {
 
   switch (event.type) {
     case "checkout.session.completed": {
-      await handleCheckoutCompleted(event.data.object);
+      const success = await handleCheckoutCompleted(event.id, event.data.object);
+      if (!success) {
+        return NextResponse.json({ error: "Processing failed" }, { status: 500 });
+      }
       break;
     }
     default:
@@ -69,7 +71,7 @@ const pendingBookingDataSchema = z.object({
   parcels: z
     .array(
       z.object({
-        parcel_size: z.enum(["small", "medium", "large", "extra_large", "xxl"]),
+        parcel_size: z.enum(["tier_1", "tier_2", "tier_3", "tier_4", "tier_5", "tier_6"]),
         weight_kg: z.number().positive(),
         billable_weight_kg: z.number().nonnegative(),
         length_cm: z.number().positive(),
@@ -89,12 +91,15 @@ const pendingBookingDataSchema = z.object({
 
 type PendingBookingData = z.infer<typeof pendingBookingDataSchema>;
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(
+  eventId: string,
+  session: Stripe.Checkout.Session
+): Promise<boolean> {
   const meta = session.metadata;
 
   if (!meta) {
     console.error("Stripe webhook: checkout.session.completed has no metadata", session.id);
-    return;
+    return true;
   }
 
   const pendingBookingId = meta.pending_booking_id;
@@ -105,14 +110,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (!customerId) {
     console.error("Stripe webhook: missing customer_id in metadata", session.id);
-    return;
+    return true;
   }
 
   const supabase = createAdminClient();
 
   if (!pendingBookingId) {
     console.error("Stripe webhook: missing pending_booking_id in metadata", session.id);
-    return;
+    return true;
   }
 
   const { data: pendingBooking, error: fetchError } = await supabase
@@ -123,7 +128,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (fetchError || !pendingBooking) {
     console.error("Stripe webhook: pending booking not found", pendingBookingId, fetchError);
-    return;
+    return true;
   }
 
   const parsed = pendingBookingDataSchema.safeParse(pendingBooking.booking_data);
@@ -134,15 +139,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       pendingBookingId,
       parsed.error.flatten()
     );
-    return;
+    return true;
   }
 
   const bookingData: PendingBookingData = parsed.data;
 
-  // Atomic claim: if two webhook deliveries race, only one succeeds
+  // Atomic claim: only one webhook delivery wins
   const { data: claimed } = await supabase
     .from("pending_bookings")
-    .update({ processed: true })
+    .update({ processed: true, stripe_event_id: eventId })
     .eq("id", pendingBookingId)
     .eq("processed", false)
     .select("id")
@@ -150,13 +155,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (!claimed) {
     console.warn(
-      "Stripe webhook: pending booking already claimed (concurrent delivery)",
-      pendingBookingId
+      "Stripe webhook: pending booking already claimed (concurrent delivery or retry)",
+      pendingBookingId,
+      eventId
     );
-    return;
+    return true;
   }
 
-  // If any parcel fails, unclaim the booking so Stripe can retry
   const createdShipments: Array<{ id: string; tracking_id: string }> = [];
   let creationFailed = false;
 
@@ -218,13 +223,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       pendingBookingId,
       `${createdShipments.length} shipments deleted`
     );
-    return;
+    return false;
   }
 
-  // Per PARCEL_JOURNEY.md: payment → waiting_at_origin
-  for (const shipment of createdShipments) {
-    await updateShipmentStatus(shipment.id, ShipmentStatus.WAITING_AT_ORIGIN);
-  }
+  await Promise.all(
+    createdShipments.map((shipment) =>
+      updateShipmentStatus(shipment.id, ShipmentStatus.WAITING_AT_ORIGIN)
+    )
+  );
 
   void logAuditEvent({
     actor_id: customerId,
@@ -241,12 +247,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     },
   });
 
-  for (const shipment of createdShipments) {
-    try {
-      const qrUrl = await generateAndUploadQrCode(shipment.tracking_id);
-      await setShipmentQrCodeUrl(shipment.id, qrUrl);
-    } catch (err) {
-      console.error(`Stripe webhook: QR code generation failed for ${shipment.tracking_id}`, err);
-    }
-  }
+  await Promise.allSettled(
+    createdShipments.map(async (shipment) => {
+      try {
+        const qrUrl = await generateAndUploadQrCode(shipment.tracking_id);
+        await setShipmentQrCodeUrl(shipment.id, qrUrl);
+      } catch (err) {
+        console.error(`Stripe webhook: QR code generation failed for ${shipment.tracking_id}`, err);
+      }
+    })
+  );
+
+  return true;
 }

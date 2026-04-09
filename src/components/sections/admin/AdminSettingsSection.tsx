@@ -16,12 +16,9 @@ type InsuranceOption = {
 };
 
 type ParcelSizeConfig = {
-  id: string;
   size: string;
+  min_weight_kg: number;
   max_weight_kg: number;
-  length_cm: number;
-  width_cm: number;
-  height_cm: number;
   is_active: boolean;
 };
 
@@ -34,7 +31,7 @@ type SettingsData = {
 type FormState = {
   carrierMargin: string;
   minimumPrice: string;
-  barcelonaPrices: Record<string, { standard: string; express: string }>;
+  barcelonaPrices: Record<string, { standard: string }>;
   insurance: InsuranceOption[];
   initialized: boolean;
 };
@@ -43,7 +40,7 @@ type FormAction =
   | { type: "INIT_FROM_DATA"; data: SettingsData }
   | { type: "SET_CARRIER_MARGIN"; value: string }
   | { type: "SET_MINIMUM_PRICE"; value: string }
-  | { type: "SET_BARCELONA_PRICE"; size: string; speed: "standard" | "express"; value: string }
+  | { type: "SET_BARCELONA_PRICE"; size: string; value: string }
   | { type: "SET_INSURANCE_SURCHARGE"; index: number; surcharge_cents: number }
   | { type: "SET_INSURANCE_ACTIVE"; index: number; is_active: boolean };
 
@@ -58,13 +55,11 @@ const initialFormState: FormState = {
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "INIT_FROM_DATA": {
-      const prices: Record<string, { standard: string; express: string }> = {};
+      const prices: Record<string, { standard: string }> = {};
       for (const size of action.data.parcelSizes) {
         const stdCents = action.data.settings[`internal_price_${size.size}_cents`];
-        const expCents = action.data.settings[`internal_price_${size.size}_express_cents`];
         prices[size.size] = {
           standard: stdCents ? (Number(stdCents) / 100).toFixed(2) : "",
-          express: expCents ? (Number(expCents) / 100).toFixed(2) : "",
         };
       }
       return {
@@ -84,10 +79,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
         ...state,
         barcelonaPrices: {
           ...state.barcelonaPrices,
-          [action.size]: {
-            ...state.barcelonaPrices[action.size],
-            [action.speed]: action.value,
-          },
+          [action.size]: { standard: action.value },
         },
       };
     case "SET_INSURANCE_SURCHARGE": {
@@ -149,9 +141,7 @@ export function AdminSettingsSection() {
 
       for (const [size, prices] of Object.entries(form.barcelonaPrices)) {
         const stdCents = Math.round(parseFloat(prices.standard || "0") * 100);
-        const expCents = Math.round(parseFloat(prices.express || "0") * 100);
         settingsPayload[`internal_price_${size}_cents`] = String(stdCents);
-        settingsPayload[`internal_price_${size}_express_cents`] = String(expCents);
       }
 
       return saveSettings({
@@ -221,9 +211,8 @@ export function AdminSettingsSection() {
               <thead>
                 <tr className="border-border-default text-text-muted border-b text-left text-xs font-semibold uppercase">
                   <th className="py-2 pr-4">{t("size")}</th>
-                  <th className="py-2 pr-4">{t("maxWeight")}</th>
-                  <th className="py-2 pr-4">{t("standardPrice")}</th>
-                  <th className="py-2">{t("expressPrice")}</th>
+                  <th className="py-2 pr-4">{t("weightRange")}</th>
+                  <th className="py-2">{t("standardPrice")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,7 +222,7 @@ export function AdminSettingsSection() {
                       {tCommon(`parcelSizeLabel.${size.size}` as Parameters<typeof tCommon>[0])}
                     </td>
                     <td className="text-text-muted py-2 pr-4">
-                      {tCommon("weightKg", { value: size.max_weight_kg })}
+                      {size.min_weight_kg}–{size.max_weight_kg} kg
                     </td>
                     <td className="py-2 pr-4">
                       <Input
@@ -245,25 +234,6 @@ export function AdminSettingsSection() {
                           dispatch({
                             type: "SET_BARCELONA_PRICE",
                             size: size.size,
-                            speed: "standard",
-                            value: e.target.value,
-                          })
-                        }
-                        className="w-28 py-1.5 text-sm"
-                        placeholder="0.00"
-                      />
-                    </td>
-                    <td className="py-2">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={form.barcelonaPrices[size.size]?.express ?? ""}
-                        onChange={(e) =>
-                          dispatch({
-                            type: "SET_BARCELONA_PRICE",
-                            size: size.size,
-                            speed: "express",
                             value: e.target.value,
                           })
                         }

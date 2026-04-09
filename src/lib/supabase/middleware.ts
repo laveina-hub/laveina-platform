@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function updateSession(request: NextRequest) {
+function createSupabaseMiddlewareClient(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -23,16 +24,60 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  return { supabase, getResponse: () => supabaseResponse };
+}
 
-  // Role from profiles table, not user_metadata (users can write metadata)
-  let role: string | null = null;
-  if (user) {
-    const { data } = await supabase.rpc("get_user_role");
-    role = (data as string | null) ?? "customer";
+/** Lightweight session check (3s timeout). */
+export async function refreshSession(request: NextRequest) {
+  const { supabase, getResponse } = createSupabaseMiddlewareClient(request);
+
+  let session = null;
+  try {
+    const result = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+    ]);
+    if (result) {
+      session = result.data.session;
+    }
+  } catch {
+    // Continue without session
   }
 
-  return { user, role, supabaseResponse };
+  return { supabase, session, supabaseResponse: getResponse() };
 }
+
+/** Server-validated auth check (5s timeout). For protected pages. */
+export async function updateSession(request: NextRequest) {
+  const { supabase, getResponse } = createSupabaseMiddlewareClient(request);
+
+  let user: User | null = null;
+  try {
+    const result = await Promise.race([
+      supabase.auth.getUser(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+    ]);
+    if (result) {
+      user = result.data.user;
+    }
+  } catch {
+    // Treat as unauthenticated
+  }
+
+  // From profiles table — user_metadata is user-writable so not trustworthy
+  let cachedRole: string | null | undefined;
+  async function getRole(): Promise<string | null> {
+    if (cachedRole !== undefined) return cachedRole;
+    if (!user) {
+      cachedRole = null;
+      return null;
+    }
+    const { data } = await supabase.rpc("get_user_role");
+    cachedRole = (data as string | null) ?? "customer";
+    return cachedRole;
+  }
+
+  return { user, getRole, supabaseResponse: getResponse() };
+}
+
+export type { User };

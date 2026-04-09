@@ -1,0 +1,1 @@
+export { WhyChoosePageSection } from "./WhyChoosePageSection";

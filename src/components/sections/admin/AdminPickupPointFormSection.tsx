@@ -177,7 +177,7 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={mutation.isPending}>
+          <Button type="submit" disabled={mutation.isPending || mutation.isSuccess}>
             {isEditMode ? t("save") : t("create")}
           </Button>
         </div>

@@ -8,11 +8,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getRates } from "@/services/pricing.service";
 import { getDeliveryMode } from "@/services/routing.service";
-import type { ParcelSize } from "@/types/enums";
 import type { PriceBreakdown } from "@/types/shipment";
 import { createCheckoutSchema } from "@/validations/shipment.schema";
 
-/** Validates booking, recalculates prices server-side, creates Stripe Checkout session. */
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
@@ -47,49 +45,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "routing.blocked" }, { status: 422 });
     }
 
-    const uniqueSizes = [...new Set(booking.parcels.map((p) => p.parcel_size))];
-    const sizeConfigResults = await Promise.all(
-      uniqueSizes.map((size) =>
-        supabase
-          .from("parcel_size_config")
-          .select("size, length_cm, width_cm, height_cm, max_weight_kg")
-          .eq("size", size)
-          .eq("is_active", true)
-          .single()
-      )
-    );
-
-    const sizeConfigMap = new Map<
-      string,
-      { length_cm: number; width_cm: number; height_cm: number; max_weight_kg: number }
-    >();
-    for (const { data: cfg, error: err } of sizeConfigResults) {
-      if (err || !cfg) {
-        return NextResponse.json({ error: "pricing.sizeNotFound" }, { status: 422 });
-      }
-      sizeConfigMap.set(cfg.size, cfg);
-    }
-
-    for (const parcel of booking.parcels) {
-      const cfg = sizeConfigMap.get(parcel.parcel_size);
-      if (!cfg || parcel.weight_kg > cfg.max_weight_kg) {
-        return NextResponse.json({ error: "pricing.weightExceedsMax" }, { status: 422 });
-      }
-    }
-
+    // Calculate rates — tier is auto-detected from billable weight
     const rateResults = await Promise.all(
-      booking.parcels.map((parcel) => {
-        const cfg = sizeConfigMap.get(parcel.parcel_size)!;
-        return getRates({
+      booking.parcels.map((parcel) =>
+        getRates({
           deliveryMode: routing.mode,
-          parcelSize: parcel.parcel_size,
           weightKg: parcel.weight_kg,
-          lengthCm: cfg.length_cm,
-          widthCm: cfg.width_cm,
-          heightCm: cfg.height_cm,
+          lengthCm: parcel.length_cm,
+          widthCm: parcel.width_cm,
+          heightCm: parcel.height_cm,
           insuranceOptionId: parcel.insurance_option_id,
-        });
-      })
+        })
+      )
     );
 
     for (const result of rateResults) {
@@ -99,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     type ParcelPricingItem = {
-      parcelSize: ParcelSize;
+      detectedTier: string;
       weightKg: number;
       insuranceOptionId: string | null;
       lengthCm: number;
@@ -111,8 +78,7 @@ export async function POST(request: NextRequest) {
 
     let grandTotalCents = 0;
     const parcelPricing: ParcelPricingItem[] = booking.parcels.map((parcel, i) => {
-      const cfg = sizeConfigMap.get(parcel.parcel_size)!;
-      // SAFETY: error results are filtered out above — only success results remain here
+      // SAFETY: errors filtered out above
       const breakdown = rateResults[i].data as PriceBreakdown;
       const selectedOption =
         booking.delivery_speed === "express" && breakdown.express
@@ -122,18 +88,18 @@ export async function POST(request: NextRequest) {
       grandTotalCents += selectedOption.totalCents;
 
       return {
-        parcelSize: parcel.parcel_size,
+        detectedTier: breakdown.detectedTier,
         weightKg: parcel.weight_kg,
         insuranceOptionId: parcel.insurance_option_id,
-        lengthCm: cfg.length_cm,
-        widthCm: cfg.width_cm,
-        heightCm: cfg.height_cm,
+        lengthCm: parcel.length_cm,
+        widthCm: parcel.width_cm,
+        heightCm: parcel.height_cm,
         breakdown,
         selectedTotalCents: selectedOption.totalCents,
       };
     });
 
-    // Store in pending_bookings to avoid Stripe metadata size limits
+    // Stored separately — Stripe metadata has a 500-char limit
     const bookingData = {
       customer_id: user.id,
       contact: {
@@ -157,7 +123,7 @@ export async function POST(request: NextRequest) {
             : pp.breakdown.standard;
 
         return {
-          parcel_size: pp.parcelSize,
+          parcel_size: pp.detectedTier,
           weight_kg: pp.weightKg,
           billable_weight_kg: pp.breakdown.billableWeightKg,
           length_cm: pp.lengthCm,
@@ -174,7 +140,6 @@ export async function POST(request: NextRequest) {
       }),
     };
 
-    // Bypass RLS — user is already authenticated above
     const adminClient = createAdminClient();
     const { data: pendingBooking, error: pendingError } = await adminClient
       .from("pending_bookings")
@@ -201,9 +166,7 @@ export async function POST(request: NextRequest) {
                 parcelCount === 1
                   ? "Laveina — Parcel Shipment"
                   : `Laveina — ${parcelCount} Parcel Shipments`,
-              description: booking.parcels
-                .map((p) => `${p.parcel_size} · ${p.weight_kg} kg`)
-                .join(", "),
+              description: booking.parcels.map((p) => `${p.weight_kg} kg`).join(", "),
             },
             unit_amount: grandTotalCents,
           },
@@ -223,12 +186,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: { url: session.url } });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    const stack = err instanceof Error ? err.stack : undefined;
-    console.error("Error creating checkout session:", message, stack);
-    return NextResponse.json(
-      { error: "Failed to create checkout session", detail: message },
-      { status: 500 }
-    );
+    console.error("Error creating checkout session:", err);
+    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
   }
 }

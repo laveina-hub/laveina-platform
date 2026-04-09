@@ -4,8 +4,9 @@ import { LogOut, Menu } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback } from "react";
 
+import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
+import { useAuth } from "@/hooks/use-auth";
 import { usePathname, useRouter } from "@/i18n/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type TopbarProps = {
@@ -18,14 +19,15 @@ export function Topbar({ userFullName, onMenuToggle }: TopbarProps) {
   const tCommon = useTranslations("common");
   const pathname = usePathname();
   const router = useRouter();
+  const { signOut } = useAuth();
 
   const handleSignOut = useCallback(async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut();
     router.push("/");
-  }, [router]);
+    router.refresh();
+  }, [signOut, router]);
 
-  // Build breadcrumb from pathname — filter out UUIDs and dynamic [id] segments
+  // Build breadcrumb, filtering out UUIDs
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const segments = pathname.split("/").filter(Boolean);
   const breadcrumb = segments
@@ -60,6 +62,7 @@ export function Topbar({ userFullName, onMenuToggle }: TopbarProps) {
       </div>
 
       <div className="flex items-center gap-3">
+        <LocaleSwitcher />
         <span className="hidden text-sm text-gray-600 sm:block">{userFullName}</span>
         <button
           onClick={handleSignOut}

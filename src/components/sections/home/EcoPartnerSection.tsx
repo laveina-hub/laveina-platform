@@ -19,6 +19,7 @@ export function EcoPartnerSection() {
             alt={t("imageAlt")}
             width={720}
             height={600}
+            sizes="(max-width: 768px) 100vw, 50vw"
             className="h-auto w-full object-cover object-center md:h-full md:min-h-96"
           />
         </div>

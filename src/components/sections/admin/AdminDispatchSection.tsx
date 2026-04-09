@@ -1,5 +1,4 @@
-// SAFETY: `as DeliveryMode` casts in this file are safe because
-// values originate from Supabase enum columns that enforce the valid set at the DB level.
+// SAFETY: enum casts are backed by DB enum columns
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";

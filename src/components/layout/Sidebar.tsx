@@ -8,6 +8,7 @@ import {
   Settings,
   ShieldCheck,
   Truck,
+  Users,
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -32,6 +33,7 @@ function getNavItems(
       { label: t("overview"), href: "/admin", icon: LayoutDashboard },
       { label: t("shipments"), href: "/admin/shipments", icon: Box },
       { label: t("pickupPoints"), href: "/admin/pickup-points", icon: MapPin },
+      { label: t("users"), href: "/admin/users", icon: Users },
       { label: t("dispatch"), href: "/admin/dispatch", icon: Truck },
       { label: t("settings"), href: "/admin/settings", icon: Settings },
     ];

@@ -5,7 +5,10 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { Toaster } from "sonner";
 
+import { CrispChat } from "@/components/layout/CrispChat";
+import { IubendaCookie } from "@/components/layout/IubendaCookie";
 import { routing } from "@/i18n/routing";
+import { AuthProvider } from "@/providers/auth-provider";
 import { QueryProvider } from "@/providers/query-provider";
 
 const prostoOne = Prosto_One({
@@ -59,13 +62,18 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <html lang={locale} suppressHydrationWarning>
+      <head />
       <body className={`${prostoOne.variable} font-body antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
-            {children}
-            <Toaster richColors position="top-right" />
+            <AuthProvider>
+              {children}
+              <Toaster richColors position="top-right" />
+            </AuthProvider>
           </QueryProvider>
         </NextIntlClientProvider>
+        <CrispChat />
+        <IubendaCookie />
       </body>
     </html>
   );

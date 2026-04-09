@@ -7,14 +7,16 @@
 -- ============================================================
 
 
--- ─── 1. PARCEL SIZE CONFIG ──────────────────────────────────────────────────
--- Dimensions and max weight per size (admin-editable from /admin/settings)
-INSERT INTO public.parcel_size_config (size, max_weight_kg, length_cm, width_cm, height_cm) VALUES
-  ('small',       2,  30, 20, 20),
-  ('medium',      5,  35, 35, 24),
-  ('large',       10, 40, 40, 37),
-  ('extra_large', 20, 55, 55, 39),
-  ('xxl',         25, 60, 60, 45)
+-- ─── 1. WEIGHT TIER CONFIG ──────────────────────────────────────────────────
+-- Weight-based pricing tiers (6 tiers per Pricing Report)
+-- Note: tiers are also seeded in the migration. This is a fallback for seed-only runs.
+INSERT INTO public.parcel_size_config (size, min_weight_kg, max_weight_kg) VALUES
+  ('tier_1', 0,     2),
+  ('tier_2', 2.01,  5),
+  ('tier_3', 5.01,  10),
+  ('tier_4', 10.01, 15),
+  ('tier_5', 15.01, 20),
+  ('tier_6', 20.01, 30)
 ON CONFLICT (size) DO NOTHING;
 
 
@@ -30,26 +32,21 @@ ON CONFLICT DO NOTHING;
 
 -- ─── 3. ADMIN SETTINGS ─────────────────────────────────────────────────────
 -- Defaults — admin can change from /admin/settings dashboard.
--- Barcelona prices confirmed by client (2026-03-20).
+-- Barcelona prices from Pricing Report (IVA 21% included).
 INSERT INTO public.admin_settings (key, value) VALUES
-  ('sendcloud_margin_percent',                '25'),
-  -- Barcelona internal: Standard prices
-  ('internal_price_small_cents',              '350'),    -- €3.50
-  ('internal_price_medium_cents',             '500'),    -- €5.00
-  ('internal_price_large_cents',              '700'),    -- €7.00
-  ('internal_price_extra_large_cents',        '1000'),   -- €10.00
-  ('internal_price_xxl_cents',                '1300'),   -- €13.00
-  -- Barcelona internal: Express 24h prices
-  ('internal_price_small_express_cents',      '550'),    -- €5.50
-  ('internal_price_medium_express_cents',     '750'),    -- €7.50
-  ('internal_price_large_express_cents',      '1000'),   -- €10.00
-  ('internal_price_extra_large_express_cents','1400'),   -- €14.00
-  ('internal_price_xxl_express_cents',        '1800'),   -- €18.00
+  ('sendcloud_margin_percent',         '25'),
+  -- Barcelona internal: Standard prices (6 weight tiers, IVA included)
+  ('internal_price_tier_1_cents',      '495'),    -- €4.95  (0–2 kg)
+  ('internal_price_tier_2_cents',      '675'),    -- €6.75  (2–5 kg)
+  ('internal_price_tier_3_cents',      '990'),    -- €9.90  (5–10 kg)
+  ('internal_price_tier_4_cents',      '1440'),   -- €14.40 (10–15 kg)
+  ('internal_price_tier_5_cents',      '1800'),   -- €18.00 (15–20 kg)
+  ('internal_price_tier_6_cents',      '2520'),   -- €25.20 (20–30 kg)
   -- SendCloud sender defaults
   ('sendcloud_sender_name',    'Laveina'),
-  ('sendcloud_sender_address', ''),
-  ('sendcloud_sender_city',    'Barcelona'),
-  ('sendcloud_sender_postcode','08001'),
+  ('sendcloud_sender_address', 'Rambla de l''Exposicio 103, Planta 1 - Local'),
+  ('sendcloud_sender_city',    'Vilanova i la Geltru'),
+  ('sendcloud_sender_postcode','08800'),
   ('sendcloud_sender_phone',   '')
 ON CONFLICT (key) DO NOTHING;
 

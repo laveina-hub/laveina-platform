@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import type { DeliveryMode, ParcelSize } from "@/types/enums";
+import type { DeliveryMode } from "@/types/enums";
 import type { PriceBreakdown } from "@/types/shipment";
 import type {
   BookingStepContactInput,
@@ -13,15 +13,12 @@ import type {
 
 export type BookingStep = 1 | 2 | 3 | 4 | 5;
 
-export type ParcelDimensions = { lengthCm: number; widthCm: number; heightCm: number };
-
 type BookingState = {
   currentStep: BookingStep;
   contact: BookingStepContactInput | null;
   origin: BookingStepOriginInput | null;
   destination: BookingStepDestinationInput | null;
   parcels: ParcelItemInput[];
-  parcelDimensionsList: ParcelDimensions[];
   speed: BookingStepSpeedInput | null;
   deliveryMode: DeliveryMode | null;
   priceBreakdowns: PriceBreakdown[] | null;
@@ -32,7 +29,7 @@ type BookingActions = {
   setContact: (data: BookingStepContactInput) => void;
   setOrigin: (data: BookingStepOriginInput) => void;
   setDestination: (data: BookingStepDestinationInput) => void;
-  setParcels: (parcels: ParcelItemInput[], dimensions: ParcelDimensions[]) => void;
+  setParcels: (parcels: ParcelItemInput[]) => void;
   setSpeed: (data: BookingStepSpeedInput) => void;
   setDeliveryMode: (mode: DeliveryMode) => void;
   setPriceBreakdowns: (breakdowns: PriceBreakdown[]) => void;
@@ -45,7 +42,6 @@ const initialState: BookingState = {
   origin: null,
   destination: null,
   parcels: [],
-  parcelDimensionsList: [],
   speed: null,
   deliveryMode: null,
   priceBreakdowns: null,
@@ -64,15 +60,15 @@ export const useBookingStore = create<BookingState & BookingActions>()(
 
       setDestination: (data) => set({ destination: data, currentStep: 4 }),
 
-      setParcels: (parcels, dimensions) =>
-        set({ parcels, parcelDimensionsList: dimensions, currentStep: 5, priceBreakdowns: null }),
+      setParcels: (parcels) => set({ parcels, currentStep: 5, priceBreakdowns: null }),
 
       setSpeed: (data) => set({ speed: data }),
 
       setDeliveryMode: (mode) =>
         set({
           deliveryMode: mode,
-          speed: null, // reset so user re-selects for new mode
+          speed: null,
+          priceBreakdowns: null,
         }),
 
       setPriceBreakdowns: (breakdowns) => set({ priceBreakdowns: breakdowns }),
@@ -81,7 +77,7 @@ export const useBookingStore = create<BookingState & BookingActions>()(
     }),
     {
       name: "laveina-booking",
-      version: 2,
+      version: 3,
       migrate: () => {
         return initialState;
       },

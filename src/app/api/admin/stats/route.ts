@@ -11,7 +11,6 @@ export async function GET() {
     return NextResponse.json({ error: { message: "Forbidden", status: 403 } }, { status: 403 });
   }
 
-  // Falls back to individual queries if the RPC function hasn't been deployed yet
   const [statsResult, recentResult] = await Promise.all([
     supabase.rpc("get_admin_dashboard_stats"),
     supabase
@@ -24,34 +23,45 @@ export async function GET() {
   ]);
 
   if (statsResult.error || !statsResult.data) {
-    const [totalResult, pickupPointsResult] = await Promise.all([
-      supabase.from("shipments").select("status, price_cents"),
+    // RPC unavailable — fall back to individual count queries
+    const statuses = [
+      "waiting_at_origin",
+      "received_at_origin",
+      "in_transit",
+      "ready_for_pickup",
+      "delivered",
+    ] as const;
+
+    const [totalResult, revenueResult, pickupPointsResult, ...statusResults] = await Promise.all([
+      supabase.from("shipments").select("id", { count: "exact", head: true }),
+      supabase.rpc("get_total_revenue_cents"),
       supabase
         .from("pickup_points")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("is_active", true),
+      ...statuses.map((status) =>
+        supabase.from("shipments").select("id", { count: "exact", head: true }).eq("status", status)
+      ),
     ]);
 
-    const shipments = totalResult.data ?? [];
-
-    const countByStatus = (status: string) => shipments.filter((s) => s.status === status).length;
+    const revenueCents = (revenueResult.data as number | null) ?? 0;
 
     return NextResponse.json({
       data: {
-        totalShipments: shipments.length,
-        waitingAtOrigin: countByStatus("waiting_at_origin"),
-        receivedAtOrigin: countByStatus("received_at_origin"),
-        inTransit: countByStatus("in_transit"),
-        readyForPickup: countByStatus("ready_for_pickup"),
-        delivered: countByStatus("delivered"),
-        totalRevenueCents: shipments.reduce((sum, s) => sum + (s.price_cents ?? 0), 0),
+        totalShipments: totalResult.count ?? 0,
+        waitingAtOrigin: statusResults[0].count ?? 0,
+        receivedAtOrigin: statusResults[1].count ?? 0,
+        inTransit: statusResults[2].count ?? 0,
+        readyForPickup: statusResults[3].count ?? 0,
+        delivered: statusResults[4].count ?? 0,
+        totalRevenueCents: revenueCents,
         activePickupPoints: pickupPointsResult.count ?? 0,
         recentShipments: recentResult.data ?? [],
       },
     });
   }
 
-  // SAFETY: statsResult.data is typed as unknown from rpc() — shape is guaranteed by our SQL function
+  // SAFETY: shape guaranteed by SQL function
   const stats = statsResult.data as Record<string, number>;
 
   return NextResponse.json({

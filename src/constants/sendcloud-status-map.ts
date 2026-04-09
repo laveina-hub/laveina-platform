@@ -1,10 +1,8 @@
-// SendCloud status IDs → Laveina status. Unmapped = no-op.
 // Ref: https://support.sendcloud.com/hc/en-us/articles/360057461691
 
 import { ShipmentStatus } from "@/types/enums";
 import type { ShipmentStatus as ShipmentStatusType } from "@/types/enums";
 
-// null = acknowledge but don't update status
 export const SENDCLOUD_STATUS_MAP: Record<number, ShipmentStatusType | null> = {
   1: null, // announced
   3: ShipmentStatus.IN_TRANSIT, // at sorting center

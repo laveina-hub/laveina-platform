@@ -1,12 +1,15 @@
-// Dual pricing: internal (Barcelona, fixed prices) vs SendCloud (carrier rates + margin).
-// IVA 21% on subtotal. Base insurance €25 always included.
+// Internal = fixed prices per weight tier, SendCloud = carrier rates + margin. IVA 21%.
 
-import { calcBillableWeightKg } from "@/constants/parcel-sizes";
+import {
+  calcBillableWeightKg,
+  calcVolumetricWeightKg,
+  getTierForWeight,
+  validateParcelDimensions,
+} from "@/constants/parcel-sizes";
 import { createClient } from "@/lib/supabase/server";
 import { getAvailableRates } from "@/services/sendcloud.service";
 import type { ApiResponse } from "@/types/api";
 import { DeliveryMode } from "@/types/enums";
-import type { ParcelSize } from "@/types/enums";
 import type { PriceBreakdown, PriceOption } from "@/types/shipment";
 
 const IVA_RATE = 0.21;
@@ -23,7 +26,7 @@ async function fetchAdminSettings(): Promise<AdminSettings> {
   return Object.fromEntries(data.map((row) => [row.key, row.value]));
 }
 
-function getSettingNumber(settings: AdminSettings, key: string, fallback: number): number {
+export function getSettingNumber(settings: AdminSettings, key: string, fallback: number): number {
   const raw = settings[key];
   if (raw === undefined) return fallback;
   const parsed = Number(raw);
@@ -84,7 +87,6 @@ function buildPriceOption({
 
 export type GetRatesInput = {
   deliveryMode: "internal" | "sendcloud";
-  parcelSize: ParcelSize;
   weightKg: number;
   lengthCm: number;
   widthCm: number;
@@ -93,29 +95,46 @@ export type GetRatesInput = {
 };
 
 export async function getRates(input: GetRatesInput): Promise<ApiResponse<PriceBreakdown>> {
-  const { deliveryMode, parcelSize, weightKg, lengthCm, widthCm, heightCm, insuranceOptionId } =
-    input;
+  const { deliveryMode, weightKg, lengthCm, widthCm, heightCm, insuranceOptionId } = input;
+
+  // Validate dimensions
+  const dimCheck = validateParcelDimensions(lengthCm, widthCm, heightCm);
+  if (!dimCheck.valid) {
+    return {
+      data: null,
+      error: { message: dimCheck.error, code: "INVALID_DIMENSIONS", status: 422 },
+    };
+  }
+
+  // Calculate weights
+  const volumetricWeightKg = calcVolumetricWeightKg(lengthCm, widthCm, heightCm);
+  const billableWeightKg = calcBillableWeightKg(weightKg, lengthCm, widthCm, heightCm);
+
+  // Determine tier from billable weight
+  const tier = getTierForWeight(billableWeightKg);
+  if (!tier) {
+    return {
+      data: null,
+      error: { message: "pricing.weightOutOfRange", code: "WEIGHT_OUT_OF_RANGE", status: 422 },
+    };
+  }
 
   const [settings, insurance] = await Promise.all([
     fetchAdminSettings(),
-    // Laveina insurance only applies to internal routes; SendCloud uses carrier insurance
     deliveryMode === DeliveryMode.INTERNAL ? fetchInsuranceOption(insuranceOptionId) : null,
   ]);
 
   const insuranceSurchargeCents = insurance?.surcharge_cents ?? 0;
-  const billableWeightKg = calcBillableWeightKg(weightKg, lengthCm, widthCm, heightCm);
 
   if (deliveryMode === DeliveryMode.INTERNAL) {
-    const standardKey = `internal_price_${parcelSize}_cents`;
-    const expressKey = `internal_price_${parcelSize}_express_cents`;
+    const standardKey = `internal_price_${tier.size}_cents`;
     const standardCents = getSettingNumber(settings, standardKey, 0);
-    const expressCents = getSettingNumber(settings, expressKey, 0);
 
     if (standardCents === 0) {
       return {
         data: null,
         error: {
-          message: `pricing.internalPriceNotConfigured`,
+          message: "pricing.internalPriceNotConfigured",
           code: "PRICE_NOT_CONFIGURED",
           status: 422,
         },
@@ -131,30 +150,22 @@ export async function getRates(input: GetRatesInput): Promise<ApiResponse<PriceB
       estimatedDays: null,
     });
 
-    const express =
-      expressCents > 0
-        ? buildPriceOption({
-            shippingCents: expressCents,
-            carrierRateCents: 0,
-            marginPercent: 0,
-            insuranceSurchargeCents,
-            shippingMethodId: null,
-            estimatedDays: "1",
-          })
-        : null;
-
     return {
       data: {
         deliveryMode: DeliveryMode.INTERNAL,
+        detectedTier: tier.size,
+        actualWeightKg: weightKg,
+        volumetricWeightKg,
         billableWeightKg,
         standard,
-        express,
+        express: null,
         insuranceCoverageCents: BASE_INSURANCE_COVERAGE_CENTS,
       },
       error: null,
     };
   }
 
+  // SendCloud route
   const ratesResult = await getAvailableRates(billableWeightKg);
 
   if (ratesResult.error) {
@@ -195,6 +206,9 @@ export async function getRates(input: GetRatesInput): Promise<ApiResponse<PriceB
   return {
     data: {
       deliveryMode: DeliveryMode.SENDCLOUD,
+      detectedTier: tier.size,
+      actualWeightKg: weightKg,
+      volumetricWeightKg,
       billableWeightKg,
       standard,
       express,

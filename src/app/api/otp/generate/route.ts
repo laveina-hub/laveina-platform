@@ -10,7 +10,6 @@ const bodySchema = z.object({
   shipmentId: z.string().uuid("Invalid shipment ID"),
 });
 
-/** Generates a 6-digit OTP for a shipment. Pickup point staff only (destination shop). */
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
@@ -31,21 +30,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Pickup point staff can only generate OTP for shipments at their shop
+    // Only allow OTP for shipments at the staff member's shop
     if (role === "pickup_point") {
-      const { data: ownedShop } = await supabase
-        .from("pickup_points")
-        .select("id")
-        .eq("owner_id", user.id)
-        .eq("is_active", true)
-        .limit(1)
-        .single();
-
-      const { data: shipment } = await supabase
-        .from("shipments")
-        .select("destination_pickup_point_id")
-        .eq("id", parsed.data.shipmentId)
-        .single();
+      const [{ data: ownedShop }, { data: shipment }] = await Promise.all([
+        supabase
+          .from("pickup_points")
+          .select("id")
+          .eq("owner_id", user.id)
+          .eq("is_active", true)
+          .limit(1)
+          .single(),
+        supabase
+          .from("shipments")
+          .select("destination_pickup_point_id")
+          .eq("id", parsed.data.shipmentId)
+          .single(),
+      ]);
 
       if (!ownedShop || !shipment || shipment.destination_pickup_point_id !== ownedShop.id) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: result.data });
   } catch (err) {
     console.error("POST /api/otp/generate failed:", err);
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

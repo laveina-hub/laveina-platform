@@ -43,8 +43,8 @@ export function CtaSection() {
               alt={t("imageAlt")}
               width={640}
               height={420}
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="w-full object-contain"
-              priority={false}
             />
           </div>
         </div>

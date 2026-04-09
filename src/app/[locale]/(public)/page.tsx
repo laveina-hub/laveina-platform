@@ -3,14 +3,12 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 export const revalidate = 3600;
 
-import {
-  CtaSection,
-  EcoPartnerSection,
-  HeroSection,
-  PickupPointsNetworkSection,
-  PricingSection,
-  WhyChooseUsSection,
-} from "@/components/sections/home";
+import { CtaSection } from "@/components/sections/home/CtaSection";
+import { EcoPartnerSection } from "@/components/sections/home/EcoPartnerSection";
+import { HeroSection } from "@/components/sections/home/HeroSection";
+import { PickupPointsNetworkSection } from "@/components/sections/home/PickupPointsNetworkSection";
+import { PricingSection } from "@/components/sections/home/PricingSection";
+import { WhyChooseUsSection } from "@/components/sections/home/WhyChooseUsSection";
 
 type Props = {
   params: Promise<{ locale: string }>;

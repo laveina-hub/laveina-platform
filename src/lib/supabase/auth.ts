@@ -21,18 +21,7 @@ type AuthFailure = {
 
 type AuthResult = AuthSuccess | AuthFailure;
 
-/**
- * Authenticates the current request and fetches the user's role.
- *
- * Returns `{ supabase, user, role }` on success, or `{ error: NextResponse }` on failure.
- *
- * Usage:
- * ```ts
- * const auth = await verifyAuth();
- * if (auth.error) return auth.error;
- * const { supabase, user, role } = auth;
- * ```
- */
+/** Authenticates the current request and fetches the user's role. */
 export async function verifyAuth(): Promise<AuthResult> {
   const supabase = await createClient();
   const {

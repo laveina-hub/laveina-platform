@@ -17,7 +17,7 @@ export function RegisterForm() {
   const t = useTranslations("auth");
   const tv = useTranslations("validation");
   const locale = useLocale();
-  const { signUp } = useAuth();
+  const { user, signUp } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
@@ -43,6 +43,7 @@ export function RegisterForm() {
 
       if (result.user?.identities?.length === 0) {
         toast.error(t("emailAlreadyExists"));
+        setSubmitting(false);
         return;
       }
 
@@ -52,6 +53,15 @@ export function RegisterForm() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (user && !emailSent) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-16">
+        <span className="border-primary-200 border-t-primary-500 h-8 w-8 animate-spin rounded-full border-4" />
+        <p className="text-text-muted text-base">{t("redirecting")}</p>
+      </div>
+    );
   }
 
   if (emailSent) {

@@ -1,5 +1,4 @@
-// SAFETY: `as ShipmentStatus` casts in this file are safe because
-// values originate from Supabase enum columns that enforce the valid set at the DB level.
+// SAFETY: enum casts are backed by DB enum columns
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
@@ -45,7 +44,6 @@ export function PickupPointDashboardSection() {
       s.status === "delivered" && new Date(s.updated_at ?? s.created_at).toDateString() === today
   ).length;
 
-  // Excludes delivered and payment_confirmed from the active parcels table
   const pendingParcels = allShipments.filter(
     (s) => s.status !== "delivered" && s.status !== "payment_confirmed"
   );

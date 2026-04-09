@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
+import {
+  MAX_LONGEST_SIDE_CM,
+  MAX_TOTAL_DIMENSIONS_CM,
+  MAX_WEIGHT_KG,
+} from "@/constants/parcel-sizes";
 import { getClientIp, publicLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { getRates } from "@/services/pricing.service";
 import { getDeliveryMode } from "@/services/routing.service";
@@ -11,14 +16,18 @@ import {
   bookingStepDestinationSchema,
 } from "@/validations/shipment.schema";
 
-const parcelRateItemSchema = z.object({
-  parcel_size: z.enum(["small", "medium", "large", "extra_large", "xxl"]),
-  weight_kg: z.number().positive().max(25),
-  length_cm: z.number().int().positive(),
-  width_cm: z.number().int().positive(),
-  height_cm: z.number().int().positive(),
-  insurance_option_id: z.string().uuid().nullable(),
-});
+const parcelRateItemSchema = z
+  .object({
+    weight_kg: z.number().positive().max(MAX_WEIGHT_KG),
+    length_cm: z.number().int().positive().max(MAX_LONGEST_SIDE_CM),
+    width_cm: z.number().int().positive().max(MAX_LONGEST_SIDE_CM),
+    height_cm: z.number().int().positive().max(MAX_LONGEST_SIDE_CM),
+    insurance_option_id: z.string().uuid().nullable(),
+  })
+  .refine((data) => data.length_cm + data.width_cm + data.height_cm <= MAX_TOTAL_DIMENSIONS_CM, {
+    message: "Total dimensions exceed limit",
+    path: ["length_cm"],
+  });
 
 const getRatesBodySchema = z.object({
   origin_postcode: bookingStepOriginSchema.shape.origin_postcode,
@@ -26,7 +35,6 @@ const getRatesBodySchema = z.object({
   parcels: z.array(parcelRateItemSchema).min(1).max(20),
 });
 
-/** Calculates shipping rates for one or more parcels. Called during booking step 4→5. */
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
@@ -55,7 +63,6 @@ export async function POST(request: NextRequest) {
       parcels.map((parcel) =>
         getRates({
           deliveryMode: routing.mode,
-          parcelSize: parcel.parcel_size,
           weightKg: parcel.weight_kg,
           lengthCm: parcel.length_cm,
           widthCm: parcel.width_cm,
@@ -71,7 +78,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // SAFETY: error results are filtered out above — only success results remain here
+    // SAFETY: errors filtered out above
     const breakdowns = rateResults.map((r) => r.data as PriceBreakdown);
 
     return NextResponse.json({ data: breakdowns });

@@ -4,7 +4,6 @@ import type { NextRequest } from "next/server";
 import { createQrSignedUrl } from "@/lib/qr/generator";
 import { createClient } from "@/lib/supabase/server";
 
-/** Returns shipments for a Stripe session. Exchanges stored QR paths for signed URLs. */
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -43,7 +42,7 @@ export async function GET(request: NextRequest) {
           try {
             qrSignedUrl = await createQrSignedUrl(shipment.qr_code_url);
           } catch {
-            // QR may still be generating due to webhook latency — client retries
+            // QR may still be generating — client retries
           }
         }
         return { ...shipment, qr_code_url: qrSignedUrl };

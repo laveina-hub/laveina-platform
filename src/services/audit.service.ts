@@ -9,15 +9,7 @@ type AuditLogEntry = {
   ip_address?: string | null;
 };
 
-/**
- * Writes an audit log entry for sensitive operations.
- *
- * Uses the admin client (bypasses RLS) so it works in both
- * authenticated routes and webhook handlers.
- *
- * Best-effort: failures are logged but never thrown — audit logging
- * must not break the primary operation.
- */
+/** Best-effort audit log — failures are logged but never thrown. */
 export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
   try {
     const supabase = createAdminClient();

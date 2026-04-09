@@ -33,11 +33,12 @@ export const DeliverySpeed = {
 export type DeliverySpeed = (typeof DeliverySpeed)[keyof typeof DeliverySpeed];
 
 export const ParcelSize = {
-  SMALL: "small",
-  MEDIUM: "medium",
-  LARGE: "large",
-  EXTRA_LARGE: "extra_large",
-  XXL: "xxl",
+  TIER_1: "tier_1",
+  TIER_2: "tier_2",
+  TIER_3: "tier_3",
+  TIER_4: "tier_4",
+  TIER_5: "tier_5",
+  TIER_6: "tier_6",
 } as const;
 
 export type ParcelSize = (typeof ParcelSize)[keyof typeof ParcelSize];

@@ -4,7 +4,6 @@ import type { ApiResponse } from "@/types/api";
 import type { SendcloudRateOption } from "@/types/sendcloud";
 import type { SendcloudParcel } from "@/types/sendcloud";
 
-// Express = any carrier with lead time ≤24h
 const EXPRESS_MAX_LEAD_HOURS = 24;
 
 export type SendcloudRates = {
@@ -12,7 +11,6 @@ export type SendcloudRates = {
   express: SendcloudRateOption | null;
 };
 
-// Mock rates for local dev without SendCloud credentials
 function getMockRates(weightKg: number): SendcloudRates {
   const baseRateCents = Math.max(400, Math.round(weightKg * 80 + 320));
   const expressRateCents = Math.round(baseRateCents * 1.4);
@@ -36,7 +34,7 @@ function getMockRates(weightKg: number): SendcloudRates {
   return { standard, express };
 }
 
-/** Fetches cheapest (standard) and fastest ≤24h (express) Spain→Spain rates. Falls back to mocks without credentials. */
+/** Fetches standard (cheapest) and express (≤24h) Spain→Spain rates. */
 export async function getAvailableRates(weightKg: number): Promise<ApiResponse<SendcloudRates>> {
   if (!env.SENDCLOUD_PUBLIC_KEY || !env.SENDCLOUD_SECRET_KEY) {
     console.warn("[sendcloud] No API keys configured — returning mock rates");
@@ -95,7 +93,6 @@ export async function getAvailableRates(weightKg: number): Promise<ApiResponse<S
   }
 }
 
-/** Creates a SendCloud parcel. Returns mock data in dev without credentials. */
 export async function dispatchParcel(params: {
   shippingMethodId: number;
   receiverName: string;

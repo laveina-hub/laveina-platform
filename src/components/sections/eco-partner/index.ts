@@ -1,0 +1,1 @@
+export { EcoPartnerPageSection } from "./EcoPartnerPageSection";

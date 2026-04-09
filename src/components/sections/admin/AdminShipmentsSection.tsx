@@ -1,9 +1,8 @@
-// SAFETY: `as ShipmentStatus` / `as DeliveryMode` casts in this file are safe because
-// values originate from Supabase enum columns that enforce the valid set at the DB level.
+// SAFETY: enum casts are backed by DB enum columns
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Box, Search } from "lucide-react";
+import { AlertTriangle, Box, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -44,7 +43,7 @@ export function AdminShipmentsSection() {
   });
   const [searchInput, setSearchInput] = useState("");
 
-  const { data, isLoading } = useShipments(filters);
+  const { data, isLoading, isError } = useShipments(filters);
 
   const handleSearch = () => {
     setFilters((prev) => ({ ...prev, search: searchInput || undefined, page: 1 }));
@@ -138,6 +137,13 @@ export function AdminShipmentsSection() {
           ))}
         </select>
       </div>
+
+      {isError && (
+        <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <AlertTriangle size={18} className="shrink-0" />
+          {t("fetchError")}
+        </div>
+      )}
 
       <DataTable
         columns={columns}
