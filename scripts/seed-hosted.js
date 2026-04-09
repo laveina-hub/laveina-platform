@@ -423,12 +423,14 @@ async function main() {
     console.log(ppErr ? `   ${pp.name} — FAILED: ${ppErr.message}` : `   ${pp.name} — OK`);
   }
 
-  // Step 4: Verify logins
+  // Step 4: Verify logins (with delay to avoid Supabase rate limiting)
   console.log("\n4. Verifying logins...");
   const anonSb = createClient(supabaseUrl, anonKey);
   for (const u of USERS) {
     const r = await anonSb.auth.signInWithPassword({ email: u.email, password: u.password });
     console.log(`   ${u.email}: ${r.error ? "FAIL — " + r.error.message : "OK"}`);
+    // Small delay between sign-in attempts to avoid auth rate limiting
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   console.log("\nDone!");

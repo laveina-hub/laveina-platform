@@ -152,6 +152,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create booking" }, { status: 500 });
     }
 
+    console.log("Pending booking created:", pendingBooking.id, "for customer:", user.id);
+
     const appUrl = env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const parcelCount = booking.parcels.length;
 

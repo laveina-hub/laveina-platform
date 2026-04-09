@@ -46,29 +46,29 @@ export function BookingSuccessSection() {
 
     async function load() {
       const url = `/api/shipments/by-session?session_id=${encodeURIComponent(sessionId!)}`;
+      // Webhook may still be processing — poll up to 5 times (2s apart, ~10s total)
+      const MAX_ATTEMPTS = 5;
+      const POLL_INTERVAL_MS = 2000;
+
       try {
-        const res = await fetch(url);
-        const json = await res.json();
-        if (cancelled) return;
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+          if (attempt > 0) {
+            await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+          }
+          if (cancelled) return;
 
-        if (json.data && Array.isArray(json.data) && json.data.length > 0) {
-          setShipments(json.data);
-          setLoading(false);
-          return;
+          const res = await fetch(url);
+          const json = await res.json();
+          if (cancelled) return;
+
+          if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+            setShipments(json.data);
+            setLoading(false);
+            return;
+          }
         }
 
-        // Webhook may not have fired yet — retry once after 3 s
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        if (cancelled) return;
-
-        const res2 = await fetch(url);
-        const json2 = await res2.json();
-        if (cancelled) return;
-        if (json2.data && Array.isArray(json2.data) && json2.data.length > 0) {
-          setShipments(json2.data);
-        } else {
-          setError(true);
-        }
+        setError(true);
       } catch {
         if (!cancelled) setError(true);
       } finally {
