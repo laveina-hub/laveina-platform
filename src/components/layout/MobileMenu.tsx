@@ -229,7 +229,7 @@ export function MobileMenu() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full py-3 font-semibold"
+                  className="w-full border-red-300 bg-red-50 py-3 font-semibold text-red-600 hover:bg-red-100 active:bg-red-200 active:text-red-700"
                   onClick={handleSignOut}
                 >
                   {t("logout")}

@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { createQrSignedUrl } from "@/lib/qr/generator";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   try {
+    // Authenticate via server client (uses cookies / RLS session)
     const supabase = await createClient();
     const {
       data: { user },
@@ -22,7 +24,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Missing session_id" }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    // Use admin client to bypass RLS — auth is already verified above,
+    // and customer_id filter ensures users can only see their own shipments.
+    const adminClient = createAdminClient();
+
+    const { data, error } = await adminClient
       .from("shipments")
       .select(
         "id, tracking_id, qr_code_url, status, parcel_size, weight_kg, delivery_mode, delivery_speed, price_cents, created_at, origin_pickup_point:pickup_points!shipments_origin_pickup_point_id_fkey(name, address, city), destination_pickup_point:pickup_points!shipments_destination_pickup_point_id_fkey(name, address, city)"
@@ -32,6 +38,12 @@ export async function GET(request: NextRequest) {
       .order("created_at", { ascending: true });
 
     if (error || !data || data.length === 0) {
+      console.error("GET /api/shipments/by-session: no shipments found", {
+        sessionId,
+        customerId: user.id,
+        error,
+        dataLength: data?.length ?? 0,
+      });
       return NextResponse.json({ error: "Shipments not found" }, { status: 404 });
     }
 

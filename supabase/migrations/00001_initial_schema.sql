@@ -422,11 +422,12 @@ CREATE INDEX idx_notifications_log_status ON public.notifications_log(status);
 -- Cleanup: delete unprocessed rows older than 24h via pg_cron.
 
 CREATE TABLE public.pending_bookings (
-  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  customer_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  booking_data   JSONB NOT NULL,
-  processed      BOOLEAN NOT NULL DEFAULT false,
-  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  booking_data    JSONB NOT NULL,
+  processed       BOOLEAN NOT NULL DEFAULT false,
+  stripe_event_id TEXT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_pending_bookings_customer ON public.pending_bookings(customer_id);
