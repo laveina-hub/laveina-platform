@@ -61,8 +61,9 @@ async function fetchShipmentByTracking(trackingId: string): Promise<ShipmentWith
 }
 
 export function useShipments(filters: ShipmentFilters = {}) {
+  const { page, pageSize, status, pickupPointId, customerId, search } = filters;
   return useQuery({
-    queryKey: ["shipments", filters],
+    queryKey: ["shipments", page, pageSize, status, pickupPointId, customerId, search],
     queryFn: () => fetchShipments(filters),
     placeholderData: (previousData) => previousData,
   });

@@ -23,6 +23,7 @@ export async function FooterInfoBar() {
               alt={t("gdprAlt")}
               width={64}
               height={64}
+              unoptimized
               className="h-24 w-auto object-contain md:h-18 xl:h-32 xl:w-32"
             />
             <Image
@@ -30,6 +31,7 @@ export async function FooterInfoBar() {
               alt={t("soc2Alt")}
               width={72}
               height={72}
+              unoptimized
               className="h-24 w-auto object-contain md:h-18 xl:h-32 xl:w-32"
             />
           </div>
@@ -37,13 +39,13 @@ export async function FooterInfoBar() {
             <div className="flex flex-col-reverse items-center gap-8 lg:flex-col">
               <nav
                 aria-label={t("footerNav")}
-                className="flex items-center justify-center gap-x-6 gap-y-2"
+                className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
               >
                 {NAV_LINKS.map(({ key, href }) => (
                   <Link
                     key={key}
                     href={href}
-                    className="text-text-muted hover:text-text-primary text-sm transition-colors md:text-lg"
+                    className="text-text-muted hover:text-text-primary text-sm whitespace-nowrap transition-colors md:text-base"
                   >
                     {t(`nav.${key}`)}
                   </Link>

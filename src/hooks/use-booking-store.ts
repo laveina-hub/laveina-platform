@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import type { DeliveryMode, ParcelSize } from "@/types/enums";
+import type { DeliveryMode } from "@/types/enums";
 import type { PriceBreakdown } from "@/types/shipment";
 import type {
   BookingStepContactInput,
@@ -72,7 +72,8 @@ export const useBookingStore = create<BookingState & BookingActions>()(
       setDeliveryMode: (mode) =>
         set({
           deliveryMode: mode,
-          speed: null, // reset so user re-selects for new mode
+          speed: null,
+          priceBreakdowns: null,
         }),
 
       setPriceBreakdowns: (breakdowns) => set({ priceBreakdowns: breakdowns }),

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
+import { isValidTransition } from "@/constants/status-transitions";
 import { verifyAuth } from "@/lib/supabase/auth";
 import { getShipmentById, updateShipmentStatus } from "@/services/shipment.service";
 import { ShipmentStatus } from "@/types/enums";
@@ -63,7 +64,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   const { id } = await params;
-  const body = await request.json();
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
   const parsed = patchBodySchema.safeParse(body);
 
   if (!parsed.success) {
@@ -73,10 +81,28 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     );
   }
 
-  const result = await updateShipmentStatus(id, parsed.data.status as ShipmentStatus);
+  const newStatus = parsed.data.status as ShipmentStatus;
+
+  // Validate status transition before updating
+  const current = await getShipmentById(id);
+  if (current.error) {
+    return NextResponse.json({ error: "Shipment not found" }, { status: 404 });
+  }
+
+  if (!isValidTransition(current.data.status, newStatus)) {
+    return NextResponse.json(
+      { error: `Invalid status transition: ${current.data.status} → ${newStatus}` },
+      { status: 422 }
+    );
+  }
+
+  const result = await updateShipmentStatus(id, newStatus);
 
   if (result.error) {
-    return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+    return NextResponse.json(
+      { error: "Failed to update shipment status" },
+      { status: result.error.status }
+    );
   }
 
   return NextResponse.json({ data: result.data });

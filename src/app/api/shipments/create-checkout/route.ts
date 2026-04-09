@@ -12,7 +12,6 @@ import type { ParcelSize } from "@/types/enums";
 import type { PriceBreakdown } from "@/types/shipment";
 import { createCheckoutSchema } from "@/validations/shipment.schema";
 
-/** Validates booking, recalculates prices server-side, creates Stripe Checkout session. */
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
@@ -112,7 +111,7 @@ export async function POST(request: NextRequest) {
     let grandTotalCents = 0;
     const parcelPricing: ParcelPricingItem[] = booking.parcels.map((parcel, i) => {
       const cfg = sizeConfigMap.get(parcel.parcel_size)!;
-      // SAFETY: error results are filtered out above — only success results remain here
+      // SAFETY: errors filtered out above
       const breakdown = rateResults[i].data as PriceBreakdown;
       const selectedOption =
         booking.delivery_speed === "express" && breakdown.express
@@ -133,7 +132,7 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Store in pending_bookings to avoid Stripe metadata size limits
+    // Stored separately — Stripe metadata has a 500-char limit
     const bookingData = {
       customer_id: user.id,
       contact: {
@@ -174,7 +173,6 @@ export async function POST(request: NextRequest) {
       }),
     };
 
-    // Bypass RLS — user is already authenticated above
     const adminClient = createAdminClient();
     const { data: pendingBooking, error: pendingError } = await adminClient
       .from("pending_bookings")
@@ -223,12 +221,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: { url: session.url } });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    const stack = err instanceof Error ? err.stack : undefined;
-    console.error("Error creating checkout session:", message, stack);
-    return NextResponse.json(
-      { error: "Failed to create checkout session", detail: message },
-      { status: 500 }
-    );
+    console.error("Error creating checkout session:", err);
+    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
   }
 }

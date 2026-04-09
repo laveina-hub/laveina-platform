@@ -2,6 +2,8 @@ export const NAV_LINKS = [
   { key: "home" as const, href: "/" },
   { key: "request" as const, href: "/book" },
   { key: "track" as const, href: "/tracking" },
+  { key: "howItWorks" as const, href: "/how-it-works" },
+  { key: "whyChoose" as const, href: "/why-choose" },
   { key: "about" as const, href: "/about" },
   { key: "contact" as const, href: "/contact" },
 ] as const;

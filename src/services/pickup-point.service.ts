@@ -21,9 +21,9 @@ export async function listPickupPoints(
 
   const supabase = await createClient();
 
-  let query = supabase.from("pickup_points").select("*").order("name");
+  let query = supabase.from("pickup_points").select("*").order("name").limit(200);
 
-  // Default to active only; pass is_active explicitly to override (admin views)
+  // Default to active; admin views pass is_active explicitly
   if (is_active !== undefined) {
     query = query.eq("is_active", is_active);
   } else if (!("is_active" in filters)) {

@@ -9,7 +9,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendStatusUpdate } from "@/services/notification.service";
 import type { ShipmentStatus } from "@/types/enums";
 
-/** Handles SendCloud parcel status webhooks. Verifies HMAC, maps status, updates shipment. */
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const signature = request.headers.get("sendcloud-signature");
@@ -57,7 +56,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  // Deduplicate: check if this transition was already processed
+  // Skip if this transition was already processed
   const { data: existingLog } = await supabase
     .from("scan_logs")
     .select("id")
@@ -107,7 +106,6 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-/** Verifies HMAC-SHA256 signature. Skips verification in dev if secret is missing. */
 function verifySignature(body: string, signature: string | null): boolean {
   const secret = env.SENDCLOUD_SECRET_KEY;
 

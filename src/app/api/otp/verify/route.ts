@@ -14,7 +14,6 @@ const bodySchema = z.object({
   pickupPointId: z.string().uuid("Invalid pickup point ID").optional(),
 });
 
-/** Verifies OTP for a shipment. If pickupPointId is provided, also confirms delivery. */
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
@@ -36,19 +35,20 @@ export async function POST(request: NextRequest) {
     }
 
     if (role === "pickup_point") {
-      const { data: ownedShop } = await supabase
-        .from("pickup_points")
-        .select("id")
-        .eq("owner_id", user.id)
-        .eq("is_active", true)
-        .limit(1)
-        .single();
-
-      const { data: shipment } = await supabase
-        .from("shipments")
-        .select("destination_pickup_point_id")
-        .eq("id", parsed.data.shipmentId)
-        .single();
+      const [{ data: ownedShop }, { data: shipment }] = await Promise.all([
+        supabase
+          .from("pickup_points")
+          .select("id")
+          .eq("owner_id", user.id)
+          .eq("is_active", true)
+          .limit(1)
+          .single(),
+        supabase
+          .from("shipments")
+          .select("destination_pickup_point_id")
+          .eq("id", parsed.data.shipmentId)
+          .single(),
+      ]);
 
       if (!ownedShop || !shipment || shipment.destination_pickup_point_id !== ownedShop.id) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       );
 
       if (deliveryResult.error) {
-        // OTP was valid but delivery failed — return verified so client knows OTP was correct
+        // OTP valid but delivery update failed
         return NextResponse.json({
           data: { verified: true, delivered: false, deliveryError: deliveryResult.error.message },
         });
@@ -97,7 +97,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: result.data });
   } catch (err) {
     console.error("POST /api/otp/verify failed:", err);
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

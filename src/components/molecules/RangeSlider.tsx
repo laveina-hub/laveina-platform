@@ -19,7 +19,6 @@ interface RangeSliderProps {
   className?: string;
 }
 
-/** Custom range slider with a floating thumb that shows the current value and +/- arrow buttons. */
 function RangeSlider({
   value,
   onChange,
@@ -41,8 +40,7 @@ function RangeSlider({
   const increase = () => onChange(Math.min(max, parseFloat((value + step).toFixed(1))));
 
   const pct = ((value - min) / (max - min)) * 100;
-  // Thumb is w-36 = 144px. Offset so the track fill aligns with the thumb center.
-  const thumbW = 144;
+  const thumbW = 144; // w-36
 
   return (
     <div className={cn("flex-1 rounded-4xl border px-6 py-3", className)}>

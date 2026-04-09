@@ -71,7 +71,7 @@ export const DEFAULT_WORKING_HOURS: WorkingHours = {
 export function parseWorkingHours(raw: unknown): WorkingHours {
   if (!raw || typeof raw !== "object") return { ...DEFAULT_WORKING_HOURS };
 
-  // SAFETY: We checked `typeof raw === "object"` above, so this is a valid object cast
+  // SAFETY: typeof guard above
   const record = raw as Record<string, unknown>;
 
   const firstValue = Object.values(record)[0];

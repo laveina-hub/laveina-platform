@@ -94,7 +94,7 @@ export function UserMenu() {
     };
   }, [open, close]);
 
-  // SAFETY: role comes from Supabase user metadata which is always string | undefined
+  // SAFETY: user_metadata values are untyped
   const role = user?.user_metadata?.role as string | undefined;
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "";
   const email = user?.email ?? "";
@@ -106,8 +106,8 @@ export function UserMenu() {
     .slice(0, 2);
 
   async function handleSignOut() {
-    close();
     await signOut();
+    close();
     router.push("/");
     router.refresh();
   }

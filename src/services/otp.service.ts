@@ -36,7 +36,7 @@ export async function generateOtp(
 
   const supabase = await createClient();
 
-  // Check for an active, unexpired OTP — don't spam the receiver
+  // Don't generate if an active OTP already exists
   const { data: existingOtp } = await supabase
     .from("otp_verifications")
     .select("expires_at")
@@ -51,7 +51,7 @@ export async function generateOtp(
     return { data: { expires_at: existingOtp.expires_at }, error: null };
   }
 
-  // Unique index only allows one unverified OTP per shipment — clear expired ones first
+  // Clear expired OTPs (unique index allows only one unverified per shipment)
   await supabase
     .from("otp_verifications")
     .update({ verified: true })
@@ -62,7 +62,6 @@ export async function generateOtp(
   const otp = generateOtpCode(OTP_LENGTH);
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
-  // Only the hash is stored; concurrent races are caught by the unique index
   const { error } = await supabase.from("otp_verifications").insert({
     shipment_id: parsed.data.shipment_id,
     otp_hash: hashOtp(otp),

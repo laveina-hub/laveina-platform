@@ -68,6 +68,7 @@ export function PickupPointsNetworkSection() {
                 alt={t("mapAlt")}
                 width={640}
                 height={480}
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="h-64 w-full object-cover sm:h-80 md:h-full md:min-h-72"
               />
             </div>

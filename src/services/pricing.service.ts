@@ -1,5 +1,4 @@
-// Dual pricing: internal (Barcelona, fixed prices) vs SendCloud (carrier rates + margin).
-// IVA 21% on subtotal. Base insurance €25 always included.
+// Internal = fixed prices, SendCloud = carrier rates + margin. IVA 21%.
 
 import { calcBillableWeightKg } from "@/constants/parcel-sizes";
 import { createClient } from "@/lib/supabase/server";
@@ -98,7 +97,7 @@ export async function getRates(input: GetRatesInput): Promise<ApiResponse<PriceB
 
   const [settings, insurance] = await Promise.all([
     fetchAdminSettings(),
-    // Laveina insurance only applies to internal routes; SendCloud uses carrier insurance
+    // Insurance only applies to internal routes
     deliveryMode === DeliveryMode.INTERNAL ? fetchInsuranceOption(insuranceOptionId) : null,
   ]);
 

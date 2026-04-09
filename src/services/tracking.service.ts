@@ -21,7 +21,6 @@ type ScanDecision =
   | { type: "error"; message: string; code: string }
   | { type: "no_change" };
 
-// Rules: origin scan → received_at_origin, destination scan → ready_for_pickup (via arrived_at_destination)
 function determineScanAction(shipment: Shipment, pickupPointId: string): ScanDecision {
   const currentStatus = shipment.status as ShipmentStatus;
   const isOrigin = pickupPointId === shipment.origin_pickup_point_id;
@@ -142,29 +141,6 @@ export async function processQrScan(
     }
 
     updatedShipment = updated;
-
-    // Auto-transition: arrived_at_destination → ready_for_pickup
-    if (nextStatus === ShipmentStatus.ARRIVED_AT_DESTINATION) {
-      const { data: autoUpdated, error: autoError } = await adminSupabase
-        .from("shipments")
-        .update({ status: ShipmentStatus.READY_FOR_PICKUP })
-        .eq("id", shipment.id)
-        .select()
-        .single();
-
-      if (!autoError && autoUpdated) {
-        updatedShipment = autoUpdated;
-        finalStatus = ShipmentStatus.READY_FOR_PICKUP;
-
-        await adminSupabase.from("scan_logs").insert({
-          shipment_id: shipment.id,
-          scanned_by: scannedBy,
-          pickup_point_id: parsed.data.pickup_point_id,
-          old_status: ShipmentStatus.ARRIVED_AT_DESTINATION,
-          new_status: ShipmentStatus.READY_FOR_PICKUP,
-        });
-      }
-    }
   }
 
   const { data: scanLog, error: scanError } = await adminSupabase
@@ -174,10 +150,33 @@ export async function processQrScan(
       scanned_by: scannedBy,
       pickup_point_id: parsed.data.pickup_point_id,
       old_status: oldStatus,
-      new_status: finalStatus ?? oldStatus,
+      new_status: nextStatus ?? oldStatus,
     })
     .select()
     .single();
+
+  // Auto-transition: arrived → ready_for_pickup
+  if (nextStatus === ShipmentStatus.ARRIVED_AT_DESTINATION) {
+    const { data: autoUpdated, error: autoError } = await adminSupabase
+      .from("shipments")
+      .update({ status: ShipmentStatus.READY_FOR_PICKUP })
+      .eq("id", shipment.id)
+      .select()
+      .single();
+
+    if (!autoError && autoUpdated) {
+      updatedShipment = autoUpdated;
+      finalStatus = ShipmentStatus.READY_FOR_PICKUP;
+
+      await adminSupabase.from("scan_logs").insert({
+        shipment_id: shipment.id,
+        scanned_by: scannedBy,
+        pickup_point_id: parsed.data.pickup_point_id,
+        old_status: ShipmentStatus.ARRIVED_AT_DESTINATION,
+        new_status: ShipmentStatus.READY_FOR_PICKUP,
+      });
+    }
+  }
 
   if (scanError || !scanLog) {
     return { data: null, error: { message: "Failed to log scan", status: 500 } };
@@ -203,7 +202,7 @@ export async function processQrScan(
   return { data: { shipment: updatedShipment, scanLog, otpSent }, error: null };
 }
 
-/** Confirms delivery after OTP verification (ready_for_pickup → delivered). */
+/** Confirms delivery after OTP verification. */
 export async function confirmDelivery(
   confirmedBy: string,
   shipmentId: string,
@@ -211,9 +210,10 @@ export async function confirmDelivery(
 ): Promise<ApiResponse<{ shipment: Shipment; scanLog: ScanLog }>> {
   const adminSupabase = createAdminClient();
 
+  // Narrow select — full row comes back from the update below
   const { data: shipment, error: findError } = await adminSupabase
     .from("shipments")
-    .select("*")
+    .select("id, status, destination_pickup_point_id, receiver_phone, receiver_name, tracking_id")
     .eq("id", shipmentId)
     .single();
 
@@ -294,7 +294,8 @@ export async function getTrackingHistory(shipmentId: string): Promise<ApiRespons
     .from("scan_logs")
     .select("*")
     .eq("shipment_id", shipmentId)
-    .order("scanned_at", { ascending: true });
+    .order("scanned_at", { ascending: true })
+    .limit(500);
 
   if (error) {
     return { data: null, error: { message: error.message, status: 500 } };

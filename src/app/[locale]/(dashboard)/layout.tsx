@@ -15,22 +15,25 @@ export default async function DashboardLayout({ children, params }: Props) {
   setRequestLocale(locale);
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) {
+  // getSession() reads the cookie locally — no network call. Safe because
+  // middleware already verified and refreshed the JWT.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.user) {
     redirect(`/${locale}/auth/login`);
   }
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, full_name")
-    .eq("id", user.id)
+    .eq("id", session.user.id)
     .single();
 
   const role = (profile?.role as UserRole) ?? "customer";
-  const userFullName = profile?.full_name ?? user.email ?? "User";
+  const userFullName = profile?.full_name ?? session.user.email ?? "User";
 
   return (
     <DashboardShell role={role} userFullName={userFullName}>

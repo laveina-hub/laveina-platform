@@ -3,15 +3,35 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
-// CSP allows Supabase, Stripe, inline styles (Next.js/Tailwind), and camera for QR scanner
+const isDev = process.env.NODE_ENV === "development";
+const isLocalProd = !isDev && process.env.NEXT_PUBLIC_APP_URL?.startsWith("http://localhost");
+
+const cspDirectives = [
+  "default-src 'self'",
+  // unsafe-eval required by Crisp Chat SDK
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://client.crisp.chat https://*.iubenda.com",
+  "style-src 'self' 'unsafe-inline' https://client.crisp.chat https://*.iubenda.com",
+  "img-src 'self' data: blob: https://*.supabase.co https://image.crisp.chat https://client.crisp.chat https://*.iubenda.com",
+  "font-src 'self' data: https://client.crisp.chat",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://server.gallabox.com https://client.crisp.chat wss://client.relay.crisp.chat https://storage.crisp.chat https://*.iubenda.com",
+  "frame-src https://js.stripe.com https://hooks.stripe.com https://game.crisp.chat https://*.iubenda.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  // Breaks localhost (forces http→https)
+  ...(isDev || isLocalProd ? [] : ["upgrade-insecure-requests"]),
+];
+
 const securityHeaders = [
   {
     key: "X-DNS-Prefetch-Control",
     value: "on",
   },
+  // max-age=0 in dev clears any cached HSTS for localhost
   {
     key: "Strict-Transport-Security",
-    value: "max-age=63072000; includeSubDomains; preload",
+    value: isDev ? "max-age=0" : "max-age=63072000; includeSubDomains; preload",
   },
   {
     key: "X-Content-Type-Options",
@@ -35,25 +55,14 @@ const securityHeaders = [
   },
   {
     key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://*.supabase.co",
-      "font-src 'self' data:",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://server.gallabox.com",
-      "frame-src https://js.stripe.com https://hooks.stripe.com",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "frame-ancestors 'none'",
-      "upgrade-insecure-requests",
-    ].join("; "),
+    value: cspDirectives.join("; "),
   },
 ];
 
 const nextConfig: NextConfig = {
   images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 2592000, // 30 days
     remotePatterns: [
       {
         protocol: "https",

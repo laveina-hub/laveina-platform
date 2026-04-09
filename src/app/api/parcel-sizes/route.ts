@@ -4,13 +4,6 @@ import type { NextRequest } from "next/server";
 import { getClientIp, publicLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
-/**
- * GET /api/parcel-sizes
- *
- * Returns active parcel size configs from the DB.
- * Public — no auth required (needed in the booking form before login check).
- * Falls back to an empty array if the table doesn't exist yet (pre-migration).
- */
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
   const rl = publicLimiter.check(ip);
@@ -28,7 +21,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ data });
+    return NextResponse.json(
+      { data },
+      {
+        headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" },
+      }
+    );
   } catch (err) {
     console.error("GET /api/parcel-sizes failed:", err);
     const message = err instanceof Error ? err.message : "Unknown error";

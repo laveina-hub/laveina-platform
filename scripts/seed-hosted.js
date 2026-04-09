@@ -366,10 +366,27 @@ async function main() {
     if (error) {
       if (error.message.includes("already been registered")) {
         console.log(`   ${u.email} — already exists (skipped)`);
-        // Fetch existing user ID
+        // Fetch existing user ID by email
         const { data: listData } = await sb.auth.admin.listUsers();
         const existing = listData?.users?.find((x) => x.email === u.email);
-        if (existing) userIdMap[u.email] = existing.id;
+        if (existing) {
+          userIdMap[u.email] = existing.id;
+          console.log(`     → found ID: ${existing.id}`);
+          // Ensure profile exists
+          const { error: profileErr } = await sb
+            .from("profiles")
+            .upsert(
+              { id: existing.id, full_name: u.name, role: u.role, email: u.email },
+              { onConflict: "id" }
+            );
+          if (profileErr) {
+            console.log(`     → PROFILE UPSERT FAILED: ${profileErr.message}`);
+          } else {
+            console.log(`     → profile ensured`);
+          }
+        } else {
+          console.log(`     → WARNING: could not find user in auth.users`);
+        }
       } else {
         console.error(`   ${u.email} — FAILED: ${error.message}`);
       }

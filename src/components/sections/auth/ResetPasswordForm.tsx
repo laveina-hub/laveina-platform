@@ -2,20 +2,25 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useRouter as useNextRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button, Label, PasswordInput } from "@/components/atoms";
-import { useRouter } from "@/i18n/navigation";
+import { getLocalePrefix, ROLE_DASHBOARD } from "@/constants/app";
+import { useAuth } from "@/hooks/use-auth";
+import { routing } from "@/i18n/routing";
 import { createClient } from "@/lib/supabase/client";
 import { resetPasswordSchema, type ResetPasswordInput } from "@/validations/auth.schema";
 
 export function ResetPasswordForm() {
   const t = useTranslations("auth");
   const tv = useTranslations("validation");
-  const router = useRouter();
+  const { user } = useAuth();
+  const nextRouter = useNextRouter();
+  const locale = useLocale();
   const supabase = useMemo(() => createClient(), []);
   const [submitting, setSubmitting] = useState(false);
 
@@ -36,17 +41,20 @@ export function ResetPasswordForm() {
 
       if (error) {
         toast.error(t("genericError"));
+        setSubmitting(false);
         return;
       }
 
       toast.success(t("passwordUpdated"), {
         description: t("passwordUpdatedDescription"),
       });
-      router.push("/");
-      router.refresh();
+      // SAFETY: user_metadata values are untyped
+      const role = (user?.user_metadata?.role as string) ?? "customer";
+      const path = ROLE_DASHBOARD[role] ?? "/customer";
+      const prefix = getLocalePrefix(locale, routing.defaultLocale);
+      nextRouter.replace(`${prefix}${path}`);
     } catch {
       toast.error(t("genericError"));
-    } finally {
       setSubmitting(false);
     }
   }

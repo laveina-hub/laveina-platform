@@ -20,7 +20,7 @@ const sizeStyles = {
   xl: "rounded-md px-6 py-3 text-base 2xl:px-10 2xl:py-7 2xl:text-2xl",
   hero: "rounded-md px-4 py-3 md:text-base 2xl:py-5 2xl:text-2xl",
   pricing: "rounded-xl px-4 py-3 text-2xl sm:text-base xl:text-2xl",
-  nav: "rounded-lg px-6 py-2 text-base xl:px-10 xl:py-4 xl:text-2xl",
+  nav: "rounded-lg px-4 py-2 text-sm xl:px-6 xl:py-3 xl:text-base",
 } as const;
 
 type ButtonLinkVariant = keyof typeof variantStyles;

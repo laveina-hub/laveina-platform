@@ -1,7 +1,7 @@
 import { type Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
-import { ForgotPasswordForm } from "@/components/sections/auth";
+import { ForgotPasswordForm } from "@/components/sections/auth/ForgotPasswordForm";
 
 type Props = {
   params: Promise<{ locale: string }>;

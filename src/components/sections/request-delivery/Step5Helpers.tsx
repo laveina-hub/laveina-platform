@@ -1,5 +1,6 @@
 "use client";
 
+import { Clock, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
@@ -65,6 +66,7 @@ export function PriceOptionCard({
   t: ReturnType<typeof useTranslations>;
 }) {
   const labelKey = speedKey === "express" ? "deliveryExpress" : "deliveryStandard";
+  const isExpress = speedKey === "express";
 
   return (
     <button
@@ -72,19 +74,47 @@ export function PriceOptionCard({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "flex flex-1 flex-col rounded-xl border p-5 text-left transition-colors focus:outline-none",
+        "group relative flex flex-1 flex-col rounded-xl border-2 p-5 text-left transition-all duration-200 focus:outline-none",
         selected
-          ? "border-primary-400 bg-primary-50"
-          : "border-border-default hover:border-primary-200 hover:bg-primary-50 bg-white"
+          ? "border-primary-400 bg-primary-50 shadow-primary-500/10 shadow-md"
+          : "border-border-default hover:border-primary-200 hover:bg-primary-50 bg-white hover:shadow-sm"
       )}
     >
-      <span className="text-lg font-semibold">{t(labelKey)}</span>
+      {/* Selected indicator */}
+      <div
+        className={cn(
+          "absolute top-4 right-4 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all",
+          selected ? "border-primary-500 bg-primary-500" : "border-border-default bg-white"
+        )}
+      >
+        {selected && <div className="h-2 w-2 rounded-full bg-white" />}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-lg",
+            isExpress
+              ? selected
+                ? "bg-tertiary-50 text-white"
+                : "bg-orange-100 text-orange-600"
+              : selected
+                ? "bg-primary-500 text-white"
+                : "bg-primary-100 text-primary-600"
+          )}
+        >
+          {isExpress ? <Zap className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+        </div>
+        <span className="text-lg font-semibold">{t(labelKey)}</span>
+      </div>
+
       {estimatedDays && (
-        <span className="text-text-muted text-sm">
+        <span className="text-text-muted mt-1 text-sm">
           {t("estimatedDays", { days: estimatedDays })}
         </span>
       )}
-      <span className="mt-3 text-2xl font-bold">{formatCents(totalCents)}</span>
+
+      <span className="text-primary-700 mt-3 text-2xl font-bold">{formatCents(totalCents)}</span>
       <span className="text-text-muted text-xs">{t("iva")}</span>
     </button>
   );

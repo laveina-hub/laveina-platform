@@ -179,7 +179,7 @@ CREATE TRIGGER set_pickup_points_updated_at
 -- SendCloud routes use carrier insurance instead
 CREATE TABLE public.insurance_options (
   id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  coverage_amount_cents INTEGER NOT NULL CHECK (coverage_amount_cents > 0),
+  coverage_amount_cents INTEGER NOT NULL UNIQUE CHECK (coverage_amount_cents > 0),
   surcharge_cents      INTEGER NOT NULL DEFAULT 0 CHECK (surcharge_cents >= 0),
   is_active            BOOLEAN NOT NULL DEFAULT true,
   display_order        INTEGER NOT NULL DEFAULT 0,
@@ -261,6 +261,8 @@ CREATE INDEX idx_shipments_origin ON public.shipments(origin_pickup_point_id);
 CREATE INDEX idx_shipments_destination ON public.shipments(destination_pickup_point_id);
 CREATE INDEX idx_shipments_created ON public.shipments(created_at DESC);
 CREATE INDEX idx_shipments_stripe_session ON public.shipments(stripe_checkout_session_id);
+CREATE INDEX idx_shipments_sendcloud_parcel ON public.shipments(sendcloud_parcel_id) WHERE sendcloud_parcel_id IS NOT NULL;
+CREATE INDEX idx_shipments_customer_created ON public.shipments(customer_id, created_at DESC);
 
 -- Generate unique tracking ID (LAV-XXXXXXXX format)
 -- Defined after shipments table exists
@@ -318,6 +320,7 @@ CREATE TABLE public.scan_logs (
 CREATE INDEX idx_scan_logs_shipment ON public.scan_logs(shipment_id);
 CREATE INDEX idx_scan_logs_scanned_by ON public.scan_logs(scanned_by);
 CREATE INDEX idx_scan_logs_scanned_at ON public.scan_logs(scanned_at DESC);
+CREATE INDEX idx_scan_logs_webhook_dedup ON public.scan_logs(shipment_id, new_status) WHERE scanned_by IS NULL;
 
 
 -- ----- OTP VERIFICATIONS -----
@@ -333,6 +336,7 @@ CREATE TABLE public.otp_verifications (
 
 CREATE INDEX idx_otp_shipment ON public.otp_verifications(shipment_id);
 CREATE INDEX idx_otp_expires ON public.otp_verifications(expires_at);
+CREATE INDEX idx_otp_active_lookup ON public.otp_verifications(shipment_id, verified, expires_at DESC);
 
 -- Prevent race condition: only one unverified OTP per shipment at a time.
 -- Expired rows are cleaned up by the application (or a future cron), so this
@@ -461,6 +465,11 @@ CREATE POLICY profiles_update_own ON public.profiles
     AND role = (SELECT role FROM public.profiles WHERE id = auth.uid())
   );
 
+CREATE POLICY profiles_admin_update ON public.profiles
+  FOR UPDATE
+  USING (public.get_user_role() = 'admin')
+  WITH CHECK (public.get_user_role() = 'admin');
+
 -- ===== PICKUP POINTS =====
 CREATE POLICY pickup_points_select_active ON public.pickup_points
   FOR SELECT USING (is_active = true);
@@ -585,3 +594,23 @@ AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION public.get_admin_dashboard_stats() TO authenticated;
+
+-- Lightweight fallback for total revenue when the full stats RPC is unavailable
+CREATE OR REPLACE FUNCTION public.get_total_revenue_cents()
+RETURNS bigint
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+AS $$
+  SELECT COALESCE(SUM(price_cents), 0)::bigint FROM public.shipments;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_total_revenue_cents() TO authenticated;
+
+-- ============================================================
+-- 9. TABLE GRANTS
+-- ============================================================
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;

@@ -1,5 +1,6 @@
 "use client";
 
+import { Menu } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -59,7 +60,6 @@ export function MobileMenu() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, close]);
 
-  // Close on route change
   useEffect(() => {
     if (isOpen) {
       close();
@@ -67,11 +67,19 @@ export function MobileMenu() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only react to pathname changes
   }, [pathname]);
 
-  // Prevent body scroll when menu is open
+  // Lock body scroll while open
   useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
+    if (isOpen) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = "hidden";
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+    }
     return () => {
       document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
     };
   }, [isOpen]);
 
@@ -98,7 +106,7 @@ export function MobileMenu() {
     return () => document.removeEventListener("keydown", handleTabTrap);
   }, [isOpen]);
 
-  // SAFETY: role comes from Supabase user metadata which is always string | undefined
+  // SAFETY: user_metadata values are untyped
   const role = user?.user_metadata?.role as string | undefined;
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "";
   const initials = displayName
@@ -109,8 +117,8 @@ export function MobileMenu() {
     .slice(0, 2);
 
   async function handleSignOut() {
-    close();
     await signOut();
+    close();
     router.push("/");
     router.refresh();
   }
@@ -119,23 +127,12 @@ export function MobileMenu() {
       <button
         ref={buttonRef}
         onClick={toggle}
-        className="hover:bg-primary-200 active:bg-primary-300 flex h-10 w-10 items-center justify-center rounded-md transition-colors"
+        className="flex h-11 w-11 items-center justify-center rounded-lg transition-colors hover:bg-white/60 active:bg-white/80"
         aria-label={isOpen ? t("closeMenu") : t("openMenu")}
         aria-expanded={isOpen}
         aria-controls="mobile-nav"
       >
-        {isOpen ? (
-          <CloseIcon size={22} className="text-text-primary" />
-        ) : (
-          <Image
-            src="/images/header/icon-hamburger-menu.svg"
-            alt=""
-            width={20}
-            height={16}
-            aria-hidden="true"
-            unoptimized
-          />
-        )}
+        <Menu size={24} className="text-text-primary" aria-hidden="true" />
       </button>
 
       {isOpen && (
@@ -197,6 +194,7 @@ export function MobileMenu() {
                   <li key={key}>
                     <Link
                       href={href}
+                      prefetch={true}
                       className={cn(
                         "flex items-center rounded-lg px-3 py-3 text-sm font-medium transition-colors",
                         isActive

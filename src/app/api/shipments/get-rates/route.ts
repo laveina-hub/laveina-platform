@@ -26,7 +26,6 @@ const getRatesBodySchema = z.object({
   parcels: z.array(parcelRateItemSchema).min(1).max(20),
 });
 
-/** Calculates shipping rates for one or more parcels. Called during booking step 4→5. */
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
@@ -71,7 +70,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // SAFETY: error results are filtered out above — only success results remain here
+    // SAFETY: errors filtered out above
     const breakdowns = rateResults.map((r) => r.data as PriceBreakdown);
 
     return NextResponse.json({ data: breakdowns });

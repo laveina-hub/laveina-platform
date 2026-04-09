@@ -1,4 +1,4 @@
-// In-memory sliding window rate limiter. For multi-instance, swap to Redis.
+// In-memory sliding window rate limiter. Swap to Redis for multi-instance.
 
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -18,7 +18,6 @@ type RateLimiter = {
   check: (token: string) => RateLimitResult;
 };
 
-/** Create one per route group at module scope so it persists across requests. */
 export function createRateLimiter(config: RateLimitConfig): RateLimiter {
   const { limit, windowMs } = config;
   const store = new Map<string, number[]>();
@@ -92,8 +91,8 @@ export function rateLimitResponse(resetMs: number): NextResponse {
   );
 }
 
-// Auth not rate-limited here — Supabase GoTrue has its own limits
-export const paymentLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
-export const otpLimiter = createRateLimiter({ limit: 3, windowMs: 600_000 });
-export const scanLimiter = createRateLimiter({ limit: 30, windowMs: 60_000 });
+// Auth uses Supabase GoTrue's built-in rate limits
+export const paymentLimiter = createRateLimiter({ limit: 5, windowMs: 300_000 }); // 5 per 5 min
+export const otpLimiter = createRateLimiter({ limit: 3, windowMs: 900_000 }); // 3 per 15 min
+export const scanLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 }); // 10 per min
 export const publicLimiter = createRateLimiter({ limit: 60, windowMs: 60_000 });

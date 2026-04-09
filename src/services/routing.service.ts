@@ -1,4 +1,4 @@
-// Both postcodes "08xxx" → internal (Barcelona drivers), otherwise → SendCloud.
+// Both postcodes "08xxx" → internal (Barcelona), otherwise → SendCloud.
 
 import { DeliveryMode } from "@/types/enums";
 

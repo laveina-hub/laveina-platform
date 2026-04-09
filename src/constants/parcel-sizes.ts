@@ -1,4 +1,4 @@
-// Stateless parcel-size math. DB values (parcel_size_config) take precedence at runtime.
+// DB parcel_size_config takes precedence at runtime.
 
 import type { ParcelSize } from "@/types/enums";
 
@@ -12,7 +12,6 @@ export function calcVolumetricWeightKg(
   return (lengthCm * widthCm * heightCm) / VOLUMETRIC_DIVISOR;
 }
 
-/** Billable weight = max(actual, volumetric). Used for pricing. */
 export function calcBillableWeightKg(
   actualWeightKg: number,
   lengthCm: number,
@@ -23,7 +22,7 @@ export function calcBillableWeightKg(
   return Math.max(actualWeightKg, volumetric);
 }
 
-// Fallbacks until parcel_size_config loads from DB
+// Fallbacks until DB config loads
 
 export type ParcelSizeFallback = {
   maxWeightKg: number;

@@ -3,28 +3,20 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+import { loginAction } from "@/actions/auth";
 import { Button, Input, Label, PasswordInput } from "@/components/atoms";
-import { useAuth } from "@/hooks/use-auth";
-import { Link, useRouter } from "@/i18n/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { Link } from "@/i18n/navigation";
 import { loginSchema, type LoginInput } from "@/validations/auth.schema";
-
-const ROLE_DASHBOARD: Record<string, string> = {
-  admin: "/admin",
-  pickup_point: "/pickup-point",
-  customer: "/customer",
-};
 
 export function LoginForm() {
   const t = useTranslations("auth");
   const tv = useTranslations("validation");
-  const { signIn } = useAuth();
-  const router = useRouter();
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const [submitting, setSubmitting] = useState(false);
 
@@ -39,27 +31,20 @@ export function LoginForm() {
   async function onSubmit(data: LoginInput) {
     setSubmitting(true);
     try {
-      await signIn(data.email, data.password);
+      const result = await loginAction(
+        data.email,
+        data.password,
+        locale,
+        searchParams.get("redirect")
+      );
 
-      // Prevent open-redirect: only allow internal paths
-      const raw = searchParams.get("redirect");
-      const hasValidRedirect = raw && raw.startsWith("/") && !raw.startsWith("//");
+      toast.error(t(result.error));
+      setSubmitting(false);
+    } catch (error: unknown) {
+      // Re-throw NEXT_REDIRECT
+      if (error && typeof error === "object" && "digest" in error) throw error;
 
-      let redirectTo: string;
-      if (hasValidRedirect) {
-        redirectTo = raw;
-      } else {
-        const supabase = createClient();
-        const { data: role } = await supabase.rpc("get_user_role");
-        // SAFETY: get_user_role() RPC returns a text value from the profiles table enum
-        redirectTo = ROLE_DASHBOARD[(role as string) ?? "customer"] ?? "/customer";
-      }
-
-      router.push(redirectTo);
-      router.refresh();
-    } catch {
-      toast.error(t("invalidCredentials"));
-    } finally {
+      toast.error(t("genericError"));
       setSubmitting(false);
     }
   }

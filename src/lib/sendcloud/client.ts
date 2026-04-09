@@ -1,4 +1,4 @@
-// Thin SendCloud HTTP client. Import via sendcloud.service.ts, not directly.
+// Low-level SendCloud HTTP client — use sendcloud.service.ts instead.
 
 import { env } from "@/env";
 import type {
@@ -38,7 +38,7 @@ async function sendcloudFetch<T>(path: string, options: RequestInit = {}): Promi
     throw new Error(`SendCloud API error ${res.status}: ${body}`);
   }
 
-  // SAFETY: caller is responsible for passing the correct generic type T
+  // SAFETY: caller provides correct generic type T
   return res.json() as Promise<T>;
 }
 

@@ -37,7 +37,7 @@ export function QrScannerSection({ pickupPointId }: QrScannerSectionProps) {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<{ message: string } | null>(null);
 
-  // SAFETY: Html5Qrcode type is only available after dynamic import at runtime
+  // SAFETY: type only available after dynamic import
   const scannerRef = useRef<InstanceType<typeof import("html5-qrcode").Html5Qrcode> | null>(null);
   const processingRef = useRef(false);
 
@@ -45,7 +45,7 @@ export function QrScannerSection({ pickupPointId }: QrScannerSectionProps) {
     if (scannerRef.current) {
       try {
         const state = scannerRef.current.getState();
-        // SAFETY: html5-qrcode state enum — 2 = SCANNING, 3 = PAUSED
+        // 2 = SCANNING, 3 = PAUSED
         if (state === 2 || state === 3) {
           await scannerRef.current.stop();
         }

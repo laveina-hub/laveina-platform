@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 export function HeroSection() {
   const t = useTranslations("hero");
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   return (
     <section className="bg-primary-50 relative overflow-hidden">
@@ -21,7 +21,9 @@ export function HeroSection() {
           <Text variant="hero">{t("subtext")}</Text>
 
           <div className="flex flex-wrap gap-2 md:gap-3">
-            {user ? (
+            {loading ? (
+              <div className="bg-primary-200 h-12 w-44 animate-pulse rounded-lg md:h-14 md:w-52" />
+            ) : user ? (
               <ButtonLink href="/book" variant="primary" size="hero">
                 {t("bookNow")}
               </ButtonLink>
@@ -43,6 +45,7 @@ export function HeroSection() {
             alt={t("imageAlt")}
             width={560}
             height={500}
+            sizes="(max-width: 768px) 100vw, 50vw"
             priority
             className="h-auto w-full object-contain object-bottom"
           />
@@ -56,6 +59,7 @@ export function HeroSection() {
           width={1440}
           height={120}
           aria-hidden="true"
+          unoptimized
           className="w-full object-fill md:w-3/4"
         />
       </div>

@@ -37,6 +37,7 @@ export function usePickupPoints(postcode?: string) {
     queryKey: ["pickup-points", postcode],
     queryFn: () => fetchPickupPoints(postcode),
     enabled: !!postcode,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -45,5 +46,6 @@ export function usePickupPoint(id: string | undefined) {
     queryKey: ["pickup-point", id],
     queryFn: () => fetchPickupPoint(id!),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000,
   });
 }

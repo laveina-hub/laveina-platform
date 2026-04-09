@@ -18,7 +18,7 @@ export async function GET(
   const localePrefix =
     locale && (routing.locales as readonly string[]).includes(locale) ? `/${locale}` : "";
 
-  const redirectPath = next.startsWith("/auth") ? `${localePrefix}${next}` : next;
+  const redirectPath = next.startsWith(localePrefix) ? next : `${localePrefix}${next}`;
   const successUrl = `${origin}${redirectPath}`;
 
   if (code) {
@@ -51,7 +51,7 @@ export async function GET(
 
     console.error("[auth/callback] Code exchange failed:", error.message);
 
-    // Code already used — check if user has a session anyway
+    // Code may already be used — check for existing session
     const {
       data: { user },
     } = await supabase.auth.getUser();

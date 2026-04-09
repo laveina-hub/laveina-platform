@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { Button, Input, Label, Text } from "@/components/atoms";
 import { CheckIcon } from "@/components/icons";
+import { useAuth } from "@/hooks/use-auth";
 import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { forgotPasswordSchema, type ForgotPasswordInput } from "@/validations/auth.schema";
@@ -17,6 +18,7 @@ export function ForgotPasswordForm() {
   const t = useTranslations("auth");
   const tv = useTranslations("validation");
   const locale = useLocale();
+  const { user } = useAuth();
   const supabase = useMemo(() => createClient(), []);
   const [submitting, setSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -39,6 +41,7 @@ export function ForgotPasswordForm() {
 
       if (error) {
         toast.error(t("genericError"));
+        setSubmitting(false);
         return;
       }
 
@@ -48,6 +51,15 @@ export function ForgotPasswordForm() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (user) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-16">
+        <span className="border-primary-200 border-t-primary-500 h-8 w-8 animate-spin rounded-full border-4" />
+        <p className="text-text-muted text-base">{t("redirecting")}</p>
+      </div>
+    );
   }
 
   if (emailSent) {

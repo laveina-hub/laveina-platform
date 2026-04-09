@@ -1,5 +1,4 @@
-// SAFETY: `as ShipmentStatus` casts in this file are safe because
-// values originate from Supabase enum columns that enforce the valid set at the DB level.
+// SAFETY: enum casts are backed by DB enum columns
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
@@ -33,10 +32,12 @@ export function CustomerShipmentsSection() {
   const t = useTranslations("customerDashboard");
   const tStatus = useTranslations("shipmentStatus");
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useShipments(user ? { customerId: user.id, page, pageSize: 20 } : {});
+  const { data, isLoading } = useShipments(
+    user ? { customerId: user.id, page, pageSize: 20 } : { page, pageSize: 20 }
+  );
 
   const columns: ColumnDef<Shipment, unknown>[] = [
     {
@@ -90,7 +91,7 @@ export function CustomerShipmentsSection() {
       <DataTable
         columns={columns}
         data={data?.data ?? []}
-        isLoading={isLoading}
+        isLoading={authLoading || isLoading}
         onRowClick={(row) => router.push(`/customer/shipments/${row.id}`)}
         emptyState={{
           icon: <Package size={40} />,

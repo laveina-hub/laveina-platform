@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 
@@ -115,7 +115,11 @@ export function Step4Parcel() {
         const selectedWeight = watch(`parcels.${index}.weight_kg`);
 
         return (
-          <CardShell key={field.id}>
+          <CardShell
+            key={field.id}
+            className="animate-fade-in-up border-border-muted border shadow-md transition-shadow hover:shadow-lg"
+            style={{ animationDelay: `${index * 80}ms` }}
+          >
             <CardHeader
               title={fields.length > 1 ? `${t("stepParcel")} #${index + 1}` : t("stepParcel")}
             />
@@ -165,7 +169,6 @@ export function Step4Parcel() {
                 )}
               </div>
 
-              {/* Insurance tiers only available for Barcelona internal routes */}
               {deliveryMode === "internal" && (
                 <div className="space-y-1.5">
                   <Label htmlFor={`insurance_${index}`}>{t("insuranceOption")}</Label>
@@ -182,10 +185,10 @@ export function Step4Parcel() {
                         {insuranceOptions?.map((opt) => (
                           <option key={opt.id} value={opt.id}>
                             {t("insuranceCoverage", {
-                              amount: `€${(opt.coverage_amount_cents / 100).toFixed(0)}`,
+                              amount: `${(opt.coverage_amount_cents / 100).toFixed(0)}`,
                             })}
                             {opt.surcharge_cents > 0
-                              ? ` — ${t("insuranceSurcharge", { amount: `€${(opt.surcharge_cents / 100).toFixed(2)}` })}`
+                              ? ` — ${t("insuranceSurcharge", { amount: `${(opt.surcharge_cents / 100).toFixed(2)}` })}`
                               : ""}
                           </option>
                         ))}
@@ -201,10 +204,10 @@ export function Step4Parcel() {
               {fields.length > 1 && (
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="ghost"
                   size="sm"
                   onClick={() => remove(index)}
-                  className="text-error"
+                  className="text-error hover:bg-red-50"
                 >
                   <Trash2 className="mr-1.5 h-4 w-4" />
                   {t("removeParcel")}
@@ -215,27 +218,33 @@ export function Step4Parcel() {
         );
       })}
 
-      {/* Max 20 parcels to match API limit */}
       {fields.length < 20 && (
-        <Button
+        <button
           type="button"
-          variant="secondary"
           onClick={() =>
             append({ parcel_size: "small", weight_kg: 0.5, insurance_option_id: null })
           }
-          className="w-full"
+          className="border-primary-300 text-primary-600 hover:border-primary-400 hover:bg-primary-50 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed py-4 font-medium transition-colors"
         >
-          <Plus className="mr-1.5 h-4 w-4" />
+          <Plus className="h-5 w-5" />
           {t("addParcel")}
-        </Button>
+        </button>
       )}
 
-      <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={() => setStep(3)}>
+      <div className="flex justify-between pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          onClick={() => setStep(3)}
+          className="group gap-2"
+        >
+          <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
           {t("back")}
         </Button>
-        <Button type="submit" variant="primary">
+        <Button type="submit" variant="primary" size="lg" className="group gap-2">
           {t("next")}
+          <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
         </Button>
       </div>
     </form>

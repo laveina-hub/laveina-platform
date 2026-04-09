@@ -29,6 +29,47 @@ export type Database = {
         };
         Relationships: [];
       };
+      audit_logs: {
+        Row: {
+          action: string;
+          actor_id: string | null;
+          created_at: string;
+          id: string;
+          ip_address: string | null;
+          metadata: Json | null;
+          resource: string;
+          resource_id: string | null;
+        };
+        Insert: {
+          action: string;
+          actor_id?: string | null;
+          created_at?: string;
+          id?: string;
+          ip_address?: string | null;
+          metadata?: Json | null;
+          resource: string;
+          resource_id?: string | null;
+        };
+        Update: {
+          action?: string;
+          actor_id?: string | null;
+          created_at?: string;
+          id?: string;
+          ip_address?: string | null;
+          metadata?: Json | null;
+          resource?: string;
+          resource_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       insurance_options: {
         Row: {
           coverage_amount_cents: number;
@@ -486,6 +527,7 @@ export type Database = {
     Functions: {
       generate_tracking_id: { Args: never; Returns: string };
       get_admin_dashboard_stats: { Args: never; Returns: Json };
+      get_total_revenue_cents: { Args: never; Returns: number };
       get_user_role: {
         Args: never;
         Returns: Database["public"]["Enums"]["user_role"];
