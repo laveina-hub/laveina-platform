@@ -15,7 +15,6 @@ export async function fetchRates(params: {
   origin_postcode: string;
   destination_postcode: string;
   parcels: Array<{
-    parcel_size: string;
     weight_kg: number;
     length_cm: number;
     width_cm: number;

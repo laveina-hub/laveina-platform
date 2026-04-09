@@ -71,7 +71,7 @@ const pendingBookingDataSchema = z.object({
   parcels: z
     .array(
       z.object({
-        parcel_size: z.enum(["small", "medium", "large", "extra_large", "xxl"]),
+        parcel_size: z.enum(["tier_1", "tier_2", "tier_3", "tier_4", "tier_5", "tier_6"]),
         weight_kg: z.number().positive(),
         billable_weight_kg: z.number().nonnegative(),
         length_cm: z.number().positive(),

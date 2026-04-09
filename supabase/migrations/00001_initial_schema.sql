@@ -47,13 +47,14 @@ CREATE TYPE public.delivery_speed AS ENUM (
   'express'      -- Fastest 24h carrier (optional upgrade)
 );
 
--- Parcel size tiers (confirmed 2026-03-18)
+-- Weight-based tiers (6 tiers per Pricing Report)
 CREATE TYPE public.parcel_size AS ENUM (
-  'small',         -- 30×20×20 cm, max 2 kg
-  'medium',        -- 35×35×24 cm, max 5 kg
-  'large',         -- 40×40×37 cm, max 10 kg
-  'extra_large',   -- 55×55×39 cm, max 20 kg
-  'xxl'            -- 55×60×39 cm, max 25 kg
+  'tier_1',        -- 0–2 kg
+  'tier_2',        -- 2–5 kg
+  'tier_3',        -- 5–10 kg
+  'tier_4',        -- 10–15 kg
+  'tier_5',        -- 15–20 kg
+  'tier_6'         -- 20–30 kg
 );
 
 
@@ -215,7 +216,7 @@ CREATE TABLE public.shipments (
 
   -- Parcel Details
   parcel_size                 public.parcel_size NOT NULL,
-  weight_kg                   NUMERIC(5,2) NOT NULL CHECK (weight_kg > 0 AND weight_kg <= 25),
+  weight_kg                   NUMERIC(5,2) NOT NULL CHECK (weight_kg > 0 AND weight_kg <= 30),
   parcel_length_cm            NUMERIC(5,1) NOT NULL,
   parcel_width_cm             NUMERIC(5,1) NOT NULL,
   parcel_height_cm            NUMERIC(5,1) NOT NULL,
@@ -361,23 +362,41 @@ CREATE TRIGGER set_admin_settings_updated_at
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
--- ----- PARCEL SIZE CONFIG -----
--- Physical dimensions and weight limits per parcel size (admin-editable).
--- The 5 size keys are fixed by the parcel_size enum above.
--- Admin can update dimensions/max weight from /admin/settings.
+-- ----- WEIGHT TIER CONFIG -----
+-- Weight-based pricing tiers (6 tiers per Pricing Report).
+-- Customer enters actual dimensions + weight; system calculates billable weight
+-- and auto-assigns the matching tier. Admin can adjust max weight per tier.
 CREATE TABLE public.parcel_size_config (
   size          public.parcel_size PRIMARY KEY,
+  min_weight_kg NUMERIC(5,2)  NOT NULL CHECK (min_weight_kg >= 0),
   max_weight_kg NUMERIC(5,2)  NOT NULL CHECK (max_weight_kg > 0),
-  length_cm     INTEGER       NOT NULL CHECK (length_cm > 0),
-  width_cm      INTEGER       NOT NULL CHECK (width_cm > 0),
-  height_cm     INTEGER       NOT NULL CHECK (height_cm > 0),
   is_active     BOOLEAN       NOT NULL DEFAULT true,
-  updated_at    TIMESTAMPTZ   NOT NULL DEFAULT now()
+  updated_at    TIMESTAMPTZ   NOT NULL DEFAULT now(),
+  CHECK (max_weight_kg > min_weight_kg)
 );
 
 CREATE TRIGGER set_parcel_size_config_updated_at
   BEFORE UPDATE ON public.parcel_size_config
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- Seed weight tiers
+INSERT INTO public.parcel_size_config (size, min_weight_kg, max_weight_kg) VALUES
+  ('tier_1', 0,     2),
+  ('tier_2', 2.01,  5),
+  ('tier_3', 5.01,  10),
+  ('tier_4', 10.01, 15),
+  ('tier_5', 15.01, 20),
+  ('tier_6', 20.01, 30);
+
+-- Seed Barcelona fixed prices (IVA 21% included, stored as cents)
+INSERT INTO public.admin_settings (key, value) VALUES
+  ('internal_price_tier_1_cents', '495'),
+  ('internal_price_tier_2_cents', '675'),
+  ('internal_price_tier_3_cents', '990'),
+  ('internal_price_tier_4_cents', '1440'),
+  ('internal_price_tier_5_cents', '1800'),
+  ('internal_price_tier_6_cents', '2520')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 
 
 -- ----- NOTIFICATIONS LOG -----

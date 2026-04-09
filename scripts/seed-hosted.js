@@ -305,13 +305,14 @@ async function main() {
   // Step 1: Seed reference data
   console.log("1. Seeding reference data (parcel sizes, insurance, admin settings)...");
 
-  console.log("   Seeding parcel_size_config...");
+  console.log("   Seeding parcel_size_config (weight tiers)...");
   const sizes = [
-    { size: "small", max_weight_kg: 2, length_cm: 30, width_cm: 20, height_cm: 20 },
-    { size: "medium", max_weight_kg: 5, length_cm: 35, width_cm: 35, height_cm: 24 },
-    { size: "large", max_weight_kg: 10, length_cm: 40, width_cm: 40, height_cm: 37 },
-    { size: "extra_large", max_weight_kg: 20, length_cm: 55, width_cm: 55, height_cm: 39 },
-    { size: "xxl", max_weight_kg: 25, length_cm: 60, width_cm: 60, height_cm: 45 },
+    { size: "tier_1", min_weight_kg: 0, max_weight_kg: 2 },
+    { size: "tier_2", min_weight_kg: 2.01, max_weight_kg: 5 },
+    { size: "tier_3", min_weight_kg: 5.01, max_weight_kg: 10 },
+    { size: "tier_4", min_weight_kg: 10.01, max_weight_kg: 15 },
+    { size: "tier_5", min_weight_kg: 15.01, max_weight_kg: 20 },
+    { size: "tier_6", min_weight_kg: 20.01, max_weight_kg: 30 },
   ];
   const { error: sizeErr } = await sb
     .from("parcel_size_config")
@@ -333,20 +334,16 @@ async function main() {
   console.log("   Seeding admin_settings...");
   const settings = [
     { key: "sendcloud_margin_percent", value: "25" },
-    { key: "internal_price_small_cents", value: "350" },
-    { key: "internal_price_medium_cents", value: "500" },
-    { key: "internal_price_large_cents", value: "700" },
-    { key: "internal_price_extra_large_cents", value: "1000" },
-    { key: "internal_price_xxl_cents", value: "1300" },
-    { key: "internal_price_small_express_cents", value: "550" },
-    { key: "internal_price_medium_express_cents", value: "750" },
-    { key: "internal_price_large_express_cents", value: "1000" },
-    { key: "internal_price_extra_large_express_cents", value: "1400" },
-    { key: "internal_price_xxl_express_cents", value: "1800" },
+    { key: "internal_price_tier_1_cents", value: "495" },
+    { key: "internal_price_tier_2_cents", value: "675" },
+    { key: "internal_price_tier_3_cents", value: "990" },
+    { key: "internal_price_tier_4_cents", value: "1440" },
+    { key: "internal_price_tier_5_cents", value: "1800" },
+    { key: "internal_price_tier_6_cents", value: "2520" },
     { key: "sendcloud_sender_name", value: "Laveina" },
-    { key: "sendcloud_sender_address", value: "" },
-    { key: "sendcloud_sender_city", value: "Barcelona" },
-    { key: "sendcloud_sender_postcode", value: "08001" },
+    { key: "sendcloud_sender_address", value: "Rambla de l'Exposicio 103, Planta 1 - Local" },
+    { key: "sendcloud_sender_city", value: "Vilanova i la Geltru" },
+    { key: "sendcloud_sender_postcode", value: "08800" },
     { key: "sendcloud_sender_phone", value: "" },
   ];
   const { error: setErr } = await sb.from("admin_settings").upsert(settings, { onConflict: "key" });

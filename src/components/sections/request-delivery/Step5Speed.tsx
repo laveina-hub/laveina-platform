@@ -9,7 +9,6 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Button, CardBody, CardHeader, CardShell, Divider } from "@/components/atoms";
-import { PARCEL_SIZE_FALLBACKS } from "@/constants/parcel-sizes";
 import { useBookingStore } from "@/hooks/use-booking-store";
 import { bookingStepSpeedSchema, type BookingStepSpeedInput } from "@/validations/shipment.schema";
 
@@ -28,7 +27,6 @@ export function Step5Speed() {
     origin,
     destination,
     parcels,
-    parcelDimensionsList,
     deliveryMode,
     speed,
     priceBreakdowns,
@@ -39,7 +37,12 @@ export function Step5Speed() {
 
   const parcelKey =
     parcels.length > 0
-      ? parcels.map((p) => `${p.parcel_size}-${p.weight_kg}-${p.insurance_option_id}`).join("|")
+      ? parcels
+          .map(
+            (p) =>
+              `${p.length_cm}-${p.width_cm}-${p.height_cm}-${p.weight_kg}-${p.insurance_option_id}`
+          )
+          .join("|")
       : null;
 
   const ratesMutation = useMutation({
@@ -51,23 +54,16 @@ export function Step5Speed() {
   useEffect(() => {
     if (!origin || !destination || parcels.length === 0 || !parcelKey) return;
 
-    const parcelParams = parcels.map((p, i) => {
-      const stored = parcelDimensionsList[i];
-      const fallback = PARCEL_SIZE_FALLBACKS[p.parcel_size];
-      return {
-        parcel_size: p.parcel_size,
-        weight_kg: p.weight_kg,
-        length_cm: stored?.lengthCm ?? fallback.lengthCm,
-        width_cm: stored?.widthCm ?? fallback.widthCm,
-        height_cm: stored?.heightCm ?? fallback.heightCm,
-        insurance_option_id: p.insurance_option_id,
-      };
-    });
-
     ratesMutation.mutate({
       origin_postcode: origin.origin_postcode,
       destination_postcode: destination.destination_postcode,
-      parcels: parcelParams,
+      parcels: parcels.map((p) => ({
+        weight_kg: p.weight_kg,
+        length_cm: p.length_cm,
+        width_cm: p.width_cm,
+        height_cm: p.height_cm,
+        insurance_option_id: p.insurance_option_id,
+      })),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parcelKey]);
@@ -101,8 +97,10 @@ export function Step5Speed() {
       ...origin,
       ...destination,
       parcels: parcels.map((p) => ({
-        parcel_size: p.parcel_size,
         weight_kg: p.weight_kg,
+        length_cm: p.length_cm,
+        width_cm: p.width_cm,
+        height_cm: p.height_cm,
         insurance_option_id: p.insurance_option_id,
       })),
       delivery_speed: data.delivery_speed,

@@ -68,6 +68,9 @@ export type PriceOption = {
 
 export type PriceBreakdown = {
   deliveryMode: DeliveryMode;
+  detectedTier: ParcelSize;
+  actualWeightKg: number;
+  volumetricWeightKg: number;
   billableWeightKg: number;
   standard: PriceOption;
   express: PriceOption | null;

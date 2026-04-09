@@ -178,31 +178,25 @@ export type Database = {
       };
       parcel_size_config: {
         Row: {
-          height_cm: number;
           is_active: boolean;
-          length_cm: number;
+          min_weight_kg: number;
           max_weight_kg: number;
           size: Database["public"]["Enums"]["parcel_size"];
           updated_at: string;
-          width_cm: number;
         };
         Insert: {
-          height_cm: number;
           is_active?: boolean;
-          length_cm: number;
+          min_weight_kg: number;
           max_weight_kg: number;
           size: Database["public"]["Enums"]["parcel_size"];
           updated_at?: string;
-          width_cm: number;
         };
         Update: {
-          height_cm?: number;
           is_active?: boolean;
-          length_cm?: number;
+          min_weight_kg?: number;
           max_weight_kg?: number;
           size?: Database["public"]["Enums"]["parcel_size"];
           updated_at?: string;
-          width_cm?: number;
         };
         Relationships: [];
       };
@@ -536,7 +530,7 @@ export type Database = {
     Enums: {
       delivery_mode: "internal" | "sendcloud";
       delivery_speed: "standard" | "express";
-      parcel_size: "small" | "medium" | "large" | "extra_large" | "xxl";
+      parcel_size: "tier_1" | "tier_2" | "tier_3" | "tier_4" | "tier_5" | "tier_6";
       shipment_status:
         | "payment_confirmed"
         | "waiting_at_origin"
@@ -673,7 +667,7 @@ export const Constants = {
     Enums: {
       delivery_mode: ["internal", "sendcloud"],
       delivery_speed: ["standard", "express"],
-      parcel_size: ["small", "medium", "large", "extra_large", "xxl"],
+      parcel_size: ["tier_1", "tier_2", "tier_3", "tier_4", "tier_5", "tier_6"],
       shipment_status: [
         "payment_confirmed",
         "waiting_at_origin",

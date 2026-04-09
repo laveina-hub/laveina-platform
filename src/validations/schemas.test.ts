@@ -225,7 +225,9 @@ describe("booking step schemas", () => {
 
   describe("bookingStepParcelSchema", () => {
     const validParcel = {
-      parcel_size: "medium",
+      length_cm: 40,
+      width_cm: 30,
+      height_cm: 20,
       weight_kg: 3.5,
       insurance_option_id: "550e8400-e29b-41d4-a716-446655440000",
     };
@@ -237,14 +239,17 @@ describe("booking step schemas", () => {
 
     it("accepts multiple parcels", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcels: [validParcel, { parcel_size: "small", weight_kg: 1, insurance_option_id: null }],
+        parcels: [
+          validParcel,
+          { length_cm: 20, width_cm: 15, height_cm: 10, weight_kg: 1, insurance_option_id: null },
+        ],
       });
       expect(result.success).toBe(true);
     });
 
     it("accepts null insurance_option_id", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcels: [{ parcel_size: "small", weight_kg: 1, insurance_option_id: null }],
+        parcels: [{ ...validParcel, insurance_option_id: null }],
       });
       expect(result.success).toBe(true);
     });
@@ -254,41 +259,46 @@ describe("booking step schemas", () => {
       expect(result.success).toBe(false);
     });
 
-    it("rejects invalid parcel size", () => {
+    it("rejects weight above 30 kg", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcels: [{ parcel_size: "huge", weight_kg: 1, insurance_option_id: null }],
-      });
-      expect(result.success).toBe(false);
-    });
-
-    it("rejects weight above 25 kg", () => {
-      const result = bookingStepParcelSchema.safeParse({
-        parcels: [{ parcel_size: "xxl", weight_kg: 26, insurance_option_id: null }],
+        parcels: [{ ...validParcel, weight_kg: 31 }],
       });
       expect(result.success).toBe(false);
     });
 
     it("rejects zero weight", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcels: [{ parcel_size: "small", weight_kg: 0, insurance_option_id: null }],
+        parcels: [{ ...validParcel, weight_kg: 0 }],
       });
       expect(result.success).toBe(false);
     });
 
     it("rejects negative weight", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcels: [{ parcel_size: "small", weight_kg: -1, insurance_option_id: null }],
+        parcels: [{ ...validParcel, weight_kg: -1 }],
       });
       expect(result.success).toBe(false);
     });
 
-    it("accepts all 5 valid parcel sizes", () => {
-      for (const size of ["small", "medium", "large", "extra_large", "xxl"]) {
-        const result = bookingStepParcelSchema.safeParse({
-          parcels: [{ parcel_size: size, weight_kg: 1, insurance_option_id: null }],
-        });
-        expect(result.success).toBe(true);
-      }
+    it("rejects longest side exceeding 120 cm", () => {
+      const result = bookingStepParcelSchema.safeParse({
+        parcels: [{ ...validParcel, length_cm: 121 }],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects total dimensions exceeding 150 cm", () => {
+      const result = bookingStepParcelSchema.safeParse({
+        parcels: [{ ...validParcel, length_cm: 60, width_cm: 50, height_cm: 41 }],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts dimensions at exactly 150 cm total", () => {
+      const result = bookingStepParcelSchema.safeParse({
+        parcels: [{ ...validParcel, length_cm: 60, width_cm: 50, height_cm: 40 }],
+      });
+      expect(result.success).toBe(true);
     });
   });
 
@@ -317,7 +327,9 @@ describe("createCheckoutSchema", () => {
     origin_pickup_point_id: "550e8400-e29b-41d4-a716-446655440000",
     destination_postcode: "28001",
     destination_pickup_point_id: "660e8400-e29b-41d4-a716-446655440000",
-    parcels: [{ parcel_size: "medium" as const, weight_kg: 3.5, insurance_option_id: null }],
+    parcels: [
+      { length_cm: 40, width_cm: 30, height_cm: 20, weight_kg: 3.5, insurance_option_id: null },
+    ],
     delivery_speed: "standard" as const,
   };
 
@@ -329,8 +341,8 @@ describe("createCheckoutSchema", () => {
     const result = createCheckoutSchema.safeParse({
       ...validCheckout,
       parcels: [
-        { parcel_size: "small", weight_kg: 1, insurance_option_id: null },
-        { parcel_size: "large", weight_kg: 8, insurance_option_id: null },
+        { length_cm: 20, width_cm: 15, height_cm: 10, weight_kg: 1, insurance_option_id: null },
+        { length_cm: 40, width_cm: 30, height_cm: 20, weight_kg: 8, insurance_option_id: null },
       ],
     });
     expect(result.success).toBe(true);
