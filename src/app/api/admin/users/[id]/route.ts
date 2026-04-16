@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { verifyAuth } from "@/lib/supabase/auth";
 import { logAuditEvent } from "@/services/audit.service";
 import { getUserById, updateUserRole } from "@/services/user.service";
+import { updateUserRoleSchema } from "@/validations/user.schema";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -45,8 +46,16 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const body = await request.json();
-  const result = await updateUserRole(id, body);
+  const body: unknown = await request.json();
+  const parsed = updateUserRoleSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid request body", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const result = await updateUserRole(id, parsed.data);
 
   if (result.error) {
     return NextResponse.json({ error: result.error }, { status: 400 });

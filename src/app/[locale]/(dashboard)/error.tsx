@@ -27,7 +27,9 @@ export default function DashboardError({ error, reset }: Props) {
       <p className="text-text-muted mt-2 max-w-md text-sm">
         {error.message || t("somethingWentWrong")}
       </p>
-      {error.digest && <p className="text-text-muted mt-1 text-xs">Error ID: {error.digest}</p>}
+      {error.digest && (
+        <p className="text-text-muted mt-1 text-xs">{t("errorId", { id: error.digest })}</p>
+      )}
       <Button onClick={reset} variant="outline" size="sm" className="mt-6">
         {t("tryAgain")}
       </Button>

@@ -12,7 +12,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/types/enums";
 
-import { DetailRow, DetailSkeleton, formatDate } from "./user-detail-helpers";
+import { DetailRow, DetailSkeleton, formatDate } from "./UserDetailHelpers";
 
 const ALL_ROLES = Object.values(UserRole);
 

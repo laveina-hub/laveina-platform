@@ -219,6 +219,7 @@ export function AdminSettingsSection() {
                 {data.parcelSizes.map((size) => (
                   <tr key={size.size} className="border-border-default border-b">
                     <td className="text-text-primary py-2 pr-4 font-medium">
+                      {/* SAFETY: parcelSizeLabel keys are defined in locale files for all possible size.size values */}
                       {tCommon(`parcelSizeLabel.${size.size}` as Parameters<typeof tCommon>[0])}
                     </td>
                     <td className="text-text-muted py-2 pr-4">

@@ -141,6 +141,7 @@ function NotificationItem({
   const isUnread = notification.status === "unread";
 
   // Map snake_case DB type → camelCase i18n key (e.g. "new_booking_paid" → "newBookingPaid")
+  // SAFETY: notification.metadata is stored as a JSON object with string values matching i18n interpolation params
   const metadata = notification.metadata as Record<string, string>;
   const typeKey = notification.type.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 

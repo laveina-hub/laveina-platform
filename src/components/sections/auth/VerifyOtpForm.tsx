@@ -79,7 +79,7 @@ export function VerifyOtpForm({ email }: Props) {
   if (!email) {
     return (
       <div className="space-y-6 text-center">
-        <p className="text-[#6d6d6d]">{t("otpNoEmail")}</p>
+        <p className="text-text-muted">{t("otpNoEmail")}</p>
         <Link
           href="/auth/forgot-password"
           className="text-primary-500 hover:text-primary-600 font-semibold transition-colors"
@@ -107,15 +107,15 @@ export function VerifyOtpForm({ email }: Props) {
         {/* Heading with back arrow */}
         <div className="flex items-center gap-3">
           <Link href="/auth/forgot-password" aria-label={t("backToForgotPassword")}>
-            <ArrowLeft className="h-7 w-7 text-[#242424]" />
+            <ArrowLeft className="text-text-primary h-7 w-7" />
           </Link>
-          <h1 className="font-display text-[28px] leading-10.5 font-semibold tracking-tight text-[#242424]">
+          <h1 className="font-display text-text-primary text-3xl leading-10.5 font-semibold tracking-tight">
             {t("forgotPasswordTitle")}
           </h1>
         </div>
 
         {/* Description */}
-        <p className="text-lg leading-7 whitespace-pre-line text-[#242424]">
+        <p className="text-text-primary text-lg leading-7 whitespace-pre-line">
           {t("otpDescription")}
         </p>
 
@@ -155,9 +155,9 @@ export function VerifyOtpForm({ email }: Props) {
 
         {/* Resend */}
         <p className="text-center text-sm">
-          <span className="text-[#242424]">{t("otpDidntReceive")}</span>{" "}
+          <span className="text-text-primary">{t("otpDidntReceive")}</span>{" "}
           {countdown > 0 ? (
-            <span className="text-[#242424]">
+            <span className="text-text-primary">
               {t("otpResendIn")}{" "}
               <span className="font-medium text-black">{formattedCountdown}</span>
             </span>

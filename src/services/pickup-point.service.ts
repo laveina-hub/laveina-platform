@@ -26,7 +26,13 @@ export async function listPickupPoints(
 
   const supabase = await createClient();
 
-  let query = supabase.from("pickup_points").select("*").order("name").limit(200);
+  let query = supabase
+    .from("pickup_points")
+    .select(
+      "id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
+    )
+    .order("name")
+    .limit(200);
 
   if (is_active !== undefined) {
     query = query.eq("is_active", is_active);
@@ -53,7 +59,13 @@ export async function listPickupPointsPaginated(
 
   const supabase = await createClient();
 
-  let query = supabase.from("pickup_points").select("*", { count: "exact" }).order("name");
+  let query = supabase
+    .from("pickup_points")
+    .select(
+      "id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at",
+      { count: "exact" }
+    )
+    .order("name");
 
   if (is_active !== undefined) {
     query = query.eq("is_active", is_active);
@@ -93,7 +105,9 @@ export async function getPickupPointById(pickupPointId: string): Promise<ApiResp
 
   const { data, error } = await supabase
     .from("pickup_points")
-    .select("*")
+    .select(
+      "id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
+    )
     .eq("id", pickupPointId)
     .single();
 
@@ -139,7 +153,9 @@ export async function createPickupPoint(
   const { data, error } = await supabase
     .from("pickup_points")
     .insert({ ...parsed.data, owner_id: ownerId })
-    .select()
+    .select(
+      "id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
+    )
     .single();
 
   if (error) {
@@ -167,7 +183,9 @@ export async function updatePickupPoint(
     .from("pickup_points")
     .update(parsed.data)
     .eq("id", pickupPointId)
-    .select()
+    .select(
+      "id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
+    )
     .single();
 
   if (error) {
@@ -255,7 +273,9 @@ export async function toggleAvailability(pickupPointId: string): Promise<ApiResp
     .from("pickup_points")
     .update({ is_active: !current.is_active })
     .eq("id", pickupPointId)
-    .select()
+    .select(
+      "id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
+    )
     .single();
 
   if (error) {

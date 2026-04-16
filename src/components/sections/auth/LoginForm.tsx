@@ -80,10 +80,10 @@ export function LoginForm() {
       <div className="space-y-10">
         {/* Heading */}
         <div className="space-y-0.5">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-[#242424]">
+          <h1 className="font-display text-text-primary text-2xl font-semibold tracking-tight">
             {t("loginTitle")}
           </h1>
-          <p className="text-lg leading-7 text-[#6d6d6d]">{t("loginSubtitle")}</p>
+          <p className="text-text-muted text-lg leading-7">{t("loginSubtitle")}</p>
         </div>
 
         {/* Form */}
@@ -91,7 +91,7 @@ export function LoginForm() {
           <div className="space-y-6">
             {/* Email field */}
             <div className="space-y-1">
-              <Label htmlFor="email" className="pl-0.5 font-semibold text-[#4f4f4f]">
+              <Label htmlFor="email" className="text-text-light pl-0.5 font-semibold">
                 {t("email")}
               </Label>
               <Input
@@ -102,7 +102,7 @@ export function LoginForm() {
                 hasError={!!errors.email}
                 aria-invalid={!!errors.email}
                 aria-describedby={errors.email ? "email-error" : undefined}
-                className="rounded-lg border-[#dadada] px-4 py-3"
+                className="border-border-default rounded-lg px-4 py-3"
                 {...register("email")}
               />
               {errors.email?.message && (
@@ -114,7 +114,7 @@ export function LoginForm() {
 
             {/* Password field */}
             <div className="space-y-1">
-              <Label htmlFor="password" className="pl-0.5 font-semibold text-[#4f4f4f]">
+              <Label htmlFor="password" className="text-text-light pl-0.5 font-semibold">
                 {t("password")}
               </Label>
               <PasswordInput
@@ -137,7 +137,7 @@ export function LoginForm() {
               <div className="flex justify-end">
                 <Link
                   href="/auth/forgot-password"
-                  className="text-sm font-semibold text-[#6d6d6d] transition-colors hover:text-[#4f4f4f]"
+                  className="text-text-muted hover:text-text-light text-sm font-semibold transition-colors"
                 >
                   {t("forgotPassword")}
                 </Link>
@@ -170,7 +170,7 @@ export function LoginForm() {
             {/* OR divider */}
             <div className="flex items-center gap-4">
               <Divider className="border-border-default flex-1 border-t" />
-              <span className="text-xs text-[#afafaf]">{t("orDivider")}</span>
+              <span className="text-text-muted text-xs">{t("orDivider")}</span>
               <Divider className="border-border-default flex-1 border-t" />
             </div>
 
@@ -178,17 +178,17 @@ export function LoginForm() {
             <button
               type="button"
               onClick={handleGoogleSignIn}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-[#c5c5c5] transition-colors hover:bg-gray-50"
+              className="border-border-default flex h-12 w-full items-center justify-center gap-2 rounded-lg border transition-colors hover:bg-gray-50"
             >
               <Image src="/images/auth/google-icon.svg" alt="" width={20} height={20} unoptimized />
               <span className="text-sm font-medium text-black">{t("signInWithGoogle")}</span>
             </button>
 
             <p className="text-center text-sm">
-              <span className="text-[#242424]">{t("noAccount")}</span>{" "}
+              <span className="text-text-primary">{t("noAccount")}</span>{" "}
               <Link
                 href="/auth/register"
-                className="font-semibold text-[#1ec0ff] transition-colors hover:text-[#0192ff]"
+                className="text-primary-400 hover:text-secondary-500 font-semibold transition-colors"
               >
                 {t("signUpLink")}
               </Link>

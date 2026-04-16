@@ -46,18 +46,15 @@ export function Step4Parcel() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const defaultParcels =
-    savedParcels.length > 0
-      ? savedParcels
-      : [
-          {
-            length_cm: undefined as unknown as number,
-            width_cm: undefined as unknown as number,
-            height_cm: undefined as unknown as number,
-            weight_kg: undefined as unknown as number,
-            insurance_option_id: null,
-          },
-        ];
+  const emptyParcel = {
+    length_cm: undefined,
+    width_cm: undefined,
+    height_cm: undefined,
+    weight_kg: undefined,
+    insurance_option_id: null,
+  };
+
+  const defaultParcels = savedParcels.length > 0 ? savedParcels : [emptyParcel];
 
   const {
     register,
@@ -67,7 +64,8 @@ export function Step4Parcel() {
     formState: { errors },
   } = useForm<BookingStepParcelInput>({
     resolver: zodResolver(bookingStepParcelSchema),
-    defaultValues: { parcels: defaultParcels },
+    // SAFETY: RHF defaultValues accepts DeepPartial<T>, undefined numeric fields render as empty inputs
+    defaultValues: { parcels: defaultParcels } as BookingStepParcelInput,
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: "parcels" });
@@ -281,13 +279,8 @@ export function Step4Parcel() {
         <button
           type="button"
           onClick={() =>
-            append({
-              length_cm: undefined as unknown as number,
-              width_cm: undefined as unknown as number,
-              height_cm: undefined as unknown as number,
-              weight_kg: undefined as unknown as number,
-              insurance_option_id: null,
-            })
+            // SAFETY: RHF append accepts DeepPartial<T>, undefined fields render as empty inputs
+            append(emptyParcel as unknown as BookingStepParcelInput["parcels"][number])
           }
           className="border-primary-300 text-primary-600 hover:border-primary-400 hover:bg-primary-50 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed py-4 font-medium transition-colors"
         >

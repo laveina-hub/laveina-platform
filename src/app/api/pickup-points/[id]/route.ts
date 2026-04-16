@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 
 import { verifyAuth } from "@/lib/supabase/auth";
 import { getPickupPointById, updatePickupPoint } from "@/services/pickup-point.service";
+import { updatePickupPointSchema } from "@/validations/pickup-point.schema";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -36,8 +37,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
   }
 
-  const body = await request.json();
-  const result = await updatePickupPoint(id, body);
+  const body: unknown = await request.json();
+  const parsed = updatePickupPointSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid request body", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const result = await updatePickupPoint(id, parsed.data);
 
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });

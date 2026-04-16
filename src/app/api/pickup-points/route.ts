@@ -8,6 +8,7 @@ import {
   listPickupPoints,
   listPickupPointsPaginated,
 } from "@/services/pickup-point.service";
+import { createPickupPointSchema } from "@/validations/pickup-point.schema";
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
@@ -65,8 +66,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await request.json();
-  const result = await createPickupPoint(body);
+  const body: unknown = await request.json();
+  const parsed = createPickupPointSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid request body", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const result = await createPickupPoint(parsed.data);
 
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });

@@ -55,22 +55,25 @@ export function CsvImportDialog({ open, onOpenChange }: CsvImportDialogProps) {
     [onOpenChange, resetState]
   );
 
-  const handleFile = useCallback((file: File) => {
-    if (!file.name.endsWith(".csv")) {
-      toast.error(t("importFileType"));
-      return;
-    }
+  const handleFile = useCallback(
+    (file: File) => {
+      if (!file.name.endsWith(".csv")) {
+        toast.error(t("importFileType"));
+        return;
+      }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result;
-      if (typeof text !== "string") return;
-      const result = parseCsvPickupPoints(text);
-      setParseResult(result);
-      setStep("preview");
-    };
-    reader.readAsText(file);
-  }, []);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result;
+        if (typeof text !== "string") return;
+        const result = parseCsvPickupPoints(text);
+        setParseResult(result);
+        setStep("preview");
+      };
+      reader.readAsText(file);
+    },
+    [t]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -96,6 +99,7 @@ export function CsvImportDialog({ open, onOpenChange }: CsvImportDialogProps) {
         "Name,Address,Postcode,City,Latitude,Longitude,Phone,Email,Monday hours,Tuesday hours,Wednesday hours,Thursday hours,Friday hours,Saturday hours,Sunday hours,Map link",
         ...rows.map((r) => {
           const formatDay = (day: string) => {
+            // SAFETY: day is always one of the working_hours keys (monday–sunday) as defined by the CSV columns
             const schedule = r.working_hours[day as keyof typeof r.working_hours];
             if (!schedule.open || schedule.slots.length === 0) return "Closed";
             return schedule.slots.map(([s, e]) => `${s}-${e}`).join(" ");

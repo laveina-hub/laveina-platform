@@ -93,6 +93,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     );
   }
 
+  // SAFETY: parsed.data.status is validated by Zod against the ShipmentStatus enum before this cast
   const newStatus = parsed.data.status as ShipmentStatus;
 
   // Validate status transition before updating

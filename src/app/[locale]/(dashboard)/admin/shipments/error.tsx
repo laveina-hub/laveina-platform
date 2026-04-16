@@ -25,7 +25,9 @@ export default function ShipmentsError({ error, reset }: Props) {
       </div>
       <h2 className="text-text-primary text-lg font-semibold">{t("somethingWentWrong")}</h2>
       <p className="text-text-muted mt-2 max-w-sm text-sm">{t("tryAgain")}</p>
-      {error.digest && <p className="text-text-muted mt-1 text-xs">Error ID: {error.digest}</p>}
+      {error.digest && (
+        <p className="text-text-muted mt-1 text-xs">{t("errorId", { id: error.digest })}</p>
+      )}
       <Button onClick={reset} variant="outline" size="sm" className="mt-4">
         {t("tryAgain")}
       </Button>

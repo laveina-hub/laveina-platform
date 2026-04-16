@@ -102,7 +102,7 @@ export async function verifyOtp(
 
   const { data, error } = await supabase
     .from("otp_verifications")
-    .select("*")
+    .select("id")
     .eq("shipment_id", parsed.data.shipment_id)
     .eq("otp_hash", otpHash)
     .eq("verified", false)

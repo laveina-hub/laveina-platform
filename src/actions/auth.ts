@@ -1,15 +1,24 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { getLocalePrefix, ROLE_DASHBOARD } from "@/constants/app";
 import { env } from "@/env";
 import { routing } from "@/i18n/routing";
+import { authLimiter } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 const RECOVERY_EMAIL_COOKIE = "recovery_email";
 const RECOVERY_EMAIL_MAX_AGE = 600; // 10 minutes
+
+/** Extracts the client IP from incoming request headers available in server actions. */
+async function getActionClientIp(): Promise<string> {
+  const headerStore = await headers();
+  const forwarded = headerStore.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return headerStore.get("x-real-ip") ?? "unknown";
+}
 
 type LoginResult = {
   error: string;
@@ -25,6 +34,10 @@ type ActionResult = {
  * is persisted in cookies, not localStorage).
  */
 export async function sendPasswordResetOtp(email: string): Promise<ActionResult> {
+  const ip = await getActionClientIp();
+  const rl = authLimiter.check(ip);
+  if (!rl.success) return { error: "tooManyRequests" };
+
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email);
 
@@ -116,6 +129,10 @@ export async function registerAction(
   fullName: string,
   locale: string
 ): Promise<ActionResult> {
+  const ip = await getActionClientIp();
+  const rl = authLimiter.check(ip);
+  if (!rl.success) return { error: "tooManyRequests" };
+
   const supabase = await createClient();
   const origin = env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const emailRedirectTo = `${origin}/${locale}/auth/callback?next=/auth/account-created`;
@@ -146,6 +163,10 @@ export async function loginAction(
   locale: string,
   redirectTo?: string | null
 ): Promise<LoginResult> {
+  const ip = await getActionClientIp();
+  const rl = authLimiter.check(ip);
+  if (!rl.success) return { error: "tooManyRequests" };
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });

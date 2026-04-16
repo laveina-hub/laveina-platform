@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 const IVA_RATE = 0.21;
 const MINIMUM_SHIPPING_CENTS = 400;
-const DEFAULT_MARGIN_PERCENT = 25;
+const _DEFAULT_MARGIN_PERCENT = 25;
 
 function buildPriceOption({
   shippingCents,

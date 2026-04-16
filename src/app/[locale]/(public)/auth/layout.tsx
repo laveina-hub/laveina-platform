@@ -17,19 +17,21 @@ export default async function AuthLayout({ children, params }: Props) {
     <div className="flex min-h-screen">
       {/* Left panel — background image with text overlay */}
       <div className="relative hidden w-1/2 shrink-0 p-6 lg:flex">
-        <div className="relative flex w-full flex-col justify-end overflow-hidden rounded-[20px]">
+        <div className="relative flex w-full flex-col justify-end overflow-hidden rounded-3xl shadow-[0px_0px_4px_0px_#e9f5fe]">
           <Image
-            src="/images/auth/login-bg.png"
+            src="/images/auth/auth-bg.png"
             alt=""
             fill
             priority
-            className="object-cover"
+            className="size-full -scale-x-100 object-cover"
             sizes="50vw"
           />
+          {/* Blue radial gradient overlay */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(169,215,255,0.4)_0%,rgba(87,148,212,0.4)_50%,rgba(6,81,168,0.4)_100%)]" />
           {/* Dark gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-          <div className="relative z-10 space-y-3 p-[62px]">
-            <h2 className="font-display text-[32px] leading-[48px] tracking-[0.32px] text-white">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
+          <div className="relative z-10 space-y-3 p-14">
+            <h2 className="font-display text-4xl leading-12 tracking-[0.32px] text-white">
               {t("brandTagline")}
             </h2>
             <p className="text-base leading-6 tracking-[0.16px] text-white/90">

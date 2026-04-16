@@ -1,3 +1,4 @@
+import { env } from "@/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type CreateOwnerResult = { userId: string; error: null } | { userId: null; error: string };
@@ -19,8 +20,7 @@ export async function createPickupPointOwner(
   info: OwnerInfo = {}
 ): Promise<CreateOwnerResult> {
   const admin = createAdminClient();
-  const isProduction =
-    process.env.NODE_ENV === "production" || process.env.SEND_OWNER_INVITES === "true";
+  const isProduction = process.env.NODE_ENV === "production" || env.SEND_OWNER_INVITES === "true";
   const displayName = info.fullName ?? email.split("@")[0];
 
   if (isProduction) {

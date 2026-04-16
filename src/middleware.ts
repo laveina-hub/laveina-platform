@@ -34,6 +34,7 @@ const rolePaths: Record<string, string[]> = {
 
 function isPublicPath(pathname: string): boolean {
   const segments = pathname.split("/").filter(Boolean);
+  // SAFETY: locales is a readonly tuple, widen to readonly string[] for includes() check
   const locales = routing.locales as readonly string[];
   const pathWithoutLocale =
     segments.length > 0 && locales.includes(segments[0])
@@ -48,6 +49,7 @@ function isPublicPath(pathname: string): boolean {
 
 function isAuthOnlyPath(pathname: string): boolean {
   const segments = pathname.split("/").filter(Boolean);
+  // SAFETY: locales is a readonly tuple, widen to readonly string[] for includes() check
   const locales = routing.locales as readonly string[];
   const pathWithoutLocale =
     segments.length > 0 && locales.includes(segments[0])
@@ -61,6 +63,7 @@ function isAuthOnlyPath(pathname: string): boolean {
 
 function getRequiredRole(pathname: string): string[] | null {
   const segments = pathname.split("/").filter(Boolean);
+  // SAFETY: locales is a readonly tuple, widen to readonly string[] for includes() check
   const locales = routing.locales as readonly string[];
   const pathWithoutLocale =
     segments.length > 0 && locales.includes(segments[0])
@@ -150,6 +153,7 @@ export async function middleware(request: NextRequest) {
   // Redirect logged-in users away from auth pages
   if (isAuthOnly && refreshResult?.session) {
     const { data } = await refreshResult.supabase.rpc("get_user_role");
+    // SAFETY: get_user_role RPC returns a text value or null
     const userRole = (data as string | null) ?? "customer";
     const dashboard =
       userRole === "admin" ? "/admin" : userRole === "pickup_point" ? "/pickup-point" : "/customer";

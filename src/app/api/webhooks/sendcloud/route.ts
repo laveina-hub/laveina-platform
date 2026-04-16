@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
 
   let payload: SendCloudWebhookPayload;
   try {
+    // SAFETY: SendCloud webhook body is documented to match SendCloudWebhookPayload shape
     payload = JSON.parse(body) as SendCloudWebhookPayload;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
 
   const sendcloudStatusId = parcel.status.id;
   const newStatus = mapSendcloudStatus(sendcloudStatusId);
+  // SAFETY: DB column is constrained to ShipmentStatus enum values via CHECK constraint
   const oldStatus = shipment.status as ShipmentStatusType;
   const isProblem = isSendcloudProblemStatus(sendcloudStatusId);
 

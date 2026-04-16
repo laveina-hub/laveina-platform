@@ -14,6 +14,7 @@ export async function createClient() {
       setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
         try {
           cookiesToSet.forEach(({ name, value, options }) =>
+            // SAFETY: options is typed as optional cookie options which are Record-shaped
             cookieStore.set(name, value, options as Record<string, unknown>)
           );
         } catch {

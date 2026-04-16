@@ -50,6 +50,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
     const { statusId, statusMessage, trackingNumber, trackingUrl, labelUrl } = result.data;
     const mappedStatus = mapSendcloudStatus(statusId);
+    // SAFETY: DB column is constrained to ShipmentStatus enum values via CHECK constraint
     const oldStatus = shipment.status as ShipmentStatus;
 
     const updates: Record<string, unknown> = {};

@@ -93,3 +93,4 @@ export const paymentLimiter = createRateLimiter({ limit: 5, windowMs: 300_000 })
 export const otpLimiter = createRateLimiter({ limit: 3, windowMs: 900_000 });
 export const scanLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 export const publicLimiter = createRateLimiter({ limit: 60, windowMs: 60_000 });
+export const authLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });

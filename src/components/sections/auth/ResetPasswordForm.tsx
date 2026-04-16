@@ -86,17 +86,17 @@ export function ResetPasswordForm({ mode = "reset" }: Props) {
       <div className="space-y-10">
         {/* Heading */}
         <div className="space-y-0.5">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-[#242424]">
+          <h1 className="font-display text-text-primary text-2xl font-semibold tracking-tight">
             {t(titleKey)}
           </h1>
-          <p className="text-lg leading-7 text-[#6d6d6d]">{t(subtitleKey)}</p>
+          <p className="text-text-muted text-lg leading-7">{t(subtitleKey)}</p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-10" noValidate>
           <div className="space-y-6">
             <div className="space-y-1">
-              <Label htmlFor="password" className="pl-0.5 font-semibold text-[#4f4f4f]">
+              <Label htmlFor="password" className="text-text-light pl-0.5 font-semibold">
                 {t("newPassword")}
               </Label>
               <PasswordInput
@@ -119,7 +119,7 @@ export function ResetPasswordForm({ mode = "reset" }: Props) {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="confirm_password" className="pl-0.5 font-semibold text-[#4f4f4f]">
+              <Label htmlFor="confirm_password" className="text-text-light pl-0.5 font-semibold">
                 {t("confirmPassword")}
               </Label>
               <PasswordInput

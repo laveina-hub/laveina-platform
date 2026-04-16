@@ -47,10 +47,10 @@ export function AccountCreatedContent() {
 
         {/* Text */}
         <div className="space-y-2 text-center">
-          <h1 className="font-display text-xl font-semibold tracking-tight text-[#242424]">
+          <h1 className="font-display text-text-primary text-xl font-semibold tracking-tight">
             {t(isConfirmed ? "accountVerified" : "accountCreated")}
           </h1>
-          <p className="text-sm leading-5.5 whitespace-pre-line text-[#6d6d6d]">
+          <p className="text-text-muted text-sm leading-5.5 whitespace-pre-line">
             {t(isConfirmed ? "accountVerifiedDescription" : "accountCreatedDescription")}
           </p>
         </div>
@@ -65,11 +65,11 @@ export function AccountCreatedContent() {
             <ArrowRight className="h-5 w-5" />
           </Link>
         ) : (
-          <p className="text-center text-sm text-[#6d6d6d]">
+          <p className="text-text-muted text-center text-sm">
             {t("didntReceiveEmail")}{" "}
             <Link
               href="/auth/register"
-              className="font-semibold text-[#1ec0ff] transition-colors hover:text-[#0192ff]"
+              className="text-primary-400 hover:text-secondary-500 font-semibold transition-colors"
             >
               {t("tryAgain")}
             </Link>

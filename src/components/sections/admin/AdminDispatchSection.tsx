@@ -77,6 +77,7 @@ export function AdminDispatchSection() {
       }
 
       const result = await response.json();
+      // SAFETY: dispatch API always returns { data: DispatchResponse } on success (validated server-side)
       return result.data as DispatchResponse;
     },
     onSuccess: (data) => {

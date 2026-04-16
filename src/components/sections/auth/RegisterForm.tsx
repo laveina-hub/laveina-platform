@@ -73,10 +73,10 @@ export function RegisterForm() {
       <div className="space-y-10">
         {/* Heading */}
         <div className="space-y-0.5">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-[#242424]">
+          <h1 className="font-display text-text-primary text-2xl font-semibold tracking-tight">
             {t("registerTitle")}
           </h1>
-          <p className="text-lg leading-7 text-[#6d6d6d]">{t("registerSubtitle")}</p>
+          <p className="text-text-muted text-lg leading-7">{t("registerSubtitle")}</p>
         </div>
 
         {/* Form */}
@@ -84,7 +84,7 @@ export function RegisterForm() {
           <div className="space-y-6">
             {/* Full Name */}
             <div className="space-y-1">
-              <Label htmlFor="full_name" className="pl-0.5 font-semibold text-[#4f4f4f]">
+              <Label htmlFor="full_name" className="text-text-light pl-0.5 font-semibold">
                 {t("fullName")}
               </Label>
               <Input
@@ -95,7 +95,7 @@ export function RegisterForm() {
                 hasError={!!errors.full_name}
                 aria-invalid={!!errors.full_name}
                 aria-describedby={errors.full_name ? "name-error" : undefined}
-                className="rounded-lg border-[#dadada] px-4 py-3"
+                className="border-border-default rounded-lg px-4 py-3"
                 {...register("full_name")}
               />
               {errors.full_name?.message && (
@@ -107,7 +107,7 @@ export function RegisterForm() {
 
             {/* Email */}
             <div className="space-y-1">
-              <Label htmlFor="email" className="pl-0.5 font-semibold text-[#4f4f4f]">
+              <Label htmlFor="email" className="text-text-light pl-0.5 font-semibold">
                 {t("email")}
               </Label>
               <Input
@@ -118,7 +118,7 @@ export function RegisterForm() {
                 hasError={!!errors.email}
                 aria-invalid={!!errors.email}
                 aria-describedby={errors.email ? "email-error" : undefined}
-                className="rounded-lg border-[#dadada] px-4 py-3"
+                className="border-border-default rounded-lg px-4 py-3"
                 {...register("email")}
               />
               {errors.email?.message && (
@@ -130,7 +130,7 @@ export function RegisterForm() {
 
             {/* Enter Password */}
             <div className="space-y-1">
-              <Label htmlFor="password" className="pl-0.5 font-semibold text-[#4f4f4f]">
+              <Label htmlFor="password" className="text-text-light pl-0.5 font-semibold">
                 {t("enterPassword")}
               </Label>
               <PasswordInput
@@ -154,7 +154,7 @@ export function RegisterForm() {
 
             {/* Confirm Password */}
             <div className="space-y-1">
-              <Label htmlFor="confirm_password" className="pl-0.5 font-semibold text-[#4f4f4f]">
+              <Label htmlFor="confirm_password" className="text-text-light pl-0.5 font-semibold">
                 {t("confirmPassword")}
               </Label>
               <PasswordInput
@@ -203,15 +203,15 @@ export function RegisterForm() {
             {/* OR divider */}
             <div className="flex items-center gap-3">
               <Divider className="border-border-default flex-1 border-t" />
-              <span className="text-[10px] text-[#6d6d6d]">{t("orDivider")}</span>
+              <span className="text-text-muted text-xs">{t("orDivider")}</span>
               <Divider className="border-border-default flex-1 border-t" />
             </div>
 
             <p className="text-center text-sm">
-              <span className="text-[#242424]">{t("hasAccount")}</span>{" "}
+              <span className="text-text-primary">{t("hasAccount")}</span>{" "}
               <Link
                 href="/auth/login"
-                className="font-semibold text-[#1ec0ff] transition-colors hover:text-[#0192ff]"
+                className="text-primary-400 hover:text-secondary-500 font-semibold transition-colors"
               >
                 {t("signInLink")}
               </Link>

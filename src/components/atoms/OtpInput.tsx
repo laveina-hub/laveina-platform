@@ -81,10 +81,12 @@ const OtpInput = forwardRef<HTMLDivElement, OtpInputProps>(
             onPaste={handlePaste}
             onFocus={(e) => e.target.select()}
             className={cn(
-              "h-[54px] w-[52px] rounded-lg border text-center text-xl font-semibold text-[#242424] transition-all duration-150",
+              "text-text-primary h-14 w-13 rounded-lg border text-center text-xl font-semibold transition-all duration-150",
               "focus:border-primary-400 focus:ring-primary-400/20 focus:ring-2 focus:outline-none",
               "disabled:opacity-50",
-              hasError ? "border-error focus:border-error focus:ring-error/20" : "border-[#dadada]"
+              hasError
+                ? "border-error focus:border-error focus:ring-error/20"
+                : "border-border-default"
             )}
           />
         ))}

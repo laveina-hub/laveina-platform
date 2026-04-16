@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { mapSendcloudStatus } from "@/constants/sendcloud-status-map";
 import { verifyAuth } from "@/lib/supabase/auth";
 import { cancelSendcloudParcel } from "@/services/sendcloud.service";
 import { DeliveryMode } from "@/types/enums";

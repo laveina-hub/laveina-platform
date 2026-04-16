@@ -2,6 +2,7 @@
 
 import { Bell } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import {
@@ -16,6 +17,7 @@ const NotificationPanel = dynamic(
 );
 
 export function NotificationBell() {
+  const t = useTranslations("dashboard");
   const [open, setOpen] = useState(false);
   const unreadCount = useUnreadNotificationCount();
 
@@ -26,11 +28,11 @@ export function NotificationBell() {
       <button
         onClick={() => setOpen((prev) => !prev)}
         className="text-text-muted hover:bg-bg-muted hover:text-text-primary relative rounded-lg p-2"
-        aria-label="Notifications"
+        aria-label={t("notifications")}
       >
         <Bell size={20} />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+          <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

@@ -20,3 +20,6 @@ export {
 export { WorkingHoursEditor, type WorkingHoursEditorProps } from "./WorkingHoursEditor";
 export { NotificationBell } from "./NotificationBell";
 export { NotificationPanel } from "./NotificationPanel";
+export { ConfirmDialog } from "./ConfirmDialog";
+export { PostcodeSearch, type PostcodeSearchProps } from "./PostcodeSearch";
+export { PickupPointMap, type PickupPointMapProps } from "./PickupPointMap";

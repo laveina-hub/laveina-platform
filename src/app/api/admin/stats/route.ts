@@ -44,6 +44,7 @@ export async function GET() {
       ),
     ]);
 
+    // SAFETY: the revenue RPC returns a numeric aggregate (sum) or null when there are no rows
     const revenueCents = (revenueResult.data as number | null) ?? 0;
 
     return NextResponse.json({

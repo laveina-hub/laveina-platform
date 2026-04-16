@@ -608,7 +608,8 @@
     "tryAgain": "Torna-ho a provar",
     "notFoundTitle": "404",
     "pageNotFound": "Pàgina no trobada",
-    "goHome": "Anar a l'Inici"
+    "goHome": "Anar a l'Inici",
+    "errorId": "ID d'error: {id}"
   },
   "header": {
     "logoAriaLabel": "Laveina — Anar a la pàgina principal",

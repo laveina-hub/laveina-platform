@@ -60,7 +60,7 @@ type SidebarProps = {
   onClose: () => void;
 };
 
-export function Sidebar({ role, userFullName, open, onClose }: SidebarProps) {
+export function Sidebar({ role, userFullName: _userFullName, open, onClose }: SidebarProps) {
   const t = useTranslations("dashboard");
   const tCommon = useTranslations("common");
   const pathname = usePathname();

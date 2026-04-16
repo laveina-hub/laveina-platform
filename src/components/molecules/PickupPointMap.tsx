@@ -18,13 +18,15 @@ interface PickupPointMapProps {
   selectedPointId?: string;
   onSelectPoint?: (id: string) => void;
   className?: string;
+  loadingLabel?: string;
+  mapAriaLabel?: string;
 }
 
 const BARCELONA_CENTER = { lat: 41.3874, lng: 2.1686 };
 const MIN_ZOOM = 15;
 const SELECTED_ZOOM = 17;
 
-function MapSkeleton({ className }: { className?: string }) {
+function MapSkeleton({ className, label }: { className?: string; label?: string }) {
   return (
     <div
       className={cn(
@@ -32,7 +34,7 @@ function MapSkeleton({ className }: { className?: string }) {
         className
       )}
     >
-      <div className="text-text-muted text-sm">Loading map...</div>
+      <div className="text-text-muted text-sm">{label}</div>
     </div>
   );
 }
@@ -42,6 +44,7 @@ function MapInner({
   selectedPointId,
   onSelectPoint,
   className,
+  mapAriaLabel,
 }: PickupPointMapProps) {
   const map = useMap();
   const coreLib = useMapsLibrary("core");
@@ -94,7 +97,7 @@ function MapInner({
   return (
     <div
       role="region"
-      aria-label="Pickup points map"
+      aria-label={mapAriaLabel}
       className={cn("h-full min-h-56 w-full overflow-hidden rounded-xl", className)}
     >
       <Map
@@ -142,7 +145,7 @@ function PickupPointMap(props: PickupPointMapProps) {
   const isLoaded = useApiIsLoaded();
 
   if (!isLoaded) {
-    return <MapSkeleton className={props.className} />;
+    return <MapSkeleton className={props.className} label={props.loadingLabel} />;
   }
 
   return <MapInner {...props} />;

@@ -17,7 +17,7 @@ function LocaleFlag({ code, isActive }: { code: string; isActive: boolean }) {
   return (
     <span
       className={cn(
-        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tracking-wider transition-colors",
+        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold tracking-wider transition-colors",
         isActive
           ? "bg-primary-500 text-white"
           : "bg-bg-muted text-text-muted group-hover:bg-primary-100 group-hover:text-primary-700"
@@ -40,6 +40,7 @@ export function LocaleSwitcher() {
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
+      // SAFETY: DOM mousedown event target is always a Node
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
@@ -144,7 +145,7 @@ export function LocaleSwitcher() {
                     >
                       {t(loc)}
                     </span>
-                    <span className="text-text-muted text-[11px] font-medium tracking-wider uppercase">
+                    <span className="text-text-muted text-xs font-medium tracking-wider uppercase">
                       {loc}
                     </span>
                   </div>

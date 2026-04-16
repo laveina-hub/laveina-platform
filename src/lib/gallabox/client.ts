@@ -90,6 +90,7 @@ export async function sendWhatsAppMessage(
       });
 
       if (response.ok) {
+        // SAFETY: Gallabox API response shape matches GallaboxResponse (id, status, message)
         return response.json() as Promise<GallaboxResponse>;
       }
 

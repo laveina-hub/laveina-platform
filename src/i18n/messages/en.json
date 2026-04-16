@@ -608,7 +608,8 @@
     "tryAgain": "Try again",
     "notFoundTitle": "404",
     "pageNotFound": "Page not found",
-    "goHome": "Go Home"
+    "goHome": "Go Home",
+    "errorId": "Error ID: {id}"
   },
   "header": {
     "logoAriaLabel": "Laveina — Go to homepage",

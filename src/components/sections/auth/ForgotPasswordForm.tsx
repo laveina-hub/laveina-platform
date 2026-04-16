@@ -74,9 +74,9 @@ export function ForgotPasswordForm() {
         {/* Heading with back arrow */}
         <div className="flex items-center gap-3">
           <Link href="/auth/login" aria-label={t("backToLogin")}>
-            <ArrowLeft className="h-7 w-7 text-[#242424]" />
+            <ArrowLeft className="text-text-primary h-7 w-7" />
           </Link>
-          <h1 className="font-display text-[28px] leading-10.5 font-semibold tracking-tight text-[#242424]">
+          <h1 className="font-display text-text-primary text-3xl leading-10.5 font-semibold tracking-tight">
             {t("forgotPasswordTitle")}
           </h1>
         </div>
@@ -84,7 +84,7 @@ export function ForgotPasswordForm() {
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
           <div className="space-y-1">
-            <Label htmlFor="email" className="pl-0.5 font-semibold text-[#4f4f4f]">
+            <Label htmlFor="email" className="text-text-light pl-0.5 font-semibold">
               {t("email")}
             </Label>
             <Input
@@ -95,7 +95,7 @@ export function ForgotPasswordForm() {
               hasError={!!errors.email}
               aria-invalid={!!errors.email}
               aria-describedby={errors.email ? "email-error" : undefined}
-              className="rounded-lg border-[#dadada] px-4 py-3"
+              className="border-border-default rounded-lg px-4 py-3"
               {...register("email")}
             />
             {errors.email?.message && (

@@ -214,6 +214,7 @@ function PostcodeSearch({
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
+      // SAFETY: DOM mousedown event target is always a Node
       const target = e.target as Node;
       if (
         dropdownRef.current &&
@@ -253,6 +254,7 @@ function PostcodeSearch({
   // Scroll active item into view
   useEffect(() => {
     if (activeIndex >= 0 && dropdownRef.current) {
+      // SAFETY: children of the dropdown <ul> are always <li> elements (HTMLElement); undefined when index is out of bounds
       const item = dropdownRef.current.children[activeIndex] as HTMLElement | undefined;
       item?.scrollIntoView({ block: "nearest" });
     }

@@ -27,6 +27,7 @@ type ScanDecision =
   | { type: "no_change" };
 
 function determineScanAction(shipment: Shipment, pickupPointId: string): ScanDecision {
+  // SAFETY: DB column is constrained to ShipmentStatus enum values via CHECK constraint
   const currentStatus = shipment.status as ShipmentStatus;
   const isOrigin = pickupPointId === shipment.origin_pickup_point_id;
   const isDestination = pickupPointId === shipment.destination_pickup_point_id;
@@ -97,7 +98,9 @@ export async function processQrScan(
 
   const { data: shipment, error: shipmentError } = await supabase
     .from("shipments")
-    .select("*")
+    .select(
+      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+    )
     .eq("tracking_id", parsed.data.tracking_id)
     .single();
 
@@ -124,6 +127,7 @@ export async function processQrScan(
     };
   }
 
+  // SAFETY: DB column is constrained to ShipmentStatus enum values via CHECK constraint
   const oldStatus = shipment.status as ShipmentStatus;
   const nextStatus = decision.type === "transition" ? decision.newStatus : null;
 
@@ -134,7 +138,9 @@ export async function processQrScan(
       .from("shipments")
       .update({ status: nextStatus })
       .eq("id", shipment.id)
-      .select()
+      .select(
+        "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+      )
       .single();
 
     if (updateError) {
@@ -156,7 +162,7 @@ export async function processQrScan(
       old_status: oldStatus,
       new_status: nextStatus ?? oldStatus,
     })
-    .select()
+    .select("id, shipment_id, scanned_by, pickup_point_id, old_status, new_status, scanned_at")
     .single();
 
   // Auto-transition to ready_for_pickup on destination scan
@@ -165,7 +171,9 @@ export async function processQrScan(
       .from("shipments")
       .update({ status: ShipmentStatus.READY_FOR_PICKUP })
       .eq("id", shipment.id)
-      .select()
+      .select(
+        "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+      )
       .single();
 
     if (!autoError && autoUpdated) {
@@ -285,7 +293,9 @@ export async function confirmDelivery(
     .from("shipments")
     .update({ status: ShipmentStatus.DELIVERED })
     .eq("id", shipment.id)
-    .select()
+    .select(
+      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+    )
     .single();
 
   if (updateError || !updated) {
@@ -304,7 +314,7 @@ export async function confirmDelivery(
       old_status: ShipmentStatus.READY_FOR_PICKUP,
       new_status: ShipmentStatus.DELIVERED,
     })
-    .select()
+    .select("id, shipment_id, scanned_by, pickup_point_id, old_status, new_status, scanned_at")
     .single();
 
   if (scanError || !scanLog) {
@@ -333,7 +343,7 @@ export async function getTrackingHistory(shipmentId: string): Promise<ApiRespons
 
   const { data, error } = await supabase
     .from("scan_logs")
-    .select("*")
+    .select("id, shipment_id, scanned_by, pickup_point_id, old_status, new_status, scanned_at")
     .eq("shipment_id", shipmentId)
     .order("scanned_at", { ascending: true })
     .limit(500);

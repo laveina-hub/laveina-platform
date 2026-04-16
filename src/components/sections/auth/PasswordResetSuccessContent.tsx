@@ -35,10 +35,10 @@ export function PasswordResetSuccessContent() {
 
         {/* Text */}
         <div className="space-y-2 text-center">
-          <h1 className="font-display text-xl font-semibold tracking-tight text-[#242424]">
+          <h1 className="font-display text-text-primary text-xl font-semibold tracking-tight">
             {t("passwordResetSuccess")}
           </h1>
-          <p className="text-sm leading-5.5 whitespace-pre-line text-[#6d6d6d]">
+          <p className="text-text-muted text-sm leading-5.5 whitespace-pre-line">
             {t("passwordResetSuccessDescription")}
           </p>
         </div>

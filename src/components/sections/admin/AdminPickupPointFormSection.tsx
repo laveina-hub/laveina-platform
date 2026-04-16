@@ -175,6 +175,7 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
         <div className="border-border-default space-y-4 rounded-xl border bg-white p-5">
           <h2 className="text-text-primary text-base font-semibold">{t("workingHours")}</h2>
           <WorkingHoursEditor
+            // SAFETY: workingHours from form state is validated against WorkingHours schema on submit
             value={workingHours as WorkingHours}
             onChange={(hours) => setValue("working_hours", hours)}
             t={t}

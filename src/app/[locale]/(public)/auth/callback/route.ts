@@ -32,6 +32,7 @@ export async function GET(
   // Prevent open redirect — only allow internal paths
   const next = isAllowedRedirect(rawNext) ? rawNext : "/";
 
+  // SAFETY: locales is a readonly tuple, widen to readonly string[] for includes() check
   const localePrefix =
     locale && (routing.locales as readonly string[]).includes(locale) ? `/${locale}` : "";
 

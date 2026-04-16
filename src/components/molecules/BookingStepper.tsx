@@ -72,7 +72,7 @@ function BookingStepper({ currentStep, className }: BookingStepperProps) {
 
               <span
                 className={cn(
-                  "mt-2.5 text-center text-[11px] font-medium transition-colors duration-300 sm:mt-3 sm:text-xs",
+                  "mt-2.5 text-center text-xs font-medium transition-colors duration-300 sm:mt-3 sm:text-xs",
                   isCompleted && "text-primary-600",
                   isCurrent && "text-primary-700 font-semibold",
                   !isCompleted && !isCurrent && "text-text-muted"
