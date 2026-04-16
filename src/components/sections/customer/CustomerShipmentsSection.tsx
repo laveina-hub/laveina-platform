@@ -40,6 +40,11 @@ export function CustomerShipmentsSection() {
     { enabled: !!user }
   );
 
+  // Show loading until the query has actually returned data.
+  // Covers: auth loading, query fetching, and the one-frame gap where
+  // TanStack Query hasn't started fetching the new query key yet.
+  const showLoading = authLoading || isLoading || !data;
+
   const columns: ColumnDef<Shipment, unknown>[] = [
     {
       accessorKey: "tracking_id",
@@ -92,7 +97,7 @@ export function CustomerShipmentsSection() {
       <DataTable
         columns={columns}
         data={data?.data ?? []}
-        isLoading={authLoading || isLoading}
+        isLoading={showLoading}
         onRowClick={(row) => router.push(`/customer/shipments/${row.id}`)}
         emptyState={{
           icon: <Package size={40} />,
