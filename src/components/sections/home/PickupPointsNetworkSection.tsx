@@ -2,7 +2,9 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 import { Button, Heading, SectionContainer, Text } from "@/components/atoms";
+import { RevealOnScroll } from "@/components/atoms/RevealOnScroll";
 import { PinIcon } from "@/components/icons";
+import { BLUR_DATA_URL } from "@/constants/image-blur";
 
 export function PickupPointsNetworkSection() {
   const t = useTranslations("pickupPointsNetwork");
@@ -29,16 +31,19 @@ export function PickupPointsNetworkSection() {
   ];
 
   return (
-    <section className="bg-white py-12 xl:py-20">
+    <section className="bg-white py-16 lg:py-24">
       <SectionContainer>
-        <div className="mb-10 text-center md:mb-12">
+        <RevealOnScroll className="mb-10 text-center md:mb-12">
           <Heading variant="section">{t("title")}</Heading>
           <Text variant="subtitle" className="text-text-secondary mx-auto mt-4 max-w-3xl">
             {t("subtitle")}
           </Text>
-        </div>
+        </RevealOnScroll>
 
-        <div className="flex flex-col gap-14 md:flex-row md:items-center md:gap-8">
+        <RevealOnScroll
+          className="flex flex-col gap-14 md:flex-row md:items-center md:gap-8"
+          delay="short"
+        >
           <div className="flex w-full flex-col gap-4 md:w-1/2">
             {pickupPoints.map((point) =>
               point.active ? (
@@ -69,11 +74,13 @@ export function PickupPointsNetworkSection() {
                 width={640}
                 height={480}
                 sizes="(max-width: 768px) 100vw, 50vw"
+                placeholder="blur"
+                blurDataURL={BLUR_DATA_URL}
                 className="h-64 w-full object-cover sm:h-80 md:h-full md:min-h-72"
               />
             </div>
           </div>
-        </div>
+        </RevealOnScroll>
       </SectionContainer>
     </section>
   );

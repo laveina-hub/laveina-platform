@@ -1,17 +1,18 @@
 import { type Page, expect } from "@playwright/test";
 
-// ─── Test accounts (must exist in Supabase — see seed.sql) ─────────────────
+// ─── Test accounts (created by `npm run db:seed`) ──────────────────────────
+// Pickup point owners are created from CSV Email column with password TestShop123!
 export const TEST_ACCOUNTS = {
   admin: {
     email: "admin@laveina-test.com",
     password: "TestAdmin123!",
   },
   pickupPointOrigin: {
-    email: "shop-origin@laveina-test.com",
+    email: "central@example.com",
     password: "TestShop123!",
   },
   pickupPointDest: {
-    email: "shop-dest@laveina-test.com",
+    email: "sol@example.com",
     password: "TestShop123!",
   },
   customer: {
@@ -21,14 +22,14 @@ export const TEST_ACCOUNTS = {
 } as const;
 
 // ─── Test data ──────────────────────────────────────────────────────────────
+// Pickup points are seeded from data/pickup-points.csv — IDs are auto-generated.
+// Use names for lookup instead of hardcoded UUIDs.
 export const TEST_PICKUP_POINTS = {
   origin: {
-    id: "a0000000-0000-0000-0000-000000000001",
     name: "Librería Central",
     postcode: "08036",
   },
   destination: {
-    id: "a0000000-0000-0000-0000-000000000002",
     name: "Papelería Sol",
     postcode: "08029",
   },

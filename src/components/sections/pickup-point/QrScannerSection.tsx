@@ -45,12 +45,12 @@ export function QrScannerSection({ pickupPointId }: QrScannerSectionProps) {
     if (scannerRef.current) {
       try {
         const state = scannerRef.current.getState();
-        // 2 = SCANNING, 3 = PAUSED
         if (state === 2 || state === 3) {
+          // SCANNING or PAUSED
           await scannerRef.current.stop();
         }
       } catch {
-        // Camera may already be stopped
+        // Already stopped
       }
       scannerRef.current = null;
     }

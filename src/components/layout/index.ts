@@ -1,6 +1,14 @@
 export { CrispChat } from "./CrispChat";
+export { DashboardShell } from "./DashboardShell";
 export { Footer } from "./Footer";
+export { FooterInfoBar } from "./FooterInfoBar";
 export { Header } from "./Header";
 export { IubendaCookie } from "./IubendaCookie";
+export { LocaleSwitcher } from "./LocaleSwitcher";
+export { LocaleSwitcherMobile } from "./LocaleSwitcherMobile";
 export { MobileMenu } from "./MobileMenu";
 export { NavLinks } from "./NavLinks";
+export { PageTransition } from "./PageTransition";
+export { Sidebar } from "./Sidebar";
+export { Topbar } from "./Topbar";
+export { UserMenu } from "./UserMenu";

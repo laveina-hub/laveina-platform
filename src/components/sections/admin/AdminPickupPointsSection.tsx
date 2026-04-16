@@ -1,14 +1,16 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MapPin, Plus, Search } from "lucide-react";
+import { MapPin, Plus, Search, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button, Input } from "@/components/atoms";
 import { DataTable } from "@/components/molecules/DataTable";
+import { CsvImportDialog } from "@/components/sections/admin/CsvImportDialog";
+import { useAdminPickupPoints, type PickupPointFilters } from "@/hooks/use-pickup-points";
 import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import type { PickupPoint } from "@/types/pickup-point";
@@ -19,24 +21,15 @@ export function AdminPickupPointsSection() {
   const queryClient = useQueryClient();
 
   const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["pickup-points", "admin", search],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      // Admins need to see inactive pickup points too
-      const response = await fetch(
-        `/api/pickup-points?include_inactive=true${search ? `&search=${encodeURIComponent(search)}` : ""}`
-      );
-      if (!response.ok) throw new Error("Failed to fetch");
-      const result = await response.json();
-      return (result.data ?? []) as PickupPoint[];
-    },
+  const [filters, setFilters] = useState<PickupPointFilters>({
+    page: 1,
+    pageSize: 20,
   });
+  const [importOpen, setImportOpen] = useState(false);
 
-  const pickupPoints = data ?? [];
+  const { data, isLoading } = useAdminPickupPoints(filters);
+
+  const pickupPoints = data?.data ?? [];
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, currentActive }: { id: string; currentActive: boolean }) => {
@@ -54,14 +47,14 @@ export function AdminPickupPointsSection() {
   });
 
   const handleSearch = () => {
-    setSearch(searchInput);
+    setFilters((prev) => ({ ...prev, search: searchInput || undefined, page: 1 }));
   };
 
   const columns: ColumnDef<PickupPoint, unknown>[] = [
     {
       accessorKey: "name",
       header: t("name"),
-      cell: ({ row }) => <span className="font-medium text-gray-900">{row.original.name}</span>,
+      cell: ({ row }) => <span className="text-text-primary font-medium">{row.original.name}</span>,
     },
     {
       accessorKey: "address",
@@ -96,7 +89,7 @@ export function AdminPickupPointsSection() {
             "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 transition ring-inset",
             row.original.is_active
               ? "bg-green-50 text-green-700 ring-green-600/20 hover:bg-green-100"
-              : "bg-gray-50 text-gray-600 ring-gray-500/10 hover:bg-gray-100"
+              : "bg-bg-secondary text-text-light ring-border-default hover:bg-bg-muted"
           )}
         >
           {row.original.is_active ? t("active") : t("inactive")}
@@ -109,19 +102,25 @@ export function AdminPickupPointsSection() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
-          <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+          <h1 className="font-body text-text-primary text-2xl font-semibold">{t("title")}</h1>
+          <p className="text-text-muted mt-1 text-sm">{t("subtitle")}</p>
         </div>
-        <Link href="/admin/pickup-points/new">
-          <Button size="sm" className="gap-2">
-            <Plus size={16} />
-            {t("addNew")}
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => setImportOpen(true)}>
+            <Upload size={16} />
+            {t("importCsv")}
           </Button>
-        </Link>
+          <Link href="/admin/pickup-points/new">
+            <Button size="sm" className="gap-2">
+              <Plus size={16} />
+              {t("addNew")}
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="relative max-w-xs">
-        <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
+        <Search size={16} className="text-text-muted absolute top-1/2 left-3 -translate-y-1/2" />
         <Input
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -141,7 +140,20 @@ export function AdminPickupPointsSection() {
           title: t("noPickupPoints"),
           description: t("noPickupPointsDesc"),
         }}
+        pagination={
+          data
+            ? {
+                page: data.page,
+                pageSize: data.pageSize,
+                total: data.total,
+                totalPages: data.totalPages,
+                onPageChange: (page) => setFilters((prev) => ({ ...prev, page })),
+              }
+            : undefined
+        }
       />
+
+      <CsvImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

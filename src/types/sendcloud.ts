@@ -1,5 +1,7 @@
 // Partial SendCloud API types — only fields Laveina uses.
 
+// --- Legacy /shipping_methods endpoint (kept for backward compat) ---
+
 export type SendcloudShippingMethod = {
   id: number;
   name: string;
@@ -23,6 +25,34 @@ export type SendcloudShippingMethodsResponse = {
   shipping_methods: SendcloudShippingMethod[];
 };
 
+// --- /shipping-products endpoint (domestic Spain rates) ---
+
+export type SendcloudShippingProduct = {
+  name: string;
+  carrier: string;
+  methods: SendcloudProductMethod[];
+  available_functionalities?: {
+    last_mile?: string[];
+  };
+};
+
+export type SendcloudProductMethod = {
+  id: number;
+  name: string;
+  shipping_product_code: string;
+  properties: {
+    min_weight: number;
+    max_weight: number;
+    max_dimensions?: {
+      length: number;
+      width: number;
+      height: number;
+      unit: string;
+    };
+  };
+  lead_time_hours?: Record<string, Record<string, number>>;
+};
+
 export type SendcloudParcelCreate = {
   name: string;
   address: string;
@@ -35,6 +65,9 @@ export type SendcloudParcelCreate = {
     id: number;
   };
   weight: string;
+  length?: number;
+  width?: number;
+  height?: number;
   order_number?: string;
   request_label: boolean;
   apply_shipping_rules?: boolean;
@@ -69,6 +102,13 @@ export type SendcloudWebhookPayload = {
     status: { id: number; message: string };
     order_number: string | null;
   };
+};
+
+export type SendcloudShippingPrice = {
+  price: string | null;
+  currency: string | null;
+  to_country: string;
+  breakdown: { type: string; label: string; value: number }[];
 };
 
 export type SendcloudRateOption = {

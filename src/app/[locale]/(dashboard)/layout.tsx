@@ -5,6 +5,8 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/enums";
 
+export const dynamic = "force-dynamic";
+
 type Props = {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
@@ -32,6 +34,7 @@ export default async function DashboardLayout({ children, params }: Props) {
     .eq("id", session.user.id)
     .single();
 
+  // SAFETY: DB profiles.role column is constrained to UserRole enum values
   const role = (profile?.role as UserRole) ?? "customer";
   const userFullName = profile?.full_name ?? session.user.email ?? "User";
 

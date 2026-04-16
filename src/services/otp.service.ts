@@ -36,7 +36,6 @@ export async function generateOtp(
 
   const supabase = await createClient();
 
-  // Don't generate if an active OTP already exists
   const { data: existingOtp } = await supabase
     .from("otp_verifications")
     .select("expires_at")
@@ -51,7 +50,7 @@ export async function generateOtp(
     return { data: { expires_at: existingOtp.expires_at }, error: null };
   }
 
-  // Clear expired OTPs (unique index allows only one unverified per shipment)
+  // Mark expired OTPs as verified so the unique index allows a new one
   await supabase
     .from("otp_verifications")
     .update({ verified: true })
@@ -103,7 +102,7 @@ export async function verifyOtp(
 
   const { data, error } = await supabase
     .from("otp_verifications")
-    .select("*")
+    .select("id")
     .eq("shipment_id", parsed.data.shipment_id)
     .eq("otp_hash", otpHash)
     .eq("verified", false)

@@ -75,7 +75,6 @@ export async function EcoPartnerPageSection() {
         </SectionContainer>
       </section>
 
-      {/* Free shipment banner */}
       <section className="px-4 pt-16 sm:px-6 md:pt-24 lg:px-10">
         <SectionContainer>
           <div className="bg-primary mx-auto max-w-5xl rounded-2xl px-6 py-8 text-center md:px-10 md:py-10">
@@ -90,7 +89,6 @@ export async function EcoPartnerPageSection() {
         </SectionContainer>
       </section>
 
-      {/* Feature cards grid */}
       <section className="px-4 py-16 sm:px-6 md:py-24 lg:px-10">
         <SectionContainer>
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
@@ -151,7 +149,6 @@ export async function EcoPartnerPageSection() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {/* Physical badge */}
               <div className="border-border-default rounded-2xl border p-6 md:p-8">
                 <BadgeCheck className="text-primary mb-4 h-8 w-8" />
                 <Heading variant="card" as="h3" className="mb-2">
@@ -167,7 +164,6 @@ export async function EcoPartnerPageSection() {
                 </div>
               </div>
 
-              {/* Digital badge */}
               <div className="border-border-default rounded-2xl border p-6 md:p-8">
                 <Globe className="text-primary mb-4 h-8 w-8" />
                 <Heading variant="card" as="h3" className="mb-2">
@@ -196,11 +192,9 @@ export async function EcoPartnerPageSection() {
         </SectionContainer>
       </section>
 
-      {/* Benefits + Brand */}
       <section className="px-4 py-16 sm:px-6 md:py-24 lg:px-10">
         <SectionContainer>
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
-            {/* Brand value */}
             <div className="bg-primary flex flex-col justify-center rounded-2xl p-8 md:p-10">
               <TrendingUp className="mb-4 h-10 w-10 text-white/80" />
               <Heading variant="card" as="h3" className="mb-3 text-white">
@@ -211,7 +205,6 @@ export async function EcoPartnerPageSection() {
               </Text>
             </div>
 
-            {/* Benefits checklist */}
             <div className="border-border-default rounded-2xl border bg-white p-6 md:p-8">
               <Heading variant="card" as="h3" className="mb-5">
                 {t("whyTitle")}
@@ -231,7 +224,6 @@ export async function EcoPartnerPageSection() {
         </SectionContainer>
       </section>
 
-      {/* CTA */}
       <section className="border-border-default border-t px-4 py-16 sm:px-6 md:py-20 lg:px-10">
         <SectionContainer>
           <div className="mx-auto max-w-xl text-center">

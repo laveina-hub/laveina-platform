@@ -9,12 +9,12 @@ const isLocalProd = !isDev && process.env.NEXT_PUBLIC_APP_URL?.startsWith("http:
 const cspDirectives = [
   "default-src 'self'",
   // unsafe-eval required by Crisp Chat SDK
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://client.crisp.chat https://*.iubenda.com",
-  "style-src 'self' 'unsafe-inline' https://client.crisp.chat https://*.iubenda.com",
-  "img-src 'self' data: blob: https://*.supabase.co https://image.crisp.chat https://client.crisp.chat https://*.iubenda.com",
-  "font-src 'self' data: https://client.crisp.chat",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://server.gallabox.com https://client.crisp.chat wss://client.relay.crisp.chat https://storage.crisp.chat https://*.iubenda.com",
-  "frame-src https://js.stripe.com https://hooks.stripe.com https://game.crisp.chat https://*.iubenda.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://client.crisp.chat https://*.iubenda.com https://maps.googleapis.com",
+  "style-src 'self' 'unsafe-inline' https://client.crisp.chat https://*.iubenda.com https://fonts.googleapis.com",
+  "img-src 'self' data: blob: https://*.supabase.co https://image.crisp.chat https://client.crisp.chat https://*.iubenda.com https://maps.gstatic.com https://maps.googleapis.com https://*.ggpht.com",
+  "font-src 'self' data: https://client.crisp.chat https://fonts.gstatic.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://server.gallabox.com https://client.crisp.chat wss://client.relay.crisp.chat https://storage.crisp.chat https://*.iubenda.com https://maps.googleapis.com https://places.googleapis.com",
+  "frame-src https://js.stripe.com https://hooks.stripe.com https://game.crisp.chat https://*.iubenda.com https://maps.googleapis.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

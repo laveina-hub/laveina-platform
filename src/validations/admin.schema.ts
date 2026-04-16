@@ -24,3 +24,14 @@ export const adminSettingsUpdateSchema = z.object({
 });
 
 export type AdminSettingsUpdateInput = z.infer<typeof adminSettingsUpdateSchema>;
+
+export const notificationQuerySchema = z.object({
+  status: z.enum(["unread", "all"]).default("all"),
+  priority: z.enum(["low", "normal", "high", "critical"]).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const notificationPatchSchema = z.object({
+  status: z.literal("read"),
+});

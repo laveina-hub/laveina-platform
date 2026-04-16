@@ -31,7 +31,7 @@ function RoleBadge({ role, label }: { role: string; label: string }) {
         "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset",
         role === "admin" && "bg-purple-50 text-purple-700 ring-purple-600/20",
         role === "pickup_point" && "bg-blue-50 text-blue-700 ring-blue-600/20",
-        role === "customer" && "bg-gray-50 text-gray-600 ring-gray-500/10"
+        role === "customer" && "bg-bg-secondary text-text-light ring-border-default"
       )}
     >
       {label}
@@ -80,8 +80,8 @@ export function AdminUsersSection() {
             {row.original.full_name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="truncate font-medium text-gray-900">{row.original.full_name}</p>
-            <p className="truncate text-xs text-gray-500">{row.original.email}</p>
+            <p className="text-text-primary truncate font-medium">{row.original.full_name}</p>
+            <p className="text-text-muted truncate text-xs">{row.original.email}</p>
           </div>
         </div>
       ),
@@ -105,14 +105,14 @@ export function AdminUsersSection() {
       accessorKey: "shipment_count",
       header: t("shipments"),
       cell: ({ row }) => (
-        <span className="text-sm text-gray-700">{row.original.shipment_count}</span>
+        <span className="text-text-secondary text-sm">{row.original.shipment_count}</span>
       ),
     },
     {
       accessorKey: "created_at",
       header: t("joined"),
       cell: ({ row }) => (
-        <span className="text-sm text-gray-500">{formatDate(row.original.created_at)}</span>
+        <span className="text-text-muted text-sm">{formatDate(row.original.created_at)}</span>
       ),
     },
   ];
@@ -120,23 +120,21 @@ export function AdminUsersSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+        <h1 className="font-body text-text-primary text-2xl font-semibold">{t("title")}</h1>
+        <p className="text-text-muted mt-1 text-sm">{t("subtitle")}</p>
       </div>
 
       {data && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-sm text-gray-500">{t("totalUsers")}</p>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">{data.total}</p>
+          <div className="border-border-default rounded-xl border bg-white p-4">
+            <p className="text-text-muted text-sm">{t("totalUsers")}</p>
+            <p className="text-text-primary mt-1 text-2xl font-semibold">{data.total}</p>
           </div>
           {ALL_ROLES.map((role) => (
-            <div key={role} className="rounded-xl border border-gray-200 bg-white p-4">
-              <p className="text-sm text-gray-500">{roleLabelMap[role]}</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900">
-                {data.data.filter((u) => u.role === role).length > 0
-                  ? data.data.filter((u) => u.role === role).length
-                  : "—"}
+            <div key={role} className="border-border-default rounded-xl border bg-white p-4">
+              <p className="text-text-muted text-sm">{roleLabelMap[role]}</p>
+              <p className="text-text-primary mt-1 text-2xl font-semibold">
+                {data.roleCounts[role] ?? 0}
               </p>
             </div>
           ))}
@@ -145,7 +143,7 @@ export function AdminUsersSection() {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 sm:max-w-xs">
-          <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="text-text-muted absolute top-1/2 left-3 -translate-y-1/2" />
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -165,7 +163,7 @@ export function AdminUsersSection() {
               page: 1,
             }))
           }
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700"
+          className="border-border-default text-text-secondary rounded-lg border bg-white px-3 py-2 text-sm"
         >
           <option value="">{t("allRoles")}</option>
           {ALL_ROLES.map((r) => (

@@ -20,8 +20,10 @@ export {
   type TextVariant,
 } from "./Typography";
 export { Input, type InputProps } from "./Input";
+export { OtpInput, type OtpInputProps } from "./OtpInput";
 export { Label, type LabelProps } from "./Label";
 export { PasswordInput, type PasswordInputProps } from "./PasswordInput";
 export { SectionContainer, type SectionContainerProps } from "./SectionContainer";
 export { Select, type SelectProps } from "./Select";
 export { StatusBadge, DeliveryModeBadge, type StatusBadgeProps } from "./StatusBadge";
+export { RevealOnScroll } from "./RevealOnScroll";

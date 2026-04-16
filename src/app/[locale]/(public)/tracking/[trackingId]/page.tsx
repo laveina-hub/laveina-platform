@@ -2,8 +2,6 @@ import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 
 import { Heading, SectionContainer } from "@/components/atoms";
-
-export const dynamic = "force-dynamic";
 import {
   TrackingSearchSection,
   TrackingDetailsSection,
@@ -11,6 +9,8 @@ import {
   ContactSupportSection,
 } from "@/components/sections/tracking";
 import { getPublicTrackingData } from "@/services/shipment.service";
+
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ locale: string; trackingId: string }>;

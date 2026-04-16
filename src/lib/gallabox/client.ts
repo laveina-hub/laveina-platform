@@ -1,3 +1,4 @@
+import { GALLABOX_MAX_RETRIES, GALLABOX_RETRY_BASE_DELAY_MS } from "@/constants/notifications";
 import { env } from "@/env";
 
 type TemplateParam = {
@@ -19,7 +20,7 @@ type GallaboxMessagePayload = {
   };
 };
 
-type GallaboxResponse = {
+export type GallaboxResponse = {
   id: string;
   status: string;
   message?: string;
@@ -34,6 +35,14 @@ function getConfig() {
     apiUrl: env.GALLABOX_API_URL,
     channelId: env.GALLABOX_CHANNEL_ID,
   };
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryable(status: number): boolean {
+  return status === 429 || status >= 500;
 }
 
 export async function sendWhatsAppMessage(
@@ -62,19 +71,39 @@ export async function sendWhatsAppMessage(
     },
   };
 
-  const response = await fetch(`${apiUrl}/messages`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: apiKey,
-    },
-    body: JSON.stringify(payload),
-  });
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Gallabox API error (${response.status}): ${errorBody}`);
+  for (let attempt = 0; attempt <= GALLABOX_MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const backoff = GALLABOX_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+      await delay(backoff);
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: apiKey,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        // SAFETY: Gallabox API response shape matches GallaboxResponse (id, status, message)
+        return response.json() as Promise<GallaboxResponse>;
+      }
+
+      const errorBody = await response.text();
+      lastError = new Error(`Gallabox API error (${response.status}): ${errorBody}`);
+
+      if (!isRetryable(response.status)) {
+        break;
+      }
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error("Gallabox request failed");
+    }
   }
 
-  return response.json() as Promise<GallaboxResponse>;
+  throw lastError ?? new Error("Gallabox request failed after retries");
 }

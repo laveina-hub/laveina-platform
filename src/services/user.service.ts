@@ -16,12 +16,15 @@ export type UserProfile = {
   shipment_count: number;
 };
 
+type RoleCounts = Record<string, number>;
+
 type UserListResult = {
   data: UserProfile[];
   page: number;
   pageSize: number;
   total: number;
   totalPages: number;
+  roleCounts: RoleCounts;
 };
 
 export async function listUsers(query: unknown): Promise<ApiResponse<UserListResult>> {
@@ -57,7 +60,16 @@ export async function listUsers(query: unknown): Promise<ApiResponse<UserListRes
     .order("created_at", { ascending: false })
     .range(offset, offset + pageSize - 1);
 
-  const [countResult, dataResult] = await Promise.all([countQuery, dataQuery]);
+  const roles: UserRole[] = ["admin", "pickup_point", "customer"];
+  const roleCountQueries = roles.map((r) =>
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", r)
+  );
+
+  const [countResult, dataResult, ...roleCountResults] = await Promise.all([
+    countQuery,
+    dataQuery,
+    ...roleCountQueries,
+  ]);
 
   if (countResult.error) {
     return { data: null, error: { message: countResult.error.message, code: "DB_ERROR" } };
@@ -68,6 +80,11 @@ export async function listUsers(query: unknown): Promise<ApiResponse<UserListRes
 
   const total = countResult.count ?? 0;
   const profiles = dataResult.data ?? [];
+
+  const roleCounts: RoleCounts = {};
+  roles.forEach((r, i) => {
+    roleCounts[r] = roleCountResults[i].count ?? 0;
+  });
 
   const userIds = profiles.map((p) => p.id);
   const shipmentCounts: Record<string, number> = {};
@@ -101,6 +118,7 @@ export async function listUsers(query: unknown): Promise<ApiResponse<UserListRes
       pageSize,
       total,
       totalPages: Math.ceil(total / pageSize),
+      roleCounts,
     },
     error: null,
   };

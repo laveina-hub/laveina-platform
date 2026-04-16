@@ -23,9 +23,11 @@ export default function ShipmentsError({ error, reset }: Props) {
       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
         <AlertTriangle size={28} className="text-red-500" />
       </div>
-      <h2 className="text-lg font-semibold text-gray-900">{t("somethingWentWrong")}</h2>
-      <p className="mt-2 max-w-sm text-sm text-gray-500">{t("tryAgain")}</p>
-      {error.digest && <p className="mt-1 text-xs text-gray-400">Error ID: {error.digest}</p>}
+      <h2 className="text-text-primary text-lg font-semibold">{t("somethingWentWrong")}</h2>
+      <p className="text-text-muted mt-2 max-w-sm text-sm">{t("tryAgain")}</p>
+      {error.digest && (
+        <p className="text-text-muted mt-1 text-xs">{t("errorId", { id: error.digest })}</p>
+      )}
       <Button onClick={reset} variant="outline" size="sm" className="mt-4">
         {t("tryAgain")}
       </Button>

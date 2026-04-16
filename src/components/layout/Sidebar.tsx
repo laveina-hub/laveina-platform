@@ -11,6 +11,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { ElementType } from "react";
 
@@ -49,7 +50,7 @@ function getNavItems(
   }
 
   // customer
-  return [{ label: t("myShipments"), href: "/customer", icon: Box }];
+  return [{ label: t("myShipments"), href: "/customer", icon: LayoutDashboard }];
 }
 
 type SidebarProps = {
@@ -59,17 +60,11 @@ type SidebarProps = {
   onClose: () => void;
 };
 
-export function Sidebar({ role, userFullName, open, onClose }: SidebarProps) {
+export function Sidebar({ role, userFullName: _userFullName, open, onClose }: SidebarProps) {
   const t = useTranslations("dashboard");
   const tCommon = useTranslations("common");
   const pathname = usePathname();
   const navItems = getNavItems(role, t);
-
-  const roleLabelMap: Record<UserRole, string> = {
-    admin: t("roleAdmin"),
-    pickup_point: t("rolePickupPoint"),
-    customer: t("roleCustomer"),
-  };
 
   return (
     <>
@@ -83,17 +78,23 @@ export function Sidebar({ role, userFullName, open, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-gray-200 bg-white transition-transform duration-200 lg:static lg:translate-x-0",
+          "border-border-default fixed inset-y-0 left-0 z-50 flex w-56 flex-col border-r bg-white transition-transform duration-200 lg:static lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-16 items-center justify-between border-b border-gray-100 px-5">
-          <Link href="/" className="font-display text-primary-500 text-xl font-bold">
-            Laveina
+        <div className="flex h-16 items-center justify-between px-5">
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/images/header/logo-laveina.svg"
+              alt={tCommon("appName")}
+              width={120}
+              height={35}
+              priority
+            />
           </Link>
           <button
             onClick={onClose}
-            className="focus-visible:ring-primary-500 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus-visible:ring-2 focus-visible:outline-none lg:hidden"
+            className="focus-visible:ring-primary-500 text-text-muted hover:bg-bg-muted hover:text-text-primary rounded-md p-1 focus-visible:ring-2 focus-visible:outline-none lg:hidden"
             aria-label={tCommon("closeSidebar")}
           >
             <X size={20} />
@@ -101,12 +102,12 @@ export function Sidebar({ role, userFullName, open, onClose }: SidebarProps) {
         </div>
 
         <div className="px-5 pt-4 pb-2">
-          <span className="bg-primary-50 text-primary-700 inline-block rounded-full px-3 py-1 text-xs font-medium">
-            {roleLabelMap[role]}
+          <span className="text-text-muted text-xs font-semibold tracking-wider uppercase">
+            {t("menu")}
           </span>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
+        <nav className="flex-1 space-y-1 overflow-y-auto py-1 pl-3">
           {navItems.map((item) => {
             const isActive =
               item.href === `/${role === "pickup_point" ? "pickup-point" : role}`
@@ -121,30 +122,18 @@ export function Sidebar({ role, userFullName, open, onClose }: SidebarProps) {
                 href={item.href}
                 onClick={onClose}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-150",
                   isActive
-                    ? "bg-primary-50 text-primary-700"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    ? "bg-primary-500 rounded-l-xl text-white"
+                    : "text-text-light hover:bg-bg-muted hover:text-text-primary rounded-l-xl"
                 )}
               >
-                <Icon size={18} className={isActive ? "text-primary-600" : "text-gray-400"} />
+                <Icon size={20} className={isActive ? "text-white" : "text-text-muted"} />
                 {item.label}
               </Link>
             );
           })}
         </nav>
-
-        <div className="border-t border-gray-100 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary-500 flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-white">
-              {userFullName.charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-gray-900">{userFullName}</p>
-              <p className="truncate text-xs text-gray-500">{roleLabelMap[role]}</p>
-            </div>
-          </div>
-        </div>
       </aside>
     </>
   );

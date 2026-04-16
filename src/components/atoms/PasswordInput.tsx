@@ -6,25 +6,16 @@ import { EyeIcon, EyeOffIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 const inputStyles =
-  "border-border-default text-text-primary placeholder:text-text-muted focus:border-primary-400 focus:ring-primary-400/20 w-full rounded-lg border bg-white px-3 py-2 pr-10 text-sm transition-colors focus:ring-2 focus:outline-none";
+  "border-border-default text-text-primary placeholder:text-text-muted focus:border-primary-400 focus:ring-primary-400/20 focus:shadow-[0_0_0_3px_rgba(66,165,245,0.1)] w-full rounded-lg border bg-white px-3.5 py-2.5 pr-10 text-base sm:text-sm transition-all duration-150 focus:ring-2 focus:outline-none";
 
 interface PasswordInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
-  showPasswordLabel?: string;
-  hidePasswordLabel?: string;
+  showPasswordLabel: string;
+  hidePasswordLabel: string;
   hasError?: boolean;
 }
 
 const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-  (
-    {
-      showPasswordLabel = "Show password",
-      hidePasswordLabel = "Hide password",
-      hasError,
-      className,
-      ...props
-    },
-    ref
-  ) => {
+  ({ showPasswordLabel, hidePasswordLabel, hasError, className, ...props }, ref) => {
     const [visible, setVisible] = useState(false);
 
     return (

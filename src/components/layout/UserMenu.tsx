@@ -77,6 +77,7 @@ export function UserMenu() {
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
+      // SAFETY: DOM mousedown event target is always a Node
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         close();
       }
@@ -125,7 +126,7 @@ export function UserMenu() {
             : "hover:border-primary-200 border-transparent hover:bg-white/80"
         )}
       >
-        <span className="bg-primary-500 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tracking-wider text-white xl:h-8 xl:w-8 xl:text-xs">
+        <span className="bg-primary-500 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold tracking-wider text-white xl:h-8 xl:w-8 xl:text-xs">
           {initials}
         </span>
         <span className="text-text-primary max-w-28 truncate text-sm font-semibold xl:text-base">

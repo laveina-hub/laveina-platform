@@ -7,12 +7,10 @@ import { env } from "@/env";
 import { generateAndUploadQrCode } from "@/lib/qr/generator";
 import { getStripe } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyNewBookingPaid } from "@/services/admin-notification.service";
 import { logAuditEvent } from "@/services/audit.service";
-import {
-  createShipment,
-  setShipmentQrCodeUrl,
-  updateShipmentStatus,
-} from "@/services/shipment.service";
+import { sendShipmentConfirmation } from "@/services/notification.service";
+import { createShipment, setShipmentQrCodeUrl } from "@/services/shipment.service";
 import { ShipmentStatus } from "@/types/enums";
 import type { CreateShipmentInput } from "@/types/shipment";
 
@@ -226,9 +224,13 @@ async function handleCheckoutCompleted(
     return false;
   }
 
+  // Use admin client directly — updateShipmentStatus uses server client (no cookies in webhooks)
   await Promise.all(
     createdShipments.map((shipment) =>
-      updateShipmentStatus(shipment.id, ShipmentStatus.WAITING_AT_ORIGIN)
+      supabase
+        .from("shipments")
+        .update({ status: ShipmentStatus.WAITING_AT_ORIGIN })
+        .eq("id", shipment.id)
     )
   );
 
@@ -247,6 +249,9 @@ async function handleCheckoutCompleted(
     },
   });
 
+  // Notify admin of new bookings
+  void Promise.allSettled(createdShipments.map((s) => notifyNewBookingPaid(s.id, s.tracking_id)));
+
   await Promise.allSettled(
     createdShipments.map(async (shipment) => {
       try {
@@ -255,6 +260,34 @@ async function handleCheckoutCompleted(
       } catch (err) {
         console.error(`Stripe webhook: QR code generation failed for ${shipment.tracking_id}`, err);
       }
+    })
+  );
+
+  // Send WhatsApp confirmation for each shipment
+  const { data: originPoint } = await supabase
+    .from("pickup_points")
+    .select("name")
+    .eq("id", bookingData.locations.origin_pickup_point_id)
+    .single();
+
+  const { data: destPoint } = await supabase
+    .from("pickup_points")
+    .select("name")
+    .eq("id", bookingData.locations.destination_pickup_point_id)
+    .single();
+
+  void Promise.allSettled(
+    createdShipments.map((shipment) => {
+      const parcel = bookingData.parcels[createdShipments.indexOf(shipment)];
+      return sendShipmentConfirmation({
+        shipmentId: shipment.id,
+        senderPhone: bookingData.contact.sender_phone,
+        senderName: bookingData.contact.sender_name,
+        trackingId: shipment.tracking_id,
+        originPickupPointName: originPoint?.name ?? "",
+        destinationPickupPointName: destPoint?.name ?? "",
+        priceCents: parcel?.price_cents ?? 0,
+      });
     })
   );
 

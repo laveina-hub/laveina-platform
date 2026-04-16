@@ -71,12 +71,32 @@
     "loginTitle": "Benvingut de nou",
     "loginSubtitle": "Inicia sessió al teu compte",
     "redirecting": "Redirigint al teu panell...",
-    "registerTitle": "Crear Compte",
-    "registerSubtitle": "Comença amb Laveina",
-    "forgotPasswordTitle": "He Oblidat la Contrasenya",
+    "registerTitle": "Crea un compte",
+    "registerSubtitle": "Explica'ns sobre tu",
+    "createAccount": "Crea un compte",
+    "enterPassword": "Introdueix contrasenya",
+    "forgotPasswordTitle": "Restableix la teva contrasenya",
     "forgotPasswordSubtitle": "Introdueix el teu correu i t'enviarem un enllaç de recuperació",
+    "sendVerificationCode": "Enviar codi de verificació",
+    "otpVerifyTitle": "Verificar codi",
+    "otpDescription": "Hem enviat un codi de 6 dígits al teu correu electrònic.\nSi us plau, introdueix-lo a continuació.",
+    "otpContinue": "Continuar",
+    "otpDidntReceive": "No has rebut el codi?",
+    "otpResendIn": "Reenviar en",
+    "otpResendNow": "Reenviar ara",
+    "otpResent": "Codi de verificació reenviat.",
+    "otpVerifyEmailTitle": "Verifica el teu correu",
+    "otpNoEmail": "No s'ha proporcionat correu electrònic. Torna enrere i introdueix el teu correu.",
+    "backToForgotPassword": "Tornar a he oblidat la contrasenya",
+    "backToRegister": "Tornar al registre",
+    "invalidOtp": "Codi de verificació invàlid. Torna-ho a provar.",
     "resetPasswordTitle": "Restablir Contrasenya",
     "resetPasswordSubtitle": "Introdueix la teva nova contrasenya",
+    "setPasswordTitle": "Estableix la Teva Contrasenya",
+    "setPasswordSubtitle": "Benvingut a Laveina! Crea una contrasenya per accedir al tauler del teu punt de recollida.",
+    "setPassword": "Establir Contrasenya",
+    "passwordSet": "Contrasenya establerta correctament",
+    "passwordSetDescription": "Ja pots iniciar sessió amb el teu correu i contrasenya.",
     "email": "Correu electrònic",
     "emailPlaceholder": "tu@exemple.com",
     "password": "Contrasenya",
@@ -101,15 +121,26 @@
     "signInLink": "Inicia sessió",
     "checkEmail": "Revisa el teu correu",
     "checkEmailDescription": "T'hem enviat un enllaç per restablir la teva contrasenya.",
-    "accountCreated": "Compte creat",
-    "accountCreatedDescription": "Revisa el teu correu per verificar el teu compte.",
+    "accountCreated": "Compte creat correctament",
+    "accountCreatedDescription": "El teu compte s'ha configurat correctament.\nRevisa el teu correu per verificar el teu compte.",
+    "accountVerified": "Correu verificat correctament",
+    "accountVerifiedDescription": "El teu correu ha estat confirmat.\nInicia sessió per continuar.",
+    "didntReceiveEmail": "No has rebut el correu?",
+    "tryAgain": "Torna-ho a provar",
+    "backToSignIn": "Tornar a iniciar sessió",
+    "emailVerified": "Correu verificat correctament. Inicia sessió.",
+    "passwordResetSuccess": "Contrasenya restablerta correctament",
+    "passwordResetSuccessDescription": "La teva contrasenya s'ha canviat correctament.\nInicia sessió de nou per continuar.",
     "passwordUpdated": "Contrasenya actualitzada",
     "passwordUpdatedDescription": "La teva contrasenya ha estat actualitzada correctament.",
     "rememberMe": "Recorda'm",
     "showPassword": "Mostrar contrasenya",
     "hidePassword": "Amagar contrasenya",
     "orContinueWith": "o continua amb",
-    "brandTagline": "Lliurament Intel·ligent Que S'Adapta al Teu Ritme",
+    "orDivider": "O",
+    "signInWithGoogle": "Inicia sessió amb Google",
+    "brandTagline": "Lliurament intel·ligent que s'adapta al teu ritme",
+    "brandSubtitle": "Reserva enviaments, fes seguiment del progrés i gestiona les recollides fàcilment.",
     "brandFeature1": "Seguiment de paquets en temps real",
     "brandFeature2": "Xarxa de lliurament de botiga a botiga",
     "brandFeature3": "Enviaments segurs i assegurats",
@@ -150,6 +181,9 @@
     "postcodePlaceholder": "08001",
     "searchPickupPoints": "Cercar punts de recollida",
     "selectPickupPoint": "Seleccionar punt de recollida",
+    "pickupPointsFound": "{count, plural, one {# punt de recollida trobat} other {# punts de recollida trobats}}",
+    "open": "Obert",
+    "closed": "Tancat",
     "noPickupPoints": "No s'han trobat punts de recollida per a aquest codi postal",
     "dimensions": "Dimensions del paquet",
     "length": "Llargada",
@@ -187,6 +221,7 @@
     "totalToPay": "Total a pagar",
     "proceedToPayment": "Procedir al pagament",
     "searchingPickupPoints": "Cercant punts de recollida...",
+    "postcodeSearchPlaceholder": "Codi postal o adre\u00e7a (ex. 08001)",
     "loadingRates": "Calculant preu...",
     "ratesError": "No s'ha pogut calcular el preu. Torna-ho a intentar.",
     "payNow": "Pagar Ara",
@@ -341,7 +376,10 @@
     "terms": "Termes i Condicions",
     "privacy": "Política de Privacitat",
     "cookiePolicy": "Política de Cookies",
-    "legalNav": "Navegació legal"
+    "legalNav": "Navegació legal",
+    "tagline": "Lliurament de paquets ràpid i fiable a tota Espanya a través de la nostra xarxa de punts de recollida.",
+    "quickLinks": "Enllaços Ràpids",
+    "company": "Empresa"
   },
   "dashboard": {
     "overview": "Resum",
@@ -357,7 +395,10 @@
     "myShipments": "Els Meus Enviaments",
     "roleAdmin": "Administrador",
     "rolePickupPoint": "Punt de Recollida",
-    "roleCustomer": "Client"
+    "roleCustomer": "Client",
+    "menu": "Menú",
+    "searchShipment": "Cercar un Enviament",
+    "notifications": "Notificacions"
   },
   "requestDelivery": {
     "title": "Sol·licitar Lliurament",
@@ -567,7 +608,8 @@
     "tryAgain": "Torna-ho a provar",
     "notFoundTitle": "404",
     "pageNotFound": "Pàgina no trobada",
-    "goHome": "Anar a l'Inici"
+    "goHome": "Anar a l'Inici",
+    "errorId": "ID d'error: {id}"
   },
   "header": {
     "logoAriaLabel": "Laveina — Anar a la pàgina principal",
@@ -649,6 +691,11 @@
   "validation": {
     "invalidEmail": "Introdueix un correu electrònic vàlid",
     "passwordMin": "La contrasenya ha de tenir almenys 8 caràcters",
+    "passwordMax": "La contrasenya no pot superar els 72 caràcters",
+    "passwordLowercase": "La contrasenya ha de contenir almenys una lletra minúscula",
+    "passwordUppercase": "La contrasenya ha de contenir almenys una lletra majúscula",
+    "passwordDigit": "La contrasenya ha de contenir almenys un número",
+    "passwordSpecial": "La contrasenya ha de contenir almenys un caràcter especial",
     "nameMin": "El nom ha de tenir almenys 2 caràcters",
     "invalidPhone": "Introdueix un número de telèfon vàlid",
     "phoneInvalid": "Introdueix un número de telèfon vàlid",
@@ -661,9 +708,15 @@
     "weightMax": "El pes màxim és 30 kg",
     "dimensionRequired": "Introdueix la dimensió",
     "dimensionPositive": "La dimensió ha de ser major que 0",
+    "dimensionMin": "La dimensió ha de ser almenys 1 cm",
+    "weightMin": "El pes ha de ser almenys 0,1 kg",
     "longestSideExceeded": "El costat més llarg no pot superar els 120 cm",
     "totalDimensionsExceeded": "Les dimensions totals (L+A+A) no poden superar els 150 cm",
-    "required": "Aquest camp és obligatori"
+    "required": "Aquest camp és obligatori",
+    "nameMax": "El nom no pot superar els 100 caràcters",
+    "addressMin": "L'adreça ha de tenir almenys 5 caràcters",
+    "addressMax": "L'adreça no pot superar els 200 caràcters",
+    "cityMax": "La ciutat no pot superar els 100 caràcters"
   },
   "adminOverview": {
     "title": "Tauler de Control",
@@ -726,6 +779,13 @@
     "total": "Total",
     "carrier": "Transportista",
     "carrierTracking": "Seguiment Transportista",
+    "sendcloudParcelId": "ID Paquet SendCloud",
+    "downloadLabel": "Descarregar Etiqueta",
+    "syncStatus": "Sincronitzar Estat",
+    "cancelParcel": "Cancel·lar Paquet",
+    "cancelSuccess": "Cancel·lació del paquet sol·licitada",
+    "syncStatusChanged": "Estat actualitzat: {status}",
+    "syncNoChange": "Estat sense canvis: {status}",
     "notAssigned": "Sense assignar"
   },
   "adminPickupPoints": {
@@ -767,7 +827,25 @@
     "back": "Tornar a Punts de Recollida",
     "saved": "Punt de recollida desat correctament",
     "created": "Punt de recollida creat correctament",
-    "searchPlaceholder": "Cercar per nom..."
+    "searchPlaceholder": "Cercar per nom...",
+    "importCsv": "Importar CSV",
+    "importDescription": "Puja un fitxer CSV per importar punts de recollida en bloc. Tots els punts es crearan com a esborranys inactius — revisa i activa cadascun des de la llista.",
+    "importDragDrop": "Arrossega i deixa anar el teu fitxer CSV aquí, o fes clic per buscar",
+    "importFileType": "Només s'accepten fitxers .csv",
+    "importExpectedFormat": "Format CSV esperat:",
+    "importRowsFound": "{count, plural, one {# fila vàlida} other {# files vàlides}} trobades",
+    "importRowsSkipped": "{count, plural, one {# fila} other {# files}} omeses",
+    "importDraftNote": "Tots els punts s'importaran com a inactius. Pots revisar-los i activar-los individualment.",
+    "importParseErrors": "Files omeses:",
+    "importBack": "Tornar",
+    "importConfirm": "Importar {count, plural, one {# punt} other {# punts}}",
+    "importImporting": "Important...",
+    "importComplete": "Importació Completada",
+    "importInserted": "{count, plural, one {# punt de recollida} other {# punts de recollida}} importats com a esborranys inactius",
+    "importFailedRows": "{count, plural, one {# fila} other {# files}} no es van poder importar:",
+    "importReviewNote": "Ves a cada punt de recollida per revisar les dades i activar-lo quan estigui llest.",
+    "importDone": "Fet",
+    "importSuccess": "{count, plural, one {# punt de recollida} other {# punts de recollida}} importats correctament"
   },
   "adminSettings": {
     "title": "Configuració de la Plataforma",
@@ -815,9 +893,49 @@
     "sendcloudDispatch": "Creant paquet a SendCloud i generant etiqueta...",
     "sendcloudNotConfigured": "Claus API de SendCloud no configurades. Contacta l'administrador.",
     "downloadLabel": "Descarregar Etiqueta",
+    "downloadAllLabels": "Descarregar Totes les Etiquetes ({count})",
     "dispatch": "Despatxar",
     "cancel": "Cancel·lar",
-    "dispatchConfirmDesc": "Estàs a punt de despatxar {count} paquet(s). Aquesta acció no es pot desfer. Continuar?"
+    "dispatchConfirmDesc": "Estàs a punt de despatxar {count} paquet(s). Aquesta acció no es pot desfer. Continuar?",
+    "dispatchPartial": "{succeeded} despatxats, {failed} fallits",
+    "resultsTitle": "Resultats del Despatx",
+    "resultsCount": "{succeeded} correctes, {failed} fallits"
+  },
+  "notifications": {
+    "title": "Notificacions",
+    "markAllAsRead": "Marcar tot llegit",
+    "noNotifications": "Sense notificacions",
+    "allCaughtUp": "Estàs al dia!",
+    "filterAll": "Totes",
+    "filterUnread": "No llegides",
+    "newBookingPaid": {
+      "title": "Nova reserva pagada",
+      "description": "L'enviament {trackingId} ha estat pagat"
+    },
+    "parcelReceivedAtOrigin": {
+      "title": "Paquet rebut",
+      "description": "{trackingId} rebut a la botiga d'origen"
+    },
+    "dispatchFailed": {
+      "title": "Despatx fallit",
+      "description": "Error en despatxar {trackingId}: {error}"
+    },
+    "deliveryProblem": {
+      "title": "Problema de lliurament",
+      "description": "Problema amb {trackingId}: {statusMessage}"
+    },
+    "parcelReturned": {
+      "title": "Paquet retornat",
+      "description": "{trackingId} retornat al remitent"
+    },
+    "parcelDelivered": {
+      "title": "Paquet lliurat",
+      "description": "{trackingId} ha estat lliurat"
+    },
+    "justNow": "Ara",
+    "minutesAgo": "fa {count}m",
+    "hoursAgo": "fa {count}h",
+    "daysAgo": "fa {count}d"
   },
   "adminUsers": {
     "title": "Usuaris",

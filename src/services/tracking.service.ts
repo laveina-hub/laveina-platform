@@ -1,6 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { sendStatusUpdate } from "@/services/notification.service";
+import {
+  sendDeliveryToReceiver,
+  sendDeliveryToSender,
+  sendReadyForPickup,
+  sendReceivedAtOrigin,
+} from "@/services/notification.service";
 import { generateOtp } from "@/services/otp.service";
 import type { ApiResponse } from "@/types/api";
 import type { Database } from "@/types/database.types";
@@ -22,6 +27,7 @@ type ScanDecision =
   | { type: "no_change" };
 
 function determineScanAction(shipment: Shipment, pickupPointId: string): ScanDecision {
+  // SAFETY: DB column is constrained to ShipmentStatus enum values via CHECK constraint
   const currentStatus = shipment.status as ShipmentStatus;
   const isOrigin = pickupPointId === shipment.origin_pickup_point_id;
   const isDestination = pickupPointId === shipment.destination_pickup_point_id;
@@ -92,7 +98,9 @@ export async function processQrScan(
 
   const { data: shipment, error: shipmentError } = await supabase
     .from("shipments")
-    .select("*")
+    .select(
+      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+    )
     .eq("tracking_id", parsed.data.tracking_id)
     .single();
 
@@ -119,9 +127,9 @@ export async function processQrScan(
     };
   }
 
+  // SAFETY: DB column is constrained to ShipmentStatus enum values via CHECK constraint
   const oldStatus = shipment.status as ShipmentStatus;
   const nextStatus = decision.type === "transition" ? decision.newStatus : null;
-  const newStatus = nextStatus ?? oldStatus;
 
   let updatedShipment = shipment;
   let finalStatus = nextStatus;
@@ -130,7 +138,9 @@ export async function processQrScan(
       .from("shipments")
       .update({ status: nextStatus })
       .eq("id", shipment.id)
-      .select()
+      .select(
+        "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+      )
       .single();
 
     if (updateError) {
@@ -152,16 +162,18 @@ export async function processQrScan(
       old_status: oldStatus,
       new_status: nextStatus ?? oldStatus,
     })
-    .select()
+    .select("id, shipment_id, scanned_by, pickup_point_id, old_status, new_status, scanned_at")
     .single();
 
-  // Auto-transition: arrived → ready_for_pickup
+  // Auto-transition to ready_for_pickup on destination scan
   if (nextStatus === ShipmentStatus.ARRIVED_AT_DESTINATION) {
     const { data: autoUpdated, error: autoError } = await adminSupabase
       .from("shipments")
       .update({ status: ShipmentStatus.READY_FOR_PICKUP })
       .eq("id", shipment.id)
-      .select()
+      .select(
+        "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+      )
       .single();
 
     if (!autoError && autoUpdated) {
@@ -188,21 +200,51 @@ export async function processQrScan(
     otpSent = otpResult.error === null;
   }
 
-  if (nextStatus) {
-    void sendStatusUpdate({
+  const isOriginScan = parsed.data.pickup_point_id === shipment.origin_pickup_point_id;
+
+  if (nextStatus && isOriginScan && nextStatus === ShipmentStatus.RECEIVED_AT_ORIGIN) {
+    const { data: originShop } = await adminSupabase
+      .from("pickup_points")
+      .select("name")
+      .eq("id", parsed.data.pickup_point_id)
+      .single();
+
+    void sendReceivedAtOrigin({
       shipmentId: shipment.id,
-      phone: shipment.receiver_phone,
-      recipientName: shipment.receiver_name,
+      senderPhone: shipment.sender_phone,
+      senderName: shipment.sender_name,
       trackingId: shipment.tracking_id,
-      oldStatus,
-      newStatus,
+      shopName: originShop?.name ?? "",
+    }).catch(() => {});
+  }
+
+  if (
+    finalStatus === ShipmentStatus.READY_FOR_PICKUP &&
+    nextStatus === ShipmentStatus.ARRIVED_AT_DESTINATION
+  ) {
+    const { data: destShop } = await adminSupabase
+      .from("pickup_points")
+      .select("name, address, city")
+      .eq("id", parsed.data.pickup_point_id)
+      .single();
+
+    const shopAddress = destShop
+      ? [destShop.address, destShop.city].filter(Boolean).join(", ")
+      : "";
+
+    void sendReadyForPickup({
+      shipmentId: shipment.id,
+      receiverPhone: shipment.receiver_phone,
+      receiverName: shipment.receiver_name,
+      trackingId: shipment.tracking_id,
+      shopName: destShop?.name ?? "",
+      shopAddress,
     }).catch(() => {});
   }
 
   return { data: { shipment: updatedShipment, scanLog, otpSent }, error: null };
 }
 
-/** Confirms delivery after OTP verification. */
 export async function confirmDelivery(
   confirmedBy: string,
   shipmentId: string,
@@ -210,10 +252,11 @@ export async function confirmDelivery(
 ): Promise<ApiResponse<{ shipment: Shipment; scanLog: ScanLog }>> {
   const adminSupabase = createAdminClient();
 
-  // Narrow select — full row comes back from the update below
   const { data: shipment, error: findError } = await adminSupabase
     .from("shipments")
-    .select("id, status, destination_pickup_point_id, receiver_phone, receiver_name, tracking_id")
+    .select(
+      "id, status, destination_pickup_point_id, sender_phone, sender_name, receiver_phone, receiver_name, tracking_id"
+    )
     .eq("id", shipmentId)
     .single();
 
@@ -250,7 +293,9 @@ export async function confirmDelivery(
     .from("shipments")
     .update({ status: ShipmentStatus.DELIVERED })
     .eq("id", shipment.id)
-    .select()
+    .select(
+      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+    )
     .single();
 
   if (updateError || !updated) {
@@ -269,19 +314,25 @@ export async function confirmDelivery(
       old_status: ShipmentStatus.READY_FOR_PICKUP,
       new_status: ShipmentStatus.DELIVERED,
     })
-    .select()
+    .select("id, shipment_id, scanned_by, pickup_point_id, old_status, new_status, scanned_at")
     .single();
 
   if (scanError || !scanLog) {
     return { data: null, error: { message: "Failed to log delivery", status: 500 } };
   }
 
-  void sendStatusUpdate({
-    phone: shipment.receiver_phone,
-    recipientName: shipment.receiver_name,
+  void sendDeliveryToSender({
+    shipmentId: shipment.id,
+    senderPhone: shipment.sender_phone,
+    senderName: shipment.sender_name,
     trackingId: shipment.tracking_id,
-    oldStatus: ShipmentStatus.READY_FOR_PICKUP,
-    newStatus: ShipmentStatus.DELIVERED,
+  }).catch(() => {});
+
+  void sendDeliveryToReceiver({
+    shipmentId: shipment.id,
+    receiverPhone: shipment.receiver_phone,
+    receiverName: shipment.receiver_name,
+    trackingId: shipment.tracking_id,
   }).catch(() => {});
 
   return { data: { shipment: updated, scanLog }, error: null };
@@ -292,7 +343,7 @@ export async function getTrackingHistory(shipmentId: string): Promise<ApiRespons
 
   const { data, error } = await supabase
     .from("scan_logs")
-    .select("*")
+    .select("id, shipment_id, scanned_by, pickup_point_id, old_status, new_status, scanned_at")
     .eq("shipment_id", shipmentId)
     .order("scanned_at", { ascending: true })
     .limit(500);

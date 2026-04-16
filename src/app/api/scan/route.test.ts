@@ -15,6 +15,11 @@ vi.mock("@/lib/rate-limit", () => ({
   ),
 }));
 
+vi.mock("@/services/admin-notification.service", () => ({
+  notifyParcelReceivedAtOrigin: vi.fn(),
+  notifyParcelDelivered: vi.fn(),
+}));
+
 const mockVerifyAuth = vi.fn();
 vi.mock("@/lib/supabase/auth", () => ({
   verifyAuth: (...args: unknown[]) => mockVerifyAuth(...args),
@@ -148,6 +153,6 @@ describe("POST /api/scan", () => {
     const { status, body } = await parseResponse(res);
 
     expect(status).toBe(500);
-    expect(body.error).toBe("DB connection lost");
+    expect(body.error).toBe("Internal server error");
   });
 });

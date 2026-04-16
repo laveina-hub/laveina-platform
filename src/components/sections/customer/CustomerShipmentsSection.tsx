@@ -2,7 +2,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Package, Plus } from "lucide-react";
+import { ArrowRight, Package, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -77,8 +77,8 @@ export function CustomerShipmentsSection() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
-          <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+          <h1 className="font-body text-text-primary text-2xl font-semibold">{t("title")}</h1>
+          <p className="text-text-muted mt-1 text-sm">{t("subtitle")}</p>
         </div>
         <Link href="/book">
           <Button size="sm" className="gap-2">
@@ -99,7 +99,10 @@ export function CustomerShipmentsSection() {
           description: t("noShipmentsDesc"),
           action: (
             <Link href="/book">
-              <Button size="sm">{t("bookShipment")}</Button>
+              <Button size="sm" className="gap-2">
+                {t("bookShipment")}
+                <ArrowRight size={16} />
+              </Button>
             </Link>
           ),
         }}

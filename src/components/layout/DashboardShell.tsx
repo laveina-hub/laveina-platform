@@ -35,7 +35,10 @@ export function DashboardShell({ role, userFullName, children }: DashboardShellP
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar userFullName={userFullName} onMenuToggle={() => setSidebarOpen((prev) => !prev)} />
-        <main id="main-content" className="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6">
+        <main
+          id="main-content"
+          className="bg-bg-dashboard flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8"
+        >
           {children}
         </main>
       </div>

@@ -51,14 +51,13 @@ function BookingStepper({ currentStep, className }: BookingStepperProps) {
                   "after:animate-progress-fill after:origin-left"
               )}
             >
-              {/* Step circle */}
               <div
                 aria-current={isCurrent ? "step" : undefined}
                 className={cn(
                   "relative z-10 flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 sm:h-12 sm:w-12",
                   isCompleted && "bg-primary-500 shadow-primary-500/30 text-white shadow-md",
                   isCurrent &&
-                    "bg-primary-500 animate-pulse-ring shadow-primary-500/40 text-white shadow-lg",
+                    "bg-primary-500 animate-pulse-ring text-white shadow-[0_0_0_4px_rgba(66,165,245,0.15),0_0_20px_rgba(66,165,245,0.2)]",
                   !isCompleted &&
                     !isCurrent &&
                     "border-border-default text-text-muted border-2 bg-white"
@@ -71,10 +70,9 @@ function BookingStepper({ currentStep, className }: BookingStepperProps) {
                 )}
               </div>
 
-              {/* Step label */}
               <span
                 className={cn(
-                  "mt-2.5 text-center text-[11px] font-medium transition-colors duration-300 sm:mt-3 sm:text-xs",
+                  "mt-2.5 text-center text-xs font-medium transition-colors duration-300 sm:mt-3 sm:text-xs",
                   isCompleted && "text-primary-600",
                   isCurrent && "text-primary-700 font-semibold",
                   !isCompleted && !isCurrent && "text-text-muted"

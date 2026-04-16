@@ -23,8 +23,7 @@ export async function createShipment(
   customerId: string,
   input: CreateShipmentInput
 ): Promise<ApiResponse<Shipment>> {
-  // Bypasses RLS — only called from Stripe webhook after payment
-  const supabase = createAdminClient();
+  const supabase = createAdminClient(); // admin: called from Stripe webhook
 
   const { data, error } = await supabase
     .from("shipments")
@@ -32,7 +31,9 @@ export async function createShipment(
       customer_id: customerId,
       ...input,
     })
-    .select()
+    .select(
+      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+    )
     .single();
 
   if (error) {
@@ -52,7 +53,9 @@ export async function setShipmentQrCodeUrl(
     .from("shipments")
     .update({ qr_code_url: qrCodeUrl })
     .eq("id", shipmentId)
-    .select()
+    .select(
+      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+    )
     .single();
 
   if (error) {
@@ -70,7 +73,8 @@ export async function getShipmentById(
   const { data, error } = await supabase
     .from("shipments")
     .select(
-      "*, origin_pickup_point:pickup_points!shipments_origin_pickup_point_id_fkey(*), destination_pickup_point:pickup_points!shipments_destination_pickup_point_id_fkey(*), customer:profiles(*), scan_logs(*)"
+      // SAFETY: All shipment columns plus full relation rows are required to satisfy ShipmentWithRelations (which extends the full Shipment Row type with full pickup_points/profiles/scan_logs Row types)
+      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at, origin_pickup_point:pickup_points!shipments_origin_pickup_point_id_fkey(id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at), destination_pickup_point:pickup_points!shipments_destination_pickup_point_id_fkey(id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at), customer:profiles(id, email, full_name, phone, role, created_at, updated_at), scan_logs(id, shipment_id, scanned_by, pickup_point_id, old_status, new_status, scanned_at)"
     )
     .eq("id", shipmentId)
     .single();
@@ -82,6 +86,7 @@ export async function getShipmentById(
     };
   }
 
+  // SAFETY: Supabase query shape matches ShipmentWithRelations via the explicit .select() column list including joined relations
   return { data: data as unknown as ShipmentWithRelations, error: null };
 }
 
@@ -93,7 +98,8 @@ export async function getShipmentByTrackingId(
   const { data, error } = await supabase
     .from("shipments")
     .select(
-      "*, origin_pickup_point:pickup_points!shipments_origin_pickup_point_id_fkey(*), destination_pickup_point:pickup_points!shipments_destination_pickup_point_id_fkey(*), customer:profiles(*), scan_logs(*)"
+      // SAFETY: All shipment columns plus full relation rows are required to satisfy ShipmentWithRelations (which extends the full Shipment Row type with full pickup_points/profiles/scan_logs Row types)
+      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at, origin_pickup_point:pickup_points!shipments_origin_pickup_point_id_fkey(id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at), destination_pickup_point:pickup_points!shipments_destination_pickup_point_id_fkey(id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at), customer:profiles(id, email, full_name, phone, role, created_at, updated_at), scan_logs(id, shipment_id, scanned_by, pickup_point_id, old_status, new_status, scanned_at)"
     )
     .eq("tracking_id", trackingId)
     .single();
@@ -105,6 +111,7 @@ export async function getShipmentByTrackingId(
     };
   }
 
+  // SAFETY: Supabase query shape matches ShipmentWithRelations via the explicit .select() column list including joined relations
   return { data: data as unknown as ShipmentWithRelations, error: null };
 }
 
@@ -125,7 +132,10 @@ export async function listShipments(
 
   let query = supabase
     .from("shipments")
-    .select("*", { count: "exact" })
+    .select(
+      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at",
+      { count: "exact" }
+    )
     .order("created_at", { ascending: false })
     .range((page - 1) * pageSize, page * pageSize - 1);
 
@@ -166,7 +176,9 @@ export async function updateShipmentStatus(
     .from("shipments")
     .update({ status: newStatus })
     .eq("id", shipmentId)
-    .select()
+    .select(
+      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+    )
     .single();
 
   if (error) {
@@ -176,7 +188,7 @@ export async function updateShipmentStatus(
   return { data, error: null };
 }
 
-/** Public tracking lookup — bypasses RLS, returns only non-sensitive fields. */
+/** Bypasses RLS — returns only non-sensitive fields for public tracking. */
 export async function getPublicTrackingData(
   trackingId: string
 ): Promise<ApiResponse<PublicTrackingData>> {
@@ -198,5 +210,6 @@ export async function getPublicTrackingData(
     };
   }
 
+  // SAFETY: Supabase query shape matches PublicTrackingData via the explicit .select() column list
   return { data: data as unknown as PublicTrackingData, error: null };
 }

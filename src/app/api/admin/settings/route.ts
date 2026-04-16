@@ -15,8 +15,16 @@ export async function GET() {
 
   const [settingsResult, insuranceResult, parcelSizesResult] = await Promise.all([
     supabase.from("admin_settings").select("key, value"),
-    supabase.from("insurance_options").select("*").order("coverage_amount_cents"),
-    supabase.from("parcel_size_config").select("*").order("max_weight_kg"),
+    supabase
+      .from("insurance_options")
+      .select(
+        "id, coverage_amount_cents, surcharge_cents, is_active, display_order, created_at, updated_at"
+      )
+      .order("coverage_amount_cents"),
+    supabase
+      .from("parcel_size_config")
+      .select("size, min_weight_kg, max_weight_kg, is_active, updated_at")
+      .order("max_weight_kg"),
   ]);
 
   const settingsMap: Record<string, string> = {};

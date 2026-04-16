@@ -4,6 +4,10 @@ import { z } from "zod";
 
 import { getClientIp, rateLimitResponse, scanLimiter } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
+import {
+  notifyParcelDelivered,
+  notifyParcelReceivedAtOrigin,
+} from "@/services/admin-notification.service";
 import { processQrScan } from "@/services/tracking.service";
 
 const scanBodySchema = z.object({
@@ -38,6 +42,16 @@ export async function POST(request: NextRequest) {
 
     if (result.error) {
       return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+    }
+
+    // Notify admin on key status transitions
+    const newStatus = result.data.scanLog?.new_status;
+    const shipment = result.data.shipment;
+    if (newStatus === "received_at_origin" && shipment) {
+      void notifyParcelReceivedAtOrigin(shipment.id, shipment.tracking_id).catch(() => {});
+    }
+    if (newStatus === "delivered" && shipment) {
+      void notifyParcelDelivered(shipment.id, shipment.tracking_id).catch(() => {});
     }
 
     return NextResponse.json({ data: result.data });

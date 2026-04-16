@@ -3,11 +3,10 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Playwright configuration for Laveina E2E tests.
  *
- * Test accounts (must be created in Supabase first — see seed.sql):
+ * Run `npm run db:seed` first to create test accounts:
  *   admin@laveina-test.com / TestAdmin123!
- *   shop-origin@laveina-test.com / TestShop123!
- *   shop-dest@laveina-test.com / TestShop123!
  *   customer@laveina-test.com / TestCustomer123!
+ *   Pickup point owners from CSV Email column / TestShop123!
  */
 export default defineConfig({
   testDir: "./e2e",

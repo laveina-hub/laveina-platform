@@ -10,7 +10,7 @@ export function Header() {
   const t = useTranslations("header");
 
   return (
-    <header className="bg-primary-100 sticky top-0 z-50">
+    <header className="bg-primary-100/90 sticky top-0 z-50 shadow-xs backdrop-blur-md">
       <div className="max-w-container mx-auto flex items-center justify-between px-6 py-3 lg:px-8 lg:py-4 xl:px-10 xl:py-5">
         <Link href="/" className="shrink-0" aria-label={t("logoAriaLabel")}>
           <Image

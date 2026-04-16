@@ -62,13 +62,27 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <head />
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      </head>
       <body className={`${prostoOne.variable} font-body antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
             <AuthProvider>
               {children}
-              <Toaster richColors position="top-right" />
+              <Toaster
+                richColors
+                position="top-right"
+                toastOptions={{
+                  className: "font-body",
+                  style: {
+                    borderRadius: "var(--radius-lg)",
+                    boxShadow: "var(--shadow-elevated)",
+                    border: "1px solid var(--color-border-default)",
+                    fontSize: "14px",
+                  },
+                }}
+              />
             </AuthProvider>
           </QueryProvider>
         </NextIntlClientProvider>

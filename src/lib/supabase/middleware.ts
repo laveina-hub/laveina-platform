@@ -17,6 +17,7 @@ function createSupabaseMiddlewareClient(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
+            // SAFETY: options is typed as optional cookie options which are Record-shaped
             supabaseResponse.cookies.set(name, value, options as Record<string, unknown>)
           );
         },
@@ -41,7 +42,7 @@ export async function refreshSession(request: NextRequest) {
       session = result.data.session;
     }
   } catch {
-    // Continue without session
+    // Treat as unauthenticated
   }
 
   return { supabase, session, supabaseResponse: getResponse() };
@@ -64,7 +65,7 @@ export async function updateSession(request: NextRequest) {
     // Treat as unauthenticated
   }
 
-  // From profiles table — user_metadata is user-writable so not trustworthy
+  // Role from profiles table, not user_metadata (user-writable, untrusted)
   let cachedRole: string | null | undefined;
   async function getRole(): Promise<string | null> {
     if (cachedRole !== undefined) return cachedRole;
@@ -73,6 +74,7 @@ export async function updateSession(request: NextRequest) {
       return null;
     }
     const { data } = await supabase.rpc("get_user_role");
+    // SAFETY: get_user_role RPC returns a text value or null
     cachedRole = (data as string | null) ?? "customer";
     return cachedRole;
   }

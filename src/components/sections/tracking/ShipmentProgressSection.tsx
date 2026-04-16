@@ -101,23 +101,23 @@ export function ShipmentProgressSection({
 
       <div className="px-6 py-8 md:px-9">
         <div className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-0">
-          {/* Mobile: vertical progress line */}
+          {/* Vertical progress line (mobile) */}
           <div
             className="bg-border-default absolute left-9.5 w-2 rounded-3xl lg:hidden"
             style={{ top: 42, bottom: 42 }}
           />
           <div
-            className="bg-primary-500 absolute left-9.5 w-2 rounded-3xl transition-all duration-500 lg:hidden"
+            className="animate-progress-shimmer from-primary-400 via-primary-500 to-primary-600 absolute left-9.5 w-2 rounded-3xl bg-linear-to-b bg-size-[200%_100%] transition-all duration-500 lg:hidden"
             style={{
               top: 42,
               height: `calc(${(activeStep / (steps.length - 1)) * 100}% - ${(activeStep / (steps.length - 1)) * 84}px)`,
             }}
           />
 
-          {/* Desktop: horizontal progress line */}
+          {/* Horizontal progress line (desktop) */}
           <div className="bg-border-default absolute top-9.5 right-0 left-0 hidden h-2 rounded-3xl lg:block" />
           <div
-            className="bg-primary-500 absolute top-9.5 left-0 hidden h-2 rounded-3xl transition-all duration-500 lg:block"
+            className="animate-progress-shimmer from-primary-400 via-primary-500 to-primary-600 absolute top-9.5 left-0 hidden h-2 rounded-3xl bg-linear-to-r bg-size-[200%_100%] transition-all duration-500 lg:block"
             style={{
               width: `${(activeStep / (steps.length - 1)) * 100}%`,
             }}

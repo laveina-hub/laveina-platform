@@ -3,9 +3,17 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
-import { Package, Truck } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Download,
+  FileText,
+  Package,
+  Truck,
+  XCircle,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import { Button, DeliveryModeBadge } from "@/components/atoms";
@@ -14,6 +22,23 @@ import { DataTable } from "@/components/molecules/DataTable";
 import { useShipments } from "@/hooks/use-shipments";
 import { ShipmentStatus, type DeliveryMode } from "@/types/enums";
 import type { Shipment } from "@/types/shipment";
+
+type DispatchResult = {
+  id: string;
+  trackingId: string;
+  success: boolean;
+  error?: string;
+  carrierName?: string;
+  carrierTrackingNumber?: string;
+  labelUrl?: string;
+};
+
+type DispatchResponse = {
+  succeeded: number;
+  failed: number;
+  total: number;
+  results: DispatchResult[];
+};
 
 function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat(undefined, {
@@ -36,6 +61,7 @@ export function AdminDispatchSection() {
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [dispatchResults, setDispatchResults] = useState<DispatchResponse | null>(null);
 
   const dispatchMutation = useMutation({
     mutationFn: async (shipmentIds: string[]) => {
@@ -51,19 +77,22 @@ export function AdminDispatchSection() {
       }
 
       const result = await response.json();
-      const { succeeded, failed } = result.data;
-
-      if (failed > 0 && succeeded === 0) {
-        throw new Error(`All ${failed} dispatch(es) failed`);
-      }
-
-      return succeeded as number;
+      // SAFETY: dispatch API always returns { data: DispatchResponse } on success (validated server-side)
+      return result.data as DispatchResponse;
     },
-    onSuccess: (count) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["shipments"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       setRowSelection({});
-      toast.success(t("dispatchSuccess", { count }));
+      setDispatchResults(data);
+
+      if (data.failed > 0 && data.succeeded === 0) {
+        toast.error(t("dispatchError"));
+      } else if (data.failed > 0) {
+        toast.warning(t("dispatchPartial", { succeeded: data.succeeded, failed: data.failed }));
+      } else {
+        toast.success(t("dispatchSuccess", { count: data.succeeded }));
+      }
     },
     onError: () => {
       toast.error(t("dispatchError"));
@@ -83,8 +112,23 @@ export function AdminDispatchSection() {
   };
 
   const executeDispatch = () => {
+    setDispatchResults(null);
     dispatchMutation.mutate(selectedIds);
   };
+
+  const handleDownloadLabel = useCallback((shipmentId: string) => {
+    window.open(`/api/shipments/${shipmentId}/label`, "_blank");
+  }, []);
+
+  const handleDownloadAllLabels = useCallback(
+    (results: DispatchResult[]) => {
+      const withLabels = results.filter((r) => r.success && r.labelUrl);
+      for (const r of withLabels) {
+        handleDownloadLabel(r.id);
+      }
+    },
+    [handleDownloadLabel]
+  );
 
   const columns: ColumnDef<Shipment, unknown>[] = [
     {
@@ -94,7 +138,7 @@ export function AdminDispatchSection() {
           type="checkbox"
           checked={table.getIsAllRowsSelected()}
           onChange={table.getToggleAllRowsSelectedHandler()}
-          className="text-primary-500 h-4 w-4 rounded border-gray-300"
+          className="text-primary-500 border-border-default h-4 w-4 rounded"
         />
       ),
       cell: ({ row }) => (
@@ -103,7 +147,7 @@ export function AdminDispatchSection() {
           checked={row.getIsSelected()}
           onChange={row.getToggleSelectedHandler()}
           onClick={(e) => e.stopPropagation()}
-          className="text-primary-500 h-4 w-4 rounded border-gray-300"
+          className="text-primary-500 border-border-default h-4 w-4 rounded"
         />
       ),
       enableSorting: false,
@@ -112,7 +156,7 @@ export function AdminDispatchSection() {
       accessorKey: "tracking_id",
       header: t("trackingId"),
       cell: ({ row }) => (
-        <span className="font-medium text-gray-900">{row.original.tracking_id}</span>
+        <span className="text-text-primary font-medium">{row.original.tracking_id}</span>
       ),
     },
     {
@@ -164,6 +208,7 @@ export function AdminDispatchSection() {
           className="px-3 py-1 text-xs"
           onClick={(e) => {
             e.stopPropagation();
+            setDispatchResults(null);
             dispatchMutation.mutate([row.original.id]);
           }}
           disabled={dispatchMutation.isPending}
@@ -178,8 +223,8 @@ export function AdminDispatchSection() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
-          <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+          <h1 className="font-body text-text-primary text-2xl font-semibold">{t("title")}</h1>
+          <p className="text-text-muted mt-1 text-sm">{t("subtitle")}</p>
         </div>
 
         {selectedIds.length > 0 && (
@@ -210,13 +255,23 @@ export function AdminDispatchSection() {
                 )}
                 {sendcloudCount > 0 && (
                   <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-violet-700">
-                    {sendcloudCount}x SendCloud — {t("sendcloudNotConfigured")}
+                    {sendcloudCount}x SendCloud — {t("sendcloudDispatch")}
                   </div>
                 )}
               </>
             );
           })()}
         </div>
+      )}
+
+      {dispatchResults && (
+        <DispatchResultsPanel
+          results={dispatchResults}
+          t={t}
+          onDownloadLabel={handleDownloadLabel}
+          onDownloadAll={handleDownloadAllLabels}
+          onDismiss={() => setDispatchResults(null)}
+        />
       )}
 
       <DataTable
@@ -244,6 +299,109 @@ export function AdminDispatchSection() {
         variant="warning"
         loading={dispatchMutation.isPending}
       />
+    </div>
+  );
+}
+
+function DispatchResultsPanel({
+  results,
+  t,
+  onDownloadLabel,
+  onDownloadAll,
+  onDismiss,
+}: {
+  results: DispatchResponse;
+  t: ReturnType<typeof useTranslations<"adminDispatch">>;
+  onDownloadLabel: (shipmentId: string) => void;
+  onDownloadAll: (results: DispatchResult[]) => void;
+  onDismiss: () => void;
+}) {
+  const labelsAvailable = results.results.filter((r) => r.success && r.labelUrl);
+  const hasLabels = labelsAvailable.length > 0;
+  const allSucceeded = results.failed === 0;
+
+  return (
+    <div
+      className={`rounded-xl border p-5 ${
+        allSucceeded
+          ? "border-green-200 bg-green-50"
+          : results.succeeded === 0
+            ? "border-red-200 bg-red-50"
+            : "border-amber-200 bg-amber-50"
+      }`}
+    >
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {allSucceeded ? (
+            <CheckCircle2 size={20} className="text-green-600" />
+          ) : (
+            <AlertTriangle size={20} className="text-amber-600" />
+          )}
+          <h3 className="text-text-primary font-semibold">{t("resultsTitle")}</h3>
+          <span className="text-text-light text-sm">
+            ({t("resultsCount", { succeeded: results.succeeded, failed: results.failed })})
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {hasLabels && labelsAvailable.length > 1 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs"
+              onClick={() => onDownloadAll(results.results)}
+            >
+              <Download size={14} />
+              {t("downloadAllLabels", { count: labelsAvailable.length })}
+            </Button>
+          )}
+          <button
+            onClick={onDismiss}
+            className="text-text-muted hover:text-text-light rounded-lg p-1 hover:bg-white/50"
+          >
+            <XCircle size={18} />
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {results.results.map((result) => (
+          <div
+            key={result.id}
+            className="flex items-center justify-between rounded-lg bg-white/70 px-4 py-3"
+          >
+            <div className="flex items-center gap-3">
+              {result.success ? (
+                <CheckCircle2 size={16} className="text-green-500" />
+              ) : (
+                <XCircle size={16} className="text-red-500" />
+              )}
+              <span className="font-mono text-sm font-medium">{result.trackingId}</span>
+              {result.carrierName && (
+                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs text-violet-700">
+                  {result.carrierName}
+                </span>
+              )}
+              {result.carrierTrackingNumber && (
+                <span className="text-text-muted text-xs">{result.carrierTrackingNumber}</span>
+              )}
+              {result.error && <span className="text-xs text-red-600">{result.error}</span>}
+            </div>
+
+            {result.success && result.labelUrl && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 text-xs"
+                onClick={() => onDownloadLabel(result.id)}
+              >
+                <FileText size={14} />
+                {t("downloadLabel")}
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

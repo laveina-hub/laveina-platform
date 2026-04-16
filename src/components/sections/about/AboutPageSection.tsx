@@ -155,7 +155,6 @@ export async function AboutPageSection() {
         </SectionContainer>
       </section>
 
-      {/* Network Stats */}
       <section className="bg-primary-50/50 border-border-default border-b px-4 py-16 sm:px-6 md:py-24 lg:px-10">
         <SectionContainer>
           <div className="mb-12 text-center">
@@ -174,7 +173,6 @@ export async function AboutPageSection() {
         </SectionContainer>
       </section>
 
-      {/* CTA */}
       <section className="px-4 py-16 sm:px-6 md:py-20 lg:px-10">
         <SectionContainer>
           <div className="mx-auto max-w-xl text-center">

@@ -66,7 +66,6 @@ export async function ContactPageSection() {
               <ContactForm />
             </div>
 
-            {/* Side info */}
             <div className="space-y-4 md:col-span-2">
               <Heading variant="card" as="h2" className="mb-4">
                 {t("infoTitle")}
@@ -91,7 +90,6 @@ export async function ContactPageSection() {
         </SectionContainer>
       </section>
 
-      {/* FAQ */}
       <section className="px-4 py-16 sm:px-6 md:py-24 lg:px-10">
         <SectionContainer>
           <div className="mx-auto max-w-3xl">

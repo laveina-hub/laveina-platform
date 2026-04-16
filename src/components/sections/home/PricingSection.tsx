@@ -34,61 +34,47 @@ function PricingCard({
   return (
     <div
       className={cn(
-        "flex h-full flex-col overflow-hidden rounded-2xl",
-        highlighted && "ring-primary-400 ring-2"
+        "relative flex h-full flex-col rounded-2xl border bg-white p-6 transition-all duration-300 sm:p-5 xl:p-7",
+        highlighted
+          ? "border-primary-400 shadow-elevated ring-primary-400/20 hover:shadow-overlay scale-[1.02] ring-1 hover:scale-[1.04]"
+          : "shadow-card hover:shadow-elevated hover:border-primary-300/40 border-white/20 hover:-translate-y-1 hover:scale-[1.02]"
       )}
     >
-      <div
-        className={cn(
-          "px-4 py-8 text-center sm:py-4 xl:py-8",
-          highlighted ? "bg-primary" : "bg-secondary-300"
-        )}
-      >
-        <span
-          className={cn(
-            "font-body text-2xl font-semibold tracking-widest uppercase sm:text-base xl:text-3xl",
-            highlighted ? "text-text-inverse" : "text-primary"
-          )}
-        >
+      {highlighted && (
+        <span className="bg-primary-500 absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-semibold tracking-wide text-white uppercase shadow-xs">
           {badge}
+        </span>
+      )}
+
+      {!highlighted && (
+        <span className="text-primary-200 font-body mb-2 text-xs font-semibold tracking-widest uppercase">
+          {badge}
+        </span>
+      )}
+
+      <h3 className="font-body text-text-primary text-lg font-bold sm:text-base xl:text-xl">
+        {name}
+      </h3>
+
+      <div className="mt-5 flex items-baseline gap-1 sm:mt-4 xl:mt-6">
+        <span className="text-text-muted text-sm">{fromLabel}</span>
+        <span className="font-display text-text-primary text-5xl font-bold sm:text-3xl xl:text-5xl">
+          &euro;{price}
         </span>
       </div>
 
-      <div className="xm:pb-3 flex flex-1 flex-col bg-white px-6 pt-16 pb-4 sm:pt-10 xl:pt-24 xl:pb-5">
-        <h3
-          className={cn(
-            "font-display text-text-primary text-center text-4xl font-bold sm:text-base xl:text-4xl"
-          )}
-        >
-          {name}
-        </h3>
+      <Text variant="body" className="mt-2 text-sm xl:text-base">
+        {description}
+      </Text>
 
-        <div className="mt-11 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:mt-8 xl:mt-11">
-          <Text variant="detail" as="span" className="text-base sm:text-xs xl:text-base">
-            {fromLabel}
-          </Text>
-          <div className="flex items-start leading-none">
-            <span className="font-body text-secondary-500 mt-1 text-2xl font-bold md:text-base xl:text-2xl">
-              $
-            </span>
-            <span className="font-display text-secondary-500 xl:text-10xl text-10xl font-bold sm:text-4xl">
-              {price}
-            </span>
-          </div>
-          <Text variant="detail" as="span" className="text-base md:text-xs xl:text-base">
-            {description}
-          </Text>
-        </div>
-
-        <ButtonLink
-          href="/book"
-          variant="secondary"
-          size="pricing"
-          className="mt-auto block text-center"
-        >
-          {ctaLabel}
-        </ButtonLink>
-      </div>
+      <ButtonLink
+        href="/book"
+        variant={highlighted ? "primary" : "outline"}
+        size="md"
+        className="mt-auto w-full justify-center text-center"
+      >
+        {ctaLabel}
+      </ButtonLink>
     </div>
   );
 }
@@ -145,19 +131,21 @@ export function PricingSection() {
   ];
 
   return (
-    <section className="bg-primary px-6 py-20 xl:px-10 xl:py-32">
+    <section className="bg-primary px-6 py-20 lg:py-28 xl:px-10">
       <SectionContainer className="px-0 md:px-0">
-        <div className="grid grid-cols-1 gap-7 md:grid-cols-3 xl:gap-x-14 xl:gap-y-10">
-          <div className="flex flex-col justify-center gap-6">
-            <Heading
-              variant="section"
-              className="text-text-inverse text-6xl font-medium lg:text-4xl xl:text-9xl"
-            >
-              {t("title")}
-            </Heading>
-            <Text variant="bodyLight">{t("description")}</Text>
-          </div>
+        <div className="mb-12 text-center md:mb-14 md:text-left">
+          <Heading
+            variant="section"
+            className="text-text-inverse text-6xl font-medium lg:text-4xl xl:text-9xl"
+          >
+            {t("title")}
+          </Heading>
+          <Text variant="bodyLight" className="mx-auto mt-4 max-w-2xl md:mx-0">
+            {t("description")}
+          </Text>
+        </div>
 
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 xl:gap-5">
           {plans.map((plan) => (
             <PricingCard key={plan.badge} {...plan} />
           ))}

@@ -56,8 +56,8 @@ export function PickupPointSettingsSection() {
   if (isLoading || !pickupPoint) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-48 animate-pulse rounded bg-gray-100" />
-        <div className="h-64 animate-pulse rounded-xl border border-gray-200 bg-gray-50" />
+        <div className="skeleton-shimmer h-8 w-48 rounded" />
+        <div className="skeleton-shimmer border-border-default bg-bg-secondary h-64 rounded-xl border" />
       </div>
     );
   }
@@ -65,14 +65,14 @@ export function PickupPointSettingsSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+        <h1 className="font-body text-text-primary text-2xl font-semibold">{t("title")}</h1>
+        <p className="text-text-muted mt-1 text-sm">{t("subtitle")}</p>
       </div>
 
       <div className="max-w-2xl space-y-6">
-        <section className="rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="text-base font-semibold text-gray-900">{t("availability")}</h2>
-          <p className="mt-1 text-xs text-gray-500">{t("availabilityDesc")}</p>
+        <section className="border-border-default rounded-xl border bg-white p-5">
+          <h2 className="text-text-primary text-base font-semibold">{t("availability")}</h2>
+          <p className="text-text-muted mt-1 text-xs">{t("availabilityDesc")}</p>
 
           <button
             onClick={() => setIsOpen((prev) => !prev)}
@@ -100,15 +100,15 @@ export function PickupPointSettingsSection() {
           {!isOpen && <p className="text-warning mt-2 text-xs">{t("manualOverrideWarning")}</p>}
         </section>
 
-        <section className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
+        <section className="border-border-default space-y-4 rounded-xl border bg-white p-5">
           <div>
-            <h2 className="text-base font-semibold text-gray-900">{t("contactInfo")}</h2>
-            <p className="mt-1 text-xs text-gray-500">{t("contactInfoDesc")}</p>
+            <h2 className="text-text-primary text-base font-semibold">{t("contactInfo")}</h2>
+            <p className="text-text-muted mt-1 text-xs">{t("contactInfoDesc")}</p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">{t("phone")}</Label>
+              <Label className="text-text-secondary text-sm font-medium">{t("phone")}</Label>
               <Input
                 value={pickupPoint.phone ?? "-"}
                 readOnly
@@ -116,7 +116,7 @@ export function PickupPointSettingsSection() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">{t("email")}</Label>
+              <Label className="text-text-secondary text-sm font-medium">{t("email")}</Label>
               <Input
                 value={pickupPoint.email ?? "-"}
                 readOnly
@@ -126,8 +126,8 @@ export function PickupPointSettingsSection() {
           </div>
         </section>
 
-        <section className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="text-base font-semibold text-gray-900">{t("workingHours")}</h2>
+        <section className="border-border-default space-y-4 rounded-xl border bg-white p-5">
+          <h2 className="text-text-primary text-base font-semibold">{t("workingHours")}</h2>
 
           <WorkingHoursEditor value={workingHours} onChange={setWorkingHours} t={t} />
         </section>

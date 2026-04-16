@@ -7,10 +7,10 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
-const LOCALE_NAMES: Record<string, { native: string; code: string }> = {
-  en: { native: "English", code: "EN" },
-  es: { native: "Espanol", code: "ES" },
-  ca: { native: "Catala", code: "CA" },
+const LOCALE_CODES: Record<string, string> = {
+  en: "EN",
+  es: "ES",
+  ca: "CA",
 };
 
 export function LocaleSwitcherMobile() {
@@ -31,7 +31,7 @@ export function LocaleSwitcherMobile() {
     >
       {routing.locales.map((loc) => {
         const isActive = loc === locale;
-        const config = LOCALE_NAMES[loc];
+        const code = LOCALE_CODES[loc];
         return (
           <button
             key={loc}
@@ -51,19 +51,19 @@ export function LocaleSwitcherMobile() {
           >
             <span
               className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold tracking-wider transition-all duration-200",
+                "flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold tracking-wider transition-all duration-200",
                 isActive ? "bg-primary-500 scale-110 text-white" : "bg-bg-muted text-text-muted"
               )}
             >
-              {config?.code ?? loc.toUpperCase()}
+              {code ?? loc.toUpperCase()}
             </span>
             <span
               className={cn(
-                "text-[11px] font-semibold transition-colors",
+                "text-xs font-semibold transition-colors",
                 isActive ? "text-primary-700" : "text-text-muted"
               )}
             >
-              {config?.native ?? t(loc)}
+              {t(loc)}
             </span>
             <span
               className={cn(

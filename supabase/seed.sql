@@ -56,16 +56,16 @@ ON CONFLICT (key) DO NOTHING;
 -- GoTrue requires users to be created through its Admin API for proper
 -- password hashing and identity setup.
 --
--- Test accounts are created by running this Node.js script (already done):
---   node scripts/create-test-users.js
---
+-- Test accounts are created by running: node scripts/seed-hosted.js
 -- Or manually via Supabase Dashboard → Authentication → Users → Add user.
 --
--- Credentials:
---   admin@laveina-test.com        / TestAdmin123!   (role: admin)
---   shop-origin@laveina-test.com  / TestShop123!    (role: pickup_point, owns Librería Central)
---   shop-dest@laveina-test.com    / TestShop123!    (role: pickup_point, owns Papelería Sol)
+-- Core credentials (seed script creates these):
+--   admin@laveina-test.com        / TestAdmin123!    (role: admin)
 --   customer@laveina-test.com     / TestCustomer123! (role: customer)
+--
+-- Pickup point owner accounts are created via CSV import:
+--   POST /api/pickup-points/import { csv: "...", default_password: "TestShop123!" }
+--   This creates owner accounts with password "TestShop123!" linked to their pickup points.
 --
 -- The SQL below is for local `supabase db reset` only (local GoTrue handles it fine).
 -- For hosted Supabase, skip this section and use the Admin API instead.
@@ -87,30 +87,6 @@ INSERT INTO auth.users (
     now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Test Admin"}',
-    now(), now()
-  ),
-  -- Pickup Point Staff (Origin shop)
-  (
-    'b0000000-0000-0000-0000-000000000002',
-    '00000000-0000-0000-0000-000000000000',
-    'authenticated', 'authenticated',
-    'shop-origin@laveina-test.com',
-    extensions.crypt('TestShop123!', extensions.gen_salt('bf')),
-    now(), now(),
-    '{"provider":"email","providers":["email"]}',
-    '{"full_name":"Origin Shop Staff"}',
-    now(), now()
-  ),
-  -- Pickup Point Staff (Destination shop)
-  (
-    'b0000000-0000-0000-0000-000000000003',
-    '00000000-0000-0000-0000-000000000000',
-    'authenticated', 'authenticated',
-    'shop-dest@laveina-test.com',
-    extensions.crypt('TestShop123!', extensions.gen_salt('bf')),
-    now(), now(),
-    '{"provider":"email","providers":["email"]}',
-    '{"full_name":"Destination Shop Staff"}',
     now(), now()
   ),
   -- Customer
@@ -141,20 +117,6 @@ INSERT INTO auth.identities (
   ),
   (
     gen_random_uuid(),
-    'b0000000-0000-0000-0000-000000000002',
-    'shop-origin@laveina-test.com', 'email',
-    '{"sub":"b0000000-0000-0000-0000-000000000002","email":"shop-origin@laveina-test.com"}',
-    now(), now(), now()
-  ),
-  (
-    gen_random_uuid(),
-    'b0000000-0000-0000-0000-000000000003',
-    'shop-dest@laveina-test.com', 'email',
-    '{"sub":"b0000000-0000-0000-0000-000000000003","email":"shop-dest@laveina-test.com"}',
-    now(), now(), now()
-  ),
-  (
-    gen_random_uuid(),
     'b0000000-0000-0000-0000-000000000004',
     'customer@laveina-test.com', 'email',
     '{"sub":"b0000000-0000-0000-0000-000000000004","email":"customer@laveina-test.com"}',
@@ -165,82 +127,15 @@ ON CONFLICT DO NOTHING;
 
 -- ─── 5. SET ROLES ───────────────────────────────────────────────────────────
 -- The handle_new_user() trigger created profile rows with role='customer'.
--- Now promote admin and pickup_point accounts.
-UPDATE public.profiles SET role = 'admin'        WHERE id = 'b0000000-0000-0000-0000-000000000001';
-UPDATE public.profiles SET role = 'pickup_point' WHERE id = 'b0000000-0000-0000-0000-000000000002';
-UPDATE public.profiles SET role = 'pickup_point' WHERE id = 'b0000000-0000-0000-0000-000000000003';
+-- Now promote admin account.
+UPDATE public.profiles SET role = 'admin' WHERE id = 'b0000000-0000-0000-0000-000000000001';
 
 
--- ─── 6. TEST PICKUP POINTS ─────────────────────────────────────────────────
--- Sample partner shops in Barcelona. Replace with real data from client.
-INSERT INTO public.pickup_points (
-  id, name, address, postcode, city, latitude, longitude,
-  phone, email, is_active, is_open, working_hours, owner_id
-) VALUES
-  (
-    'a0000000-0000-0000-0000-000000000001',
-    'Librería Central',
-    'Carrer de Mallorca, 123',
-    '08036',
-    'Barcelona',
-    41.3947, 2.1558,
-    '+34 93 123 4567',
-    'central@laveina-test.com',
-    true, true,
-    '{"monday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"tuesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"wednesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"thursday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"friday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"saturday":{"open":true,"slots":[["10:00","14:00"]]},"sunday":{"open":false,"slots":[]}}',
-    'b0000000-0000-0000-0000-000000000002'  -- owned by shop-origin@
-  ),
-  (
-    'a0000000-0000-0000-0000-000000000002',
-    'Papelería Sol',
-    'Avinguda Diagonal, 456',
-    '08029',
-    'Barcelona',
-    41.3920, 2.1380,
-    '+34 93 234 5678',
-    'sol@laveina-test.com',
-    true, true,
-    '{"monday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"tuesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"wednesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"thursday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"friday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"saturday":{"open":true,"slots":[["10:00","14:00"]]},"sunday":{"open":false,"slots":[]}}',
-    'b0000000-0000-0000-0000-000000000003'  -- owned by shop-dest@
-  ),
-  (
-    'a0000000-0000-0000-0000-000000000003',
-    'Kiosko Marina',
-    'Passeig de Gràcia, 78',
-    '08008',
-    'Barcelona',
-    41.3950, 2.1650,
-    '+34 93 345 6789',
-    'marina@laveina-test.com',
-    true, true,
-    '{"monday":{"open":true,"slots":[["08:00","21:00"]]},"tuesday":{"open":true,"slots":[["08:00","21:00"]]},"wednesday":{"open":true,"slots":[["08:00","21:00"]]},"thursday":{"open":true,"slots":[["08:00","21:00"]]},"friday":{"open":true,"slots":[["08:00","21:00"]]},"saturday":{"open":true,"slots":[["09:00","14:00"]]},"sunday":{"open":false,"slots":[]}}',
-    NULL  -- unassigned shop (available for testing)
-  ),
-  -- ── Non-Barcelona pickup points (SendCloud routing) ──
-  (
-    'a0000000-0000-0000-0000-000000000004',
-    'Papelería Gran Vía',
-    'Gran Vía, 42',
-    '28013',
-    'Madrid',
-    40.4200, -3.7025,
-    '+34 91 123 4567',
-    'madrid@laveina-test.com',
-    true, true,
-    '{"monday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"tuesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"wednesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"thursday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"friday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"saturday":{"open":true,"slots":[["10:00","14:00"]]},"sunday":{"open":false,"slots":[]}}',
-    NULL  -- unassigned (SendCloud test)
-  ),
-  (
-    'a0000000-0000-0000-0000-000000000005',
-    'Librería Ruzafa',
-    'Carrer de Russafa, 18',
-    '46004',
-    'Valencia',
-    39.4630, -0.3740,
-    '+34 96 123 4567',
-    'valencia@laveina-test.com',
-    true, true,
-    '{"monday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"tuesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"wednesday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"thursday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"friday":{"open":true,"slots":[["09:00","14:00"],["16:00","20:00"]]},"saturday":{"open":true,"slots":[["10:00","14:00"]]},"sunday":{"open":false,"slots":[]}}',
-    NULL  -- unassigned (SendCloud test)
-  )
-ON CONFLICT (id) DO NOTHING;
+-- ─── 6. PICKUP POINTS ──────────────────────────────────────────────────────
+-- Pickup points are now imported via CSV through the admin dashboard.
+-- Use the CSV import API with default_password for testing:
+--   POST /api/pickup-points/import
+--   { csv: "<CSV data with Owner Email column>", default_password: "TestShop123!" }
+--
+-- This creates both the pickup point records and owner accounts in one step.
+-- Owner accounts get password "TestShop123!" and role "pickup_point" automatically.

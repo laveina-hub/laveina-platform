@@ -630,6 +630,56 @@ GRANT EXECUTE ON FUNCTION public.get_total_revenue_cents() TO authenticated;
 -- ============================================================
 -- 9. TABLE GRANTS
 -- ============================================================
+-- ============================================================
+-- 10. ADMIN NOTIFICATIONS
+-- ============================================================
+
+CREATE TYPE public.notification_type AS ENUM (
+  'new_booking_paid',
+  'parcel_received_at_origin',
+  'dispatch_failed',
+  'delivery_problem',
+  'parcel_returned',
+  'parcel_delivered'
+);
+
+CREATE TYPE public.notification_priority AS ENUM (
+  'low',
+  'normal',
+  'high',
+  'critical'
+);
+
+CREATE TABLE public.admin_notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  type public.notification_type NOT NULL,
+  priority public.notification_priority NOT NULL DEFAULT 'normal',
+  status TEXT NOT NULL DEFAULT 'unread' CHECK (status IN ('unread', 'read')),
+  title TEXT NOT NULL,
+  description TEXT,
+  shipment_id UUID REFERENCES public.shipments(id) ON DELETE SET NULL,
+  tracking_id TEXT,
+  metadata JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  read_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_admin_notifications_status ON public.admin_notifications(status);
+CREATE INDEX idx_admin_notifications_created_at ON public.admin_notifications(created_at DESC);
+CREATE INDEX idx_admin_notifications_shipment ON public.admin_notifications(shipment_id);
+CREATE INDEX idx_admin_notifications_priority ON public.admin_notifications(priority);
+
+ALTER TABLE public.admin_notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY admin_notifications_admin_all
+  ON public.admin_notifications
+  FOR ALL USING (public.get_user_role() = 'admin');
+
+ALTER PUBLICATION supabase_realtime ADD TABLE public.admin_notifications;
+
+-- ============================================================
+-- 11. TABLE GRANTS
+-- ============================================================
 GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;

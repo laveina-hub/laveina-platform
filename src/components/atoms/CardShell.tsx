@@ -2,11 +2,20 @@ import { type HTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
-type CardShellProps = HTMLAttributes<HTMLDivElement>;
+interface CardShellProps extends HTMLAttributes<HTMLDivElement> {
+  interactive?: boolean;
+}
 
-function CardShell({ className, ...props }: CardShellProps) {
+function CardShell({ interactive, className, ...props }: CardShellProps) {
   return (
-    <div className={cn("overflow-hidden rounded-xl bg-white shadow-sm", className)} {...props} />
+    <div
+      className={cn(
+        "border-border-default shadow-card overflow-hidden rounded-xl border bg-white",
+        interactive && "card-interactive cursor-pointer",
+        className
+      )}
+      {...props}
+    />
   );
 }
 

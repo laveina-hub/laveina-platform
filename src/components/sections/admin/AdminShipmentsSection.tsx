@@ -102,13 +102,13 @@ export function AdminShipmentsSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+        <h1 className="font-body text-text-primary text-2xl font-semibold">{t("title")}</h1>
+        <p className="text-text-muted mt-1 text-sm">{t("subtitle")}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 sm:max-w-xs">
-          <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="text-text-muted absolute top-1/2 left-3 -translate-y-1/2" />
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -127,7 +127,7 @@ export function AdminShipmentsSection() {
               page: 1,
             }))
           }
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700"
+          className="border-border-default text-text-secondary rounded-lg border bg-white px-3 py-2 text-sm"
         >
           <option value="">{t("allStatuses")}</option>
           {ALL_STATUSES.map((s) => (

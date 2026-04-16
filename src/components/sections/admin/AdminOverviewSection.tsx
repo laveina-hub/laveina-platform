@@ -8,8 +8,14 @@ import { useTranslations } from "next-intl";
 import { StatusBadge, DeliveryModeBadge } from "@/components/atoms";
 import { DataTable } from "@/components/molecules/DataTable";
 import { useAdminStats, type AdminStats } from "@/hooks/use-admin-stats";
+import { useCountUp } from "@/hooks/use-count-up";
 import { Link } from "@/i18n/navigation";
 import type { ShipmentStatus, DeliveryMode } from "@/types/enums";
+
+function AnimatedNumber({ value }: { value: number }) {
+  const animated = useCountUp(value);
+  return <>{animated.toLocaleString()}</>;
+}
 
 type StatsCardProps = {
   label: string;
@@ -21,13 +27,15 @@ type StatsCardProps = {
 
 function StatsCard({ label, value, icon: Icon, iconColor, iconBg }: StatsCardProps) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5">
+    <div className="border-border-default shadow-card card-interactive flex items-center gap-4 rounded-xl border bg-white p-5">
       <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${iconBg}`}>
         <Icon size={22} className={iconColor} />
       </div>
       <div>
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="text-2xl font-semibold text-gray-900">{value}</p>
+        <p className="text-text-muted text-sm">{label}</p>
+        <p className="text-text-primary text-2xl font-semibold">
+          {typeof value === "number" ? <AnimatedNumber value={value} /> : value}
+        </p>
       </div>
     </div>
   );
@@ -119,8 +127,10 @@ export function AdminOverviewSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+        <h1 className="font-body text-text-primary text-2xl font-semibold tracking-tight">
+          {t("title")}
+        </h1>
+        <p className="text-text-muted mt-1 text-sm">{t("subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -155,42 +165,42 @@ export function AdminOverviewSection() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
-          <p className="text-2xl font-semibold text-gray-900">{stats.waitingAtOrigin}</p>
-          <p className="mt-1 text-xs text-gray-500">{t("waitingAtOrigin")}</p>
+        <div className="border-border-default shadow-card rounded-xl border bg-white p-4 text-center">
+          <p className="text-text-primary text-2xl font-semibold">{stats.waitingAtOrigin}</p>
+          <p className="text-text-muted mt-1 text-xs">{t("waitingAtOrigin")}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
-          <p className="text-2xl font-semibold text-gray-900">{stats.receivedAtOrigin}</p>
-          <p className="mt-1 text-xs text-gray-500">{t("receivedAtOrigin")}</p>
+        <div className="border-border-default shadow-card rounded-xl border bg-white p-4 text-center">
+          <p className="text-text-primary text-2xl font-semibold">{stats.receivedAtOrigin}</p>
+          <p className="text-text-muted mt-1 text-xs">{t("receivedAtOrigin")}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
-          <p className="text-2xl font-semibold text-gray-900">{stats.delivered}</p>
-          <p className="mt-1 text-xs text-gray-500">{t("delivered")}</p>
+        <div className="border-border-default shadow-card rounded-xl border bg-white p-4 text-center">
+          <p className="text-text-primary text-2xl font-semibold">{stats.delivered}</p>
+          <p className="text-text-muted mt-1 text-xs">{t("delivered")}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
-          <p className="text-2xl font-semibold text-gray-900">{stats.activePickupPoints}</p>
-          <p className="mt-1 text-xs text-gray-500">{t("activePickupPoints")}</p>
+        <div className="border-border-default shadow-card rounded-xl border bg-white p-4 text-center">
+          <p className="text-text-primary text-2xl font-semibold">{stats.activePickupPoints}</p>
+          <p className="text-text-muted mt-1 text-xs">{t("activePickupPoints")}</p>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-3">
         <Link
           href="/admin/dispatch"
-          className="bg-primary-500 hover:bg-primary-600 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition"
+          className="bg-primary-500 hover:bg-primary-600 active:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-xs transition-all duration-150 hover:shadow-sm active:scale-[0.98]"
         >
           <Truck size={16} />
           {t("goToDispatch")}
         </Link>
         <Link
           href="/admin/shipments"
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+          className="border-border-default text-text-primary hover:bg-bg-muted inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-medium transition-all duration-150 hover:shadow-xs active:scale-[0.98]"
         >
           <Box size={16} />
           {t("viewAllShipments")}
         </Link>
         <Link
           href="/admin/pickup-points"
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+          className="border-border-default text-text-primary hover:bg-bg-muted inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-medium transition-all duration-150 hover:shadow-xs active:scale-[0.98]"
         >
           <MapPin size={16} />
           {t("managePickupPoints")}
@@ -198,7 +208,7 @@ export function AdminOverviewSection() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">{t("recentShipments")}</h2>
+        <h2 className="text-text-primary mb-3 text-lg font-semibold">{t("recentShipments")}</h2>
         <DataTable
           columns={columns}
           data={stats.recentShipments}
@@ -213,18 +223,31 @@ function OverviewSkeleton() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="h-8 w-48 animate-pulse rounded bg-gray-100" />
-        <div className="mt-2 h-4 w-72 animate-pulse rounded bg-gray-100" />
+        <div className="skeleton-shimmer h-8 w-48 rounded" />
+        <div className="skeleton-shimmer mt-2 h-4 w-72 rounded" />
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="h-24 animate-pulse rounded-xl border border-gray-200 bg-gray-50"
+            className="skeleton-shimmer border-border-default h-24 rounded-xl border bg-white"
           />
         ))}
       </div>
-      <div className="h-64 animate-pulse rounded-xl border border-gray-200 bg-gray-50" />
+      <div className="border-border-default rounded-xl border bg-white">
+        <div className="divide-border-muted divide-y">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-6 py-4">
+              <div className="skeleton-shimmer h-12 w-12 shrink-0 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <div className="skeleton-shimmer h-4 w-3/4 rounded" />
+                <div className="skeleton-shimmer h-3 w-1/2 rounded" />
+                <div className="skeleton-shimmer h-3 w-1/3 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

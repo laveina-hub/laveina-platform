@@ -3,11 +3,17 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { mapSendcloudStatus } from "@/constants/sendcloud-status-map";
+import { isSendcloudProblemStatus, mapSendcloudStatus } from "@/constants/sendcloud-status-map";
 import { env } from "@/env";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  notifyDeliveryProblem,
+  notifyParcelDelivered,
+  notifyParcelReturned,
+} from "@/services/admin-notification.service";
 import { sendStatusUpdate } from "@/services/notification.service";
-import type { ShipmentStatus } from "@/types/enums";
+import { ShipmentStatus } from "@/types/enums";
+import type { ShipmentStatus as ShipmentStatusType } from "@/types/enums";
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -20,6 +26,7 @@ export async function POST(request: NextRequest) {
 
   let payload: SendCloudWebhookPayload;
   try {
+    // SAFETY: SendCloud webhook body is documented to match SendCloudWebhookPayload shape
     payload = JSON.parse(body) as SendCloudWebhookPayload;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
@@ -39,7 +46,7 @@ export async function POST(request: NextRequest) {
   const { data: shipment, error: findError } = await supabase
     .from("shipments")
     .select(
-      "id, status, tracking_id, destination_pickup_point_id, receiver_phone, receiver_name, carrier_tracking_number"
+      "id, status, tracking_id, destination_pickup_point_id, sender_phone, sender_name, receiver_phone, receiver_name, carrier_tracking_number"
     )
     .eq("sendcloud_parcel_id", parcel.id)
     .single();
@@ -49,8 +56,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  const newStatus = mapSendcloudStatus(parcel.status.id);
-  const oldStatus = shipment.status as ShipmentStatus;
+  const sendcloudStatusId = parcel.status.id;
+  const newStatus = mapSendcloudStatus(sendcloudStatusId);
+  // SAFETY: DB column is constrained to ShipmentStatus enum values via CHECK constraint
+  const oldStatus = shipment.status as ShipmentStatusType;
+  const isProblem = isSendcloudProblemStatus(sendcloudStatusId);
+
+  // Log problem statuses and notify admin
+  if (isProblem) {
+    console.warn(
+      `SendCloud webhook: problem status ${sendcloudStatusId} ("${parcel.status.message}") for ${shipment.tracking_id}`
+    );
+    // Returned/refused → critical return notification
+    if (sendcloudStatusId === 62991 || sendcloudStatusId === 62992) {
+      void notifyParcelReturned(shipment.id, shipment.tracking_id).catch(() => {});
+    } else {
+      void notifyDeliveryProblem(
+        shipment.id,
+        shipment.tracking_id,
+        sendcloudStatusId,
+        parcel.status.message
+      ).catch(() => {});
+    }
+  }
 
   if (!newStatus || newStatus === oldStatus) {
     return NextResponse.json({ received: true });
@@ -93,14 +121,19 @@ export async function POST(request: NextRequest) {
     }
 
     void sendStatusUpdate({
-      phone: shipment.receiver_phone,
-      recipientName: shipment.receiver_name,
+      shipmentId: shipment.id,
+      phone: shipment.sender_phone,
+      recipientName: shipment.sender_name,
       trackingId: shipment.tracking_id,
       oldStatus,
       newStatus,
     }).catch((err) => {
       console.error("SendCloud webhook: notification failed", err);
     });
+
+    if (newStatus === ShipmentStatus.DELIVERED) {
+      void notifyParcelDelivered(shipment.id, shipment.tracking_id).catch(() => {});
+    }
   }
 
   return NextResponse.json({ received: true });

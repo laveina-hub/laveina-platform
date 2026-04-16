@@ -95,7 +95,6 @@ export async function WhyChoosePageSection() {
         </SectionContainer>
       </section>
 
-      {/* Feature cards grid */}
       <section className="px-4 py-16 sm:px-6 md:py-24 lg:px-10">
         <SectionContainer>
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
@@ -117,7 +116,6 @@ export async function WhyChoosePageSection() {
               ]}
             />
 
-            {/* Transparency — full width with timeline */}
             <div className="border-border-default rounded-2xl border bg-white p-6 md:col-span-2 md:p-8">
               <div className="flex flex-col gap-8 md:flex-row md:items-start md:gap-12">
                 <div className="flex-1">
@@ -150,7 +148,6 @@ export async function WhyChoosePageSection() {
               features={[t("securityFeature1"), t("securityFeature2"), t("securityFeature3")]}
             />
 
-            {/* Promise card */}
             <div className="bg-primary flex flex-col items-center justify-center rounded-2xl p-6 text-center md:p-8">
               <Package className="mb-4 h-10 w-10 text-white/80" />
               <Heading variant="card" as="h3" className="mb-2 text-white">
@@ -164,7 +161,6 @@ export async function WhyChoosePageSection() {
         </SectionContainer>
       </section>
 
-      {/* CTA */}
       <section className="border-border-default border-t px-4 py-16 sm:px-6 md:py-20 lg:px-10">
         <SectionContainer>
           <div className="mx-auto max-w-xl text-center">
