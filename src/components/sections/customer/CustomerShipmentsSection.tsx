@@ -40,6 +40,10 @@ export function CustomerShipmentsSection() {
     { enabled: !!user }
   );
 
+  // Treat "auth still loading" or "auth done but query hasn't started yet" as loading
+  // to prevent the empty state from flashing before shipments are fetched
+  const showLoading = authLoading || isLoading || !user;
+
   const columns: ColumnDef<Shipment, unknown>[] = [
     {
       accessorKey: "tracking_id",
@@ -92,7 +96,7 @@ export function CustomerShipmentsSection() {
       <DataTable
         columns={columns}
         data={data?.data ?? []}
-        isLoading={authLoading || isLoading}
+        isLoading={showLoading}
         onRowClick={(row) => router.push(`/customer/shipments/${row.id}`)}
         emptyState={{
           icon: <Package size={40} />,
