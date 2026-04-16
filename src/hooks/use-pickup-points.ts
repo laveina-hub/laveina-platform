@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import { throwApiError } from "@/lib/api-error";
 import type { PaginatedResponse } from "@/types/api";
 import type { PickupPoint } from "@/types/pickup-point";
 
@@ -19,8 +20,7 @@ async function fetchPickupPoints(postcode?: string): Promise<PickupPoint[]> {
   const response = await fetch(url);
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message ?? "Failed to fetch pickup points");
+    await throwApiError(response, "Failed to fetch pickup points");
   }
 
   const result = await response.json();
@@ -40,8 +40,7 @@ async function fetchPickupPointsPaginated(
   const response = await fetch(`/api/pickup-points?${params.toString()}`);
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message ?? "Failed to fetch pickup points");
+    await throwApiError(response, "Failed to fetch pickup points");
   }
 
   const result = await response.json();
@@ -52,8 +51,7 @@ async function fetchPickupPoint(id: string): Promise<PickupPoint> {
   const response = await fetch(`/api/pickup-points/${id}`);
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message ?? "Failed to fetch pickup point");
+    await throwApiError(response, "Failed to fetch pickup point");
   }
 
   const result = await response.json();

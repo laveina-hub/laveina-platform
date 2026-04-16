@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import { throwApiError } from "@/lib/api-error";
 import type { PaginatedResponse } from "@/types/api";
 import type { ShipmentStatus } from "@/types/enums";
 import type { Shipment, ShipmentWithRelations } from "@/types/shipment";
@@ -28,8 +29,7 @@ async function fetchShipments(filters: ShipmentFilters): Promise<PaginatedRespon
   const response = await fetch(`/api/shipments?${params.toString()}`);
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message ?? "Failed to fetch shipments");
+    await throwApiError(response, "Failed to fetch shipments");
   }
 
   const result = await response.json();
@@ -40,8 +40,7 @@ async function fetchShipment(id: string): Promise<ShipmentWithRelations> {
   const response = await fetch(`/api/shipments/${id}`);
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message ?? "Failed to fetch shipment");
+    await throwApiError(response, "Failed to fetch shipment");
   }
 
   const result = await response.json();
@@ -52,20 +51,20 @@ async function fetchShipmentByTracking(trackingId: string): Promise<ShipmentWith
   const response = await fetch(`/api/shipments/tracking/${encodeURIComponent(trackingId)}`);
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message ?? "Failed to fetch shipment");
+    await throwApiError(response, "Failed to fetch shipment");
   }
 
   const result = await response.json();
   return result.data;
 }
 
-export function useShipments(filters: ShipmentFilters = {}) {
+export function useShipments(filters: ShipmentFilters = {}, { enabled = true } = {}) {
   const { page, pageSize, status, pickupPointId, customerId, search } = filters;
   return useQuery({
     queryKey: ["shipments", page, pageSize, status, pickupPointId, customerId, search],
     queryFn: () => fetchShipments(filters),
     placeholderData: (previousData) => previousData,
+    enabled,
   });
 }
 

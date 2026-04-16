@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+import { UnauthorizedError } from "@/lib/api-error";
 import { createClient } from "@/lib/supabase/client";
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
@@ -13,7 +14,10 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
           queries: {
             staleTime: 60 * 1000,
             gcTime: 10 * 60 * 1000,
-            retry: 1,
+            retry: (failureCount, error) => {
+              if (error instanceof UnauthorizedError) return false;
+              return failureCount < 1;
+            },
           },
         },
       })
