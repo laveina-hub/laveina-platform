@@ -40,9 +40,10 @@ export function CustomerShipmentsSection() {
     { enabled: !!user }
   );
 
-  // Treat "auth still loading" or "auth done but query hasn't started yet" as loading
-  // to prevent the empty state from flashing before shipments are fetched
-  const showLoading = authLoading || isLoading || !user;
+  // Show loading until the query has actually returned data.
+  // Covers: auth loading, query fetching, and the one-frame gap where
+  // TanStack Query hasn't started fetching the new query key yet.
+  const showLoading = authLoading || isLoading || !data;
 
   const columns: ColumnDef<Shipment, unknown>[] = [
     {
