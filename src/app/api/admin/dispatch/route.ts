@@ -2,7 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { isValidTransition } from "@/constants/status-transitions";
 import { verifyAuth } from "@/lib/supabase/auth";
+import { notifyDispatchFailed } from "@/services/admin-notification.service";
 import { logAuditEvent } from "@/services/audit.service";
+import { sendInTransit } from "@/services/notification.service";
 import { dispatchParcel } from "@/services/sendcloud.service";
 import { DeliveryMode, ShipmentStatus } from "@/types/enums";
 import { batchDispatchSchema } from "@/validations/admin.schema";
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
     const { data: shipments, error: fetchError } = await supabase
       .from("shipments")
       .select(
-        "id, tracking_id, status, delivery_mode, delivery_speed, shipping_method_id, receiver_name, receiver_phone, destination_postcode, weight_kg, destination_pickup_point:pickup_points!shipments_destination_pickup_point_id_fkey(name, address, city)"
+        "id, tracking_id, status, delivery_mode, delivery_speed, shipping_method_id, sender_name, sender_phone, receiver_name, receiver_phone, destination_postcode, weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, destination_pickup_point:pickup_points!shipments_destination_pickup_point_id_fkey(name, address, city)"
       )
       .in("id", shipmentIds);
 
@@ -69,22 +71,30 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // SAFETY: DB enum column
-      const mode = shipment.delivery_mode as string;
+      const mode = shipment.delivery_mode as string; // SAFETY: DB enum column
 
       if (mode === DeliveryMode.SENDCLOUD) {
-        // SAFETY: Supabase FK joins may return an array
+        if (!shipment.shipping_method_id) {
+          result.error = "Missing shipping method — rebook this shipment";
+          results.push(result);
+          continue;
+        }
+
+        // SAFETY: Supabase FK joins can return an array
         const destPointRaw = shipment.destination_pickup_point;
         const destPoint = Array.isArray(destPointRaw) ? destPointRaw[0] : destPointRaw;
 
         const parcelResult = await dispatchParcel({
-          shippingMethodId: shipment.shipping_method_id ?? 0,
+          shippingMethodId: shipment.shipping_method_id,
           receiverName: shipment.receiver_name,
           receiverPhone: shipment.receiver_phone,
           destinationAddress: destPoint?.address ?? "",
           destinationCity: destPoint?.city ?? "",
           destinationPostcode: shipment.destination_postcode,
           weightKg: shipment.weight_kg,
+          lengthCm: shipment.parcel_length_cm ?? 0,
+          widthCm: shipment.parcel_width_cm ?? 0,
+          heightCm: shipment.parcel_height_cm ?? 0,
           trackingId: shipment.tracking_id,
         });
 
@@ -142,11 +152,23 @@ export async function POST(request: NextRequest) {
         scanned_by: user.id,
       });
 
+      void sendInTransit({
+        shipmentId: shipment.id,
+        senderPhone: shipment.sender_phone,
+        senderName: shipment.sender_name,
+        trackingId: shipment.tracking_id,
+      }).catch(() => {});
+
       results.push(result);
     }
 
     const succeeded = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
+
+    // Notify admin of failed dispatches
+    for (const r of results.filter((r) => !r.success)) {
+      void notifyDispatchFailed(r.id, r.trackingId, r.error ?? "Unknown error").catch(() => {});
+    }
 
     if (succeeded > 0) {
       void logAuditEvent({

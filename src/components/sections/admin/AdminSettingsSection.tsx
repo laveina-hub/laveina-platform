@@ -318,12 +318,12 @@ export function AdminSettingsSection() {
 function SettingsSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="bg-secondary-100 h-8 w-64 animate-pulse rounded" />
+      <div className="skeleton-shimmer h-8 w-64 rounded" />
       <div className="max-w-3xl space-y-6">
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="border-border-default bg-secondary-50 h-48 animate-pulse rounded-xl border"
+            className="border-border-default bg-secondary-50 skeleton-shimmer h-48 rounded-xl border"
           />
         ))}
       </div>

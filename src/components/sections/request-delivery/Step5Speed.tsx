@@ -207,7 +207,7 @@ export function Step5Speed() {
         <Button
           type="button"
           variant="outline"
-          size="lg"
+          size="md"
           onClick={() => setStep(4)}
           className="group gap-2"
         >
@@ -217,7 +217,7 @@ export function Step5Speed() {
         <Button
           type="submit"
           variant="primary"
-          size="lg"
+          size="md"
           disabled={!breakdowns || checkoutMutation.isPending}
           aria-busy={checkoutMutation.isPending}
           className="group gap-2"

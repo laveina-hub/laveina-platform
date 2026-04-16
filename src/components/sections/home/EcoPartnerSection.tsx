@@ -2,8 +2,10 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 import { ButtonLink, Heading, Text } from "@/components/atoms";
+import { RevealOnScroll } from "@/components/atoms/RevealOnScroll";
 import { CheckIcon } from "@/components/icons";
 import { FeatureListItem } from "@/components/molecules";
+import { BLUR_DATA_URL } from "@/constants/image-blur";
 
 export function EcoPartnerSection() {
   const t = useTranslations("ecoPartner");
@@ -12,7 +14,7 @@ export function EcoPartnerSection() {
 
   return (
     <section className="overflow-hidden">
-      <div className="flex flex-col pt-6 md:flex-row md:pt-20 xl:pt-40">
+      <RevealOnScroll className="flex flex-col pt-16 md:flex-row lg:pt-24">
         <div className="relative w-full md:w-1/2">
           <Image
             src="/images/eco-partner/eco-partner-handshake.png"
@@ -20,6 +22,8 @@ export function EcoPartnerSection() {
             width={720}
             height={600}
             sizes="(max-width: 768px) 100vw, 50vw"
+            placeholder="blur"
+            blurDataURL={BLUR_DATA_URL}
             className="h-auto w-full object-cover object-center md:h-full md:min-h-96"
           />
         </div>
@@ -52,7 +56,7 @@ export function EcoPartnerSection() {
             </ButtonLink>
           </div>
         </div>
-      </div>
+      </RevealOnScroll>
     </section>
   );
 }

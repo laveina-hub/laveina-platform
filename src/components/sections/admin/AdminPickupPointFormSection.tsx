@@ -21,13 +21,17 @@ import {
 } from "@/validations/pickup-point.schema";
 
 const formSchema = z.object({
-  name: z.string().min(2),
-  address: z.string().min(5),
-  postcode: z.string().min(4).max(10),
-  city: z.string().min(2),
+  name: z.string().min(2).max(100),
+  address: z.string().min(5).max(200),
+  postcode: z.string().regex(/^[0-9]{5}$/, "validation.postcodeInvalid"),
+  city: z.string().min(2).max(100),
   latitude: z.coerce.number().min(-90).max(90),
   longitude: z.coerce.number().min(-180).max(180),
-  phone: z.string().optional(),
+  phone: z
+    .string()
+    .regex(/^\+?[\d\s\-]{9,15}$/, "validation.phoneInvalid")
+    .optional()
+    .or(z.literal("")),
   email: z.string().email().optional().or(z.literal("")),
   working_hours: workingHoursSchema.optional(),
 });
@@ -40,6 +44,7 @@ type Props = {
 
 export function AdminPickupPointFormSection({ pickupPointId }: Props) {
   const t = useTranslations("adminPickupPoints");
+  const tv = useTranslations("validation");
   const router = useRouter();
   const isEditMode = !!pickupPointId;
   const { data: pickupPoint, isLoading } = usePickupPoint(pickupPointId);
@@ -107,11 +112,11 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
       <div className="flex items-center gap-3">
         <Link
           href="/admin/pickup-points"
-          className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          className="text-text-muted hover:bg-bg-muted hover:text-text-light rounded-lg p-2"
         >
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="font-body text-2xl font-semibold text-gray-900">
+        <h1 className="font-body text-text-primary text-2xl font-semibold">
           {isEditMode ? t("editPickupPoint") : t("createPickupPoint")}
         </h1>
       </div>
@@ -120,26 +125,26 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
         onSubmit={handleSubmit((data) => mutation.mutate(data))}
         className="max-w-2xl space-y-6"
       >
-        <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
-          <Field label={t("name")} error={errors.name?.message}>
+        <div className="border-border-default space-y-4 rounded-xl border bg-white p-5">
+          <Field label={t("name")} error={errors.name?.message} tv={tv}>
             <Input {...register("name")} hasError={!!errors.name} />
           </Field>
 
-          <Field label={t("address")} error={errors.address?.message}>
+          <Field label={t("address")} error={errors.address?.message} tv={tv}>
             <Input {...register("address")} hasError={!!errors.address} />
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label={t("postcode")} error={errors.postcode?.message}>
+            <Field label={t("postcode")} error={errors.postcode?.message} tv={tv}>
               <Input {...register("postcode")} hasError={!!errors.postcode} />
             </Field>
-            <Field label={t("city")} error={errors.city?.message}>
+            <Field label={t("city")} error={errors.city?.message} tv={tv}>
               <Input {...register("city")} hasError={!!errors.city} />
             </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label={t("latitude")} error={errors.latitude?.message}>
+            <Field label={t("latitude")} error={errors.latitude?.message} tv={tv}>
               <Input
                 type="number"
                 step="any"
@@ -147,7 +152,7 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
                 hasError={!!errors.latitude}
               />
             </Field>
-            <Field label={t("longitude")} error={errors.longitude?.message}>
+            <Field label={t("longitude")} error={errors.longitude?.message} tv={tv}>
               <Input
                 type="number"
                 step="any"
@@ -158,17 +163,17 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label={t("phone")}>
-              <Input {...register("phone")} />
+            <Field label={t("phone")} error={errors.phone?.message} tv={tv}>
+              <Input {...register("phone")} hasError={!!errors.phone} />
             </Field>
-            <Field label={t("email")} error={errors.email?.message}>
+            <Field label={t("email")} error={errors.email?.message} tv={tv}>
               <Input type="email" {...register("email")} hasError={!!errors.email} />
             </Field>
           </div>
         </div>
 
-        <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="text-base font-semibold text-gray-900">{t("workingHours")}</h2>
+        <div className="border-border-default space-y-4 rounded-xl border bg-white p-5">
+          <h2 className="text-text-primary text-base font-semibold">{t("workingHours")}</h2>
           <WorkingHoursEditor
             value={workingHours as WorkingHours}
             onChange={(hours) => setValue("working_hours", hours)}
@@ -189,17 +194,22 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
 function Field({
   label,
   error,
+  tv,
   children,
 }: {
   label: string;
   error?: string;
+  tv?: (key: string) => string;
   children: React.ReactNode;
 }) {
+  const errorText =
+    error && tv && error.startsWith("validation.") ? tv(error.replace("validation.", "")) : error;
+
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm font-medium text-gray-700">{label}</Label>
+      <Label className="text-text-secondary text-sm font-medium">{label}</Label>
       {children}
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {errorText && <p className="text-xs text-red-500">{errorText}</p>}
     </div>
   );
 }
@@ -207,8 +217,8 @@ function Field({
 function FormSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="h-8 w-64 animate-pulse rounded bg-gray-100" />
-      <div className="h-96 animate-pulse rounded-xl border border-gray-200 bg-gray-50" />
+      <div className="skeleton-shimmer h-8 w-64 rounded" />
+      <div className="skeleton-shimmer border-border-default bg-bg-secondary h-96 rounded-xl border" />
     </div>
   );
 }

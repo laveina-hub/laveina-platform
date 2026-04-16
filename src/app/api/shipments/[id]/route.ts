@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { isValidTransition } from "@/constants/status-transitions";
+import { createQrSignedUrl } from "@/lib/qr/generator";
 import { verifyAuth } from "@/lib/supabase/auth";
 import { getShipmentById, updateShipmentStatus } from "@/services/shipment.service";
 import { ShipmentStatus } from "@/types/enums";
@@ -44,7 +45,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
   }
 
-  return NextResponse.json({ data: result.data });
+  const shipment = result.data;
+
+  if (shipment.qr_code_url) {
+    try {
+      shipment.qr_code_url = await createQrSignedUrl(shipment.qr_code_url);
+    } catch {
+      // signed URL generation failed — leave as null so the UI hides the QR section
+      shipment.qr_code_url = null;
+    }
+  }
+
+  return NextResponse.json({ data: shipment });
 }
 
 const shipmentStatusValues = Object.values(ShipmentStatus) as [string, ...string[]];

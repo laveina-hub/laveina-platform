@@ -7,9 +7,9 @@ import {
 } from "@/constants/parcel-sizes";
 
 export const bookingStepContactSchema = z.object({
-  sender_name: z.string().min(2, "validation.nameMin"),
+  sender_name: z.string().min(2, "validation.nameMin").max(100, "validation.nameMax"),
   sender_phone: z.string().regex(/^\+?[\d\s\-]{9,15}$/, "validation.phoneInvalid"),
-  receiver_name: z.string().min(2, "validation.nameMin"),
+  receiver_name: z.string().min(2, "validation.nameMin").max(100, "validation.nameMax"),
   receiver_phone: z.string().regex(/^\+?[\d\s\-]{9,15}$/, "validation.phoneInvalid"),
 });
 
@@ -25,7 +25,7 @@ export const bookingStepDestinationSchema = z.object({
 
 const dimensionField = z
   .number({ invalid_type_error: "validation.dimensionRequired" })
-  .positive("validation.dimensionPositive")
+  .min(1, "validation.dimensionMin")
   .max(MAX_LONGEST_SIDE_CM, "validation.longestSideExceeded");
 
 export const parcelItemSchema = z
@@ -35,7 +35,7 @@ export const parcelItemSchema = z
     height_cm: dimensionField,
     weight_kg: z
       .number({ invalid_type_error: "validation.weightRequired" })
-      .positive("validation.weightPositive")
+      .min(0.1, "validation.weightMin")
       .max(MAX_WEIGHT_KG, "validation.weightMax"),
     insurance_option_id: z.string().uuid("validation.required").nullable(),
   })

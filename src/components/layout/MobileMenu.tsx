@@ -67,7 +67,6 @@ export function MobileMenu() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only react to pathname changes
   }, [pathname]);
 
-  // Lock body scroll while open
   useEffect(() => {
     if (isOpen) {
       const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;

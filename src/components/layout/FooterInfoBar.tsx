@@ -75,7 +75,6 @@ export async function FooterInfoBar() {
               {t("stayUpdated")}
             </p>
 
-            {/* Email input with inline arrow submit */}
             <form
               action="#"
               className="border-border-default bg-bg-primary flex w-full max-w-xs items-center overflow-hidden rounded-md border"
@@ -105,28 +104,11 @@ export async function FooterInfoBar() {
               </button>
             </form>
 
-            {/* Language switcher */}
             <div className="mt-2 w-full max-w-xs">
               <LocaleSwitcherMobile />
             </div>
           </div>
         </div>
-
-        {/* ── Mobile-only: Nav links shown below social icons ── */}
-        {/* <nav
-          aria-label={t("footerNav")}
-          className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:hidden"
-        >
-          {NAV_LINKS.map(({ key, href }) => (
-            <Link
-              key={key}
-              href={href}
-              className="text-text-muted hover:text-text-primary text-sm transition-colors"
-            >
-              {t(`nav.${key}`)}
-            </Link>
-          ))}
-        </nav> */}
       </div>
     </section>
   );

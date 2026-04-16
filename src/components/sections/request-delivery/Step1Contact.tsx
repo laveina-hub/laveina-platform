@@ -135,7 +135,7 @@ export function Step1Contact() {
       </CardShell>
 
       <div className="flex justify-end pt-2">
-        <Button type="submit" variant="primary" size="lg" className="group gap-2">
+        <Button type="submit" variant="primary" size="md" className="group gap-2">
           {t("next")}
           <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
         </Button>

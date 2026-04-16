@@ -3,6 +3,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { LoginForm } from "@/components/sections/auth/LoginForm";
 
+export const revalidate = 86400;
+
 type Props = {
   params: Promise<{ locale: string }>;
 };

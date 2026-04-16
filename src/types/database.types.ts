@@ -8,6 +8,56 @@ export type Database = {
   };
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          metadata: Json;
+          priority: Database["public"]["Enums"]["notification_priority"];
+          read_at: string | null;
+          shipment_id: string | null;
+          status: string;
+          title: string;
+          tracking_id: string | null;
+          type: Database["public"]["Enums"]["notification_type"];
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          metadata?: Json;
+          priority?: Database["public"]["Enums"]["notification_priority"];
+          read_at?: string | null;
+          shipment_id?: string | null;
+          status?: string;
+          title: string;
+          tracking_id?: string | null;
+          type: Database["public"]["Enums"]["notification_type"];
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          metadata?: Json;
+          priority?: Database["public"]["Enums"]["notification_priority"];
+          read_at?: string | null;
+          shipment_id?: string | null;
+          status?: string;
+          title?: string;
+          tracking_id?: string | null;
+          type?: Database["public"]["Enums"]["notification_type"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "admin_notifications_shipment_id_fkey";
+            columns: ["shipment_id"];
+            isOneToOne: false;
+            referencedRelation: "shipments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       admin_settings: {
         Row: {
           id: string;
@@ -179,22 +229,22 @@ export type Database = {
       parcel_size_config: {
         Row: {
           is_active: boolean;
-          min_weight_kg: number;
           max_weight_kg: number;
+          min_weight_kg: number;
           size: Database["public"]["Enums"]["parcel_size"];
           updated_at: string;
         };
         Insert: {
           is_active?: boolean;
-          min_weight_kg: number;
           max_weight_kg: number;
+          min_weight_kg: number;
           size: Database["public"]["Enums"]["parcel_size"];
           updated_at?: string;
         };
         Update: {
           is_active?: boolean;
-          min_weight_kg?: number;
           max_weight_kg?: number;
+          min_weight_kg?: number;
           size?: Database["public"]["Enums"]["parcel_size"];
           updated_at?: string;
         };
@@ -207,6 +257,7 @@ export type Database = {
           customer_id: string;
           id: string;
           processed: boolean;
+          stripe_event_id: string | null;
         };
         Insert: {
           booking_data: Json;
@@ -214,6 +265,7 @@ export type Database = {
           customer_id: string;
           id?: string;
           processed?: boolean;
+          stripe_event_id?: string | null;
         };
         Update: {
           booking_data?: Json;
@@ -221,6 +273,7 @@ export type Database = {
           customer_id?: string;
           id?: string;
           processed?: boolean;
+          stripe_event_id?: string | null;
         };
         Relationships: [];
       };
@@ -530,6 +583,14 @@ export type Database = {
     Enums: {
       delivery_mode: "internal" | "sendcloud";
       delivery_speed: "standard" | "express";
+      notification_priority: "low" | "normal" | "high" | "critical";
+      notification_type:
+        | "new_booking_paid"
+        | "parcel_received_at_origin"
+        | "dispatch_failed"
+        | "delivery_problem"
+        | "parcel_returned"
+        | "parcel_delivered";
       parcel_size: "tier_1" | "tier_2" | "tier_3" | "tier_4" | "tier_5" | "tier_6";
       shipment_status:
         | "payment_confirmed"
@@ -667,6 +728,15 @@ export const Constants = {
     Enums: {
       delivery_mode: ["internal", "sendcloud"],
       delivery_speed: ["standard", "express"],
+      notification_priority: ["low", "normal", "high", "critical"],
+      notification_type: [
+        "new_booking_paid",
+        "parcel_received_at_origin",
+        "dispatch_failed",
+        "delivery_problem",
+        "parcel_returned",
+        "parcel_delivered",
+      ],
       parcel_size: ["tier_1", "tier_2", "tier_3", "tier_4", "tier_5", "tier_6"],
       shipment_status: [
         "payment_confirmed",

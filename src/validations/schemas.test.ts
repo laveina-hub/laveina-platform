@@ -30,10 +30,10 @@ describe("auth schemas", () => {
       expect(result.success).toBe(false);
     });
 
-    it("rejects password shorter than 8 chars", () => {
+    it("rejects empty password", () => {
       const result = loginSchema.safeParse({
         email: "test@example.com",
-        password: "1234567",
+        password: "",
       });
       expect(result.success).toBe(false);
     });
@@ -48,8 +48,8 @@ describe("auth schemas", () => {
     const validData = {
       full_name: "John Doe",
       email: "john@example.com",
-      password: "securepass",
-      confirm_password: "securepass",
+      password: "SecurePass1!",
+      confirm_password: "SecurePass1!",
     };
 
     it("accepts valid registration data", () => {

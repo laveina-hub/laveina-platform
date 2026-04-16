@@ -12,12 +12,14 @@ export const env = createEnv({
     GALLABOX_CHANNEL_ID: z.string().min(1).optional(),
     SENDCLOUD_PUBLIC_KEY: z.string().min(1).optional(),
     SENDCLOUD_SECRET_KEY: z.string().min(1).optional(),
+    ADMIN_WHATSAPP_PHONE: z.string().min(1).optional(),
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_").optional(),
     NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().min(1),
   },
   runtimeEnv: {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -29,10 +31,12 @@ export const env = createEnv({
     GALLABOX_CHANNEL_ID: process.env.GALLABOX_CHANNEL_ID,
     SENDCLOUD_PUBLIC_KEY: process.env.SENDCLOUD_PUBLIC_KEY,
     SENDCLOUD_SECRET_KEY: process.env.SENDCLOUD_SECRET_KEY,
+    ADMIN_WHATSAPP_PHONE: process.env.ADMIN_WHATSAPP_PHONE,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });

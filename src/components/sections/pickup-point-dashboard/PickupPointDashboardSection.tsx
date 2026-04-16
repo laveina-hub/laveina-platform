@@ -53,7 +53,7 @@ export function PickupPointDashboardSection() {
       accessorKey: "tracking_id",
       header: t("trackingId"),
       cell: ({ row }) => (
-        <span className="font-medium text-gray-900">{row.original.tracking_id}</span>
+        <span className="text-text-primary font-medium">{row.original.tracking_id}</span>
       ),
     },
     {
@@ -84,9 +84,9 @@ export function PickupPointDashboardSection() {
   if (!pickupPointId && !loadingPpId) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <Package size={48} className="mb-4 text-gray-300" />
-        <h2 className="text-lg font-semibold text-gray-900">{t("noParcels")}</h2>
-        <p className="mt-1 text-sm text-gray-500">{t("noParcelsDesc")}</p>
+        <Package size={48} className="text-border-default mb-4" />
+        <h2 className="text-text-primary text-lg font-semibold">{t("noParcels")}</h2>
+        <p className="text-text-muted mt-1 text-sm">{t("noParcelsDesc")}</p>
       </div>
     );
   }
@@ -94,8 +94,8 @@ export function PickupPointDashboardSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-body text-2xl font-semibold text-gray-900">{t("title")}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+        <h1 className="font-body text-text-primary text-2xl font-semibold">{t("title")}</h1>
+        <p className="text-text-muted mt-1 text-sm">{t("subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -120,37 +120,37 @@ export function PickupPointDashboardSection() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-600">{t("quickActions")}</h2>
+        <h2 className="text-text-light mb-3 text-sm font-semibold">{t("quickActions")}</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link
             href="/pickup-point/scan"
-            className="hover:border-primary-300 flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 transition hover:shadow-sm"
+            className="hover:border-primary-300 border-border-default flex items-center gap-4 rounded-xl border bg-white p-4 transition hover:shadow-sm"
           >
             <div className="bg-primary-50 flex h-10 w-10 items-center justify-center rounded-lg">
               <QrCode size={20} className="text-primary-600" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">{t("scanQr")}</p>
-              <p className="text-xs text-gray-500">{t("scanQrDesc")}</p>
+              <p className="text-text-primary text-sm font-semibold">{t("scanQr")}</p>
+              <p className="text-text-muted text-xs">{t("scanQrDesc")}</p>
             </div>
           </Link>
           <Link
             href="/pickup-point/verify"
-            className="hover:border-primary-300 flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 transition hover:shadow-sm"
+            className="hover:border-primary-300 border-border-default flex items-center gap-4 rounded-xl border bg-white p-4 transition hover:shadow-sm"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50">
               <ShieldCheck size={20} className="text-green-600" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">{t("verifyDelivery")}</p>
-              <p className="text-xs text-gray-500">{t("verifyDeliveryDesc")}</p>
+              <p className="text-text-primary text-sm font-semibold">{t("verifyDelivery")}</p>
+              <p className="text-text-muted text-xs">{t("verifyDeliveryDesc")}</p>
             </div>
           </Link>
         </div>
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">{t("pendingParcels")}</h2>
+        <h2 className="text-text-primary mb-3 text-lg font-semibold">{t("pendingParcels")}</h2>
         <DataTable
           columns={columns}
           data={pendingParcels}
@@ -178,11 +178,11 @@ function StatCard({
   bg: string;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4">
+    <div className="border-border-default flex items-center gap-4 rounded-xl border bg-white p-4">
       <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${bg}`}>{icon}</div>
       <div>
-        <p className="text-2xl font-semibold text-gray-900">{value}</p>
-        <p className="text-xs text-gray-500">{label}</p>
+        <p className="text-text-primary text-2xl font-semibold">{value}</p>
+        <p className="text-text-muted text-xs">{label}</p>
       </div>
     </div>
   );

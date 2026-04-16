@@ -9,7 +9,7 @@ import {
   IndividualsSection,
 } from "@/components/sections/how-it-works";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 type Props = {
   params: Promise<{ locale: string }>;

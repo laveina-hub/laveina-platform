@@ -1,10 +1,10 @@
-// Low-level SendCloud HTTP client — use sendcloud.service.ts instead.
-
 import { env } from "@/env";
 import type {
   SendcloudParcelCreate,
   SendcloudParcelResponse,
   SendcloudShippingMethodsResponse,
+  SendcloudShippingPrice,
+  SendcloudShippingProduct,
 } from "@/types/sendcloud";
 
 const SENDCLOUD_API_BASE = "https://panel.sendcloud.sc/api/v2";
@@ -51,6 +51,33 @@ export async function fetchShippingMethods(
   );
 }
 
+export async function fetchShippingProducts(
+  fromCountry = "ES",
+  toCountry = "ES"
+): Promise<SendcloudShippingProduct[]> {
+  return sendcloudFetch<SendcloudShippingProduct[]>(
+    `/shipping-products?from_country=${fromCountry}&to_country=${toCountry}`
+  );
+}
+
+export async function fetchShippingPrice(params: {
+  shippingMethodId: number;
+  fromPostalCode: string;
+  toPostalCode: string;
+  weightKg: number;
+}): Promise<SendcloudShippingPrice[]> {
+  const qs = new URLSearchParams({
+    shipping_method_id: String(params.shippingMethodId),
+    from_country: "ES",
+    to_country: "ES",
+    from_postal_code: params.fromPostalCode,
+    to_postal_code: params.toPostalCode,
+    weight: String(params.weightKg),
+    weight_unit: "kilogram",
+  });
+  return sendcloudFetch<SendcloudShippingPrice[]>(`/shipping-price?${qs.toString()}`);
+}
+
 export async function createParcel(
   payload: SendcloudParcelCreate
 ): Promise<SendcloudParcelResponse> {
@@ -58,4 +85,32 @@ export async function createParcel(
     method: "POST",
     body: JSON.stringify({ parcel: payload }),
   });
+}
+
+export async function getParcel(parcelId: number): Promise<SendcloudParcelResponse> {
+  return sendcloudFetch<SendcloudParcelResponse>(`/parcels/${parcelId}`);
+}
+
+export type SendcloudCancelResponse = { status: string; message: string };
+
+export async function cancelParcel(parcelId: number): Promise<SendcloudCancelResponse> {
+  const res = await fetch(`${SENDCLOUD_API_BASE}/parcels/${parcelId}/cancel`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: getAuthHeader(),
+    },
+  });
+
+  const body = await res.json().catch(() => ({ status: "error", message: "Invalid response" }));
+
+  // 200 = cancelled, 202 = queued, 410 = deleted (all OK)
+  if (res.status === 200 || res.status === 202 || res.status === 410) {
+    // SAFETY: response matches SendcloudCancelResponse shape per API spec
+    return body as SendcloudCancelResponse;
+  }
+
+  // 400 = already cancelled/delivered, 404 = not found
+  const msg = (body as { message?: string }).message ?? `Cancel failed (${res.status})`;
+  throw new Error(msg);
 }

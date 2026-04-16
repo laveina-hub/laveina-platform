@@ -20,7 +20,7 @@ export function TrackingSearchSection() {
   }
 
   return (
-    <section className="max-w-4xl rounded-xl bg-white p-6 shadow-sm md:p-9">
+    <section className="border-border-default shadow-card max-w-4xl rounded-xl border bg-white p-6 md:p-9">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
         <div className="flex-1">
           <Input
@@ -28,7 +28,7 @@ export function TrackingSearchSection() {
             value={trackingNumber}
             onChange={(e) => setTrackingNumber(e.target.value)}
             placeholder={t("placeholder")}
-            className="font-body focus:border-primary-500 focus:ring-primary-100 py-4 text-xl focus:ring-2 lg:py-6"
+            className="font-body focus:border-primary-500 focus:ring-primary-100 py-4 text-lg focus:ring-2 sm:text-xl lg:py-6"
             aria-label={t("placeholder")}
           />
         </div>
@@ -41,7 +41,7 @@ export function TrackingSearchSection() {
           {t("search")}
         </Button>
       </form>
-      <Text variant="body" className="mt-3">
+      <Text variant="body" className="mt-4">
         {t("helperText")}
       </Text>
     </section>

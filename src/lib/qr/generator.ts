@@ -20,7 +20,7 @@ export async function generateQrDataUrl(trackingId: string): Promise<string> {
   return dataUrl;
 }
 
-/** Generates QR PNG and uploads to private bucket. Returns file path. */
+/** Generates QR PNG and uploads to the private bucket. */
 export async function generateAndUploadQrCode(trackingId: string): Promise<string> {
   const buffer = await QRCode.toBuffer(trackingId, {
     errorCorrectionLevel: "M",

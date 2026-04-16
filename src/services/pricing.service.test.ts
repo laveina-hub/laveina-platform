@@ -34,19 +34,18 @@ describe("pricing calculations", () => {
     it("applies 21% IVA on shipping only", () => {
       const result = buildPriceOption({ shippingCents: 500, insuranceSurchargeCents: 0 });
       expect(result.subtotalCents).toBe(500);
-      expect(result.ivaCents).toBe(105); // 500 * 0.21
+      expect(result.ivaCents).toBe(105);
       expect(result.totalCents).toBe(605);
     });
 
     it("applies 21% IVA on shipping + insurance surcharge", () => {
       const result = buildPriceOption({ shippingCents: 500, insuranceSurchargeCents: 200 });
       expect(result.subtotalCents).toBe(700);
-      expect(result.ivaCents).toBe(147); // 700 * 0.21
+      expect(result.ivaCents).toBe(147);
       expect(result.totalCents).toBe(847);
     });
 
     it("rounds IVA to nearest cent", () => {
-      // 333 * 0.21 = 69.93 → rounds to 70
       const result = buildPriceOption({ shippingCents: 333, insuranceSurchargeCents: 0 });
       expect(result.ivaCents).toBe(70);
     });
@@ -59,37 +58,30 @@ describe("pricing calculations", () => {
 
   describe("margin application", () => {
     it("applies 25% margin correctly", () => {
-      // €3.20 carrier rate × 1.25 = €4.00
       expect(applyMargin(320, 25)).toBe(400);
     });
 
     it("applies margin and rounds to nearest cent", () => {
-      // €3.00 × 1.25 = €3.75 = 375 cents
-      expect(applyMargin(300, 25)).toBe(400); // hits minimum €4.00
+      expect(applyMargin(300, 25)).toBe(400); // hits minimum
     });
 
     it("respects minimum price floor of €4.00", () => {
-      // €1.00 × 1.25 = €1.25 → floor at €4.00
       expect(applyMargin(100, 25)).toBe(400);
     });
 
     it("does not apply floor when result exceeds minimum", () => {
-      // €7.80 × 1.25 = €9.75 = 975 cents (above €4.00)
       expect(applyMargin(780, 25)).toBe(975);
     });
 
     it("handles 0% margin", () => {
-      // €5.00 × 1.00 = €5.00
       expect(applyMargin(500, 0)).toBe(500);
     });
 
     it("handles 50% margin", () => {
-      // €5.00 × 1.50 = €7.50
       expect(applyMargin(500, 50)).toBe(750);
     });
 
     it("floor applies even with 0% margin", () => {
-      // €2.00 × 1.00 = €2.00 → floor at €4.00
       expect(applyMargin(200, 0)).toBe(400);
     });
   });
@@ -102,7 +94,7 @@ describe("pricing calculations", () => {
 
       expect(shippingCents).toBe(300);
       expect(result.subtotalCents).toBe(300);
-      expect(result.ivaCents).toBe(63); // 300 * 0.21
+      expect(result.ivaCents).toBe(63);
       expect(result.totalCents).toBe(363);
     });
 
@@ -113,35 +105,32 @@ describe("pricing calculations", () => {
     });
 
     it("includes insurance surcharge in total", () => {
-      // Barcelona small (€3.00) + €100 insurance (+€2.00 = 200 cents)
       const result = buildPriceOption({ shippingCents: 300, insuranceSurchargeCents: 200 });
-      expect(result.subtotalCents).toBe(500); // 300 + 200
-      expect(result.ivaCents).toBe(105); // 500 * 0.21
+      expect(result.subtotalCents).toBe(500);
+      expect(result.ivaCents).toBe(105);
       expect(result.totalCents).toBe(605);
     });
   });
 
   describe("SendCloud pricing (carrier rate + margin)", () => {
     it("calculates full SendCloud price correctly", () => {
-      // Carrier rate: €3.20, Margin: 25%, Insurance: +€1.00
       const carrierRateCents = 320;
       const marginPercent = 25;
       const shippingCents = applyMargin(carrierRateCents, marginPercent);
       const result = buildPriceOption({ shippingCents, insuranceSurchargeCents: 100 });
 
-      expect(shippingCents).toBe(400); // 320 * 1.25 = 400
-      expect(result.subtotalCents).toBe(500); // 400 + 100
-      expect(result.ivaCents).toBe(105); // 500 * 0.21
+      expect(shippingCents).toBe(400);
+      expect(result.subtotalCents).toBe(500);
+      expect(result.ivaCents).toBe(105);
       expect(result.totalCents).toBe(605);
     });
 
     it("applies minimum price when carrier rate is very low", () => {
-      // Carrier rate: €1.00, Margin: 25% → €1.25 → floor at €4.00
       const shippingCents = applyMargin(100, 25);
       const result = buildPriceOption({ shippingCents, insuranceSurchargeCents: 0 });
 
       expect(shippingCents).toBe(400);
-      expect(result.totalCents).toBe(484); // 400 * 1.21
+      expect(result.totalCents).toBe(484);
     });
   });
 
@@ -162,7 +151,7 @@ describe("pricing calculations", () => {
       expect(getSettingNumber({ key: "3.14" }, "key", 0)).toBeCloseTo(3.14);
     });
 
-    it("handles empty string as 0 (Number('') === 0)", () => {
+    it("handles empty string as 0", () => {
       expect(getSettingNumber({ key: "" }, "key", 50)).toBe(0);
     });
   });

@@ -5,6 +5,8 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types/enums";
 
+export const dynamic = "force-dynamic";
+
 type Props = {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;

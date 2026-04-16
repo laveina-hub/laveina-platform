@@ -18,7 +18,14 @@ const publicPaths = [
   "/about",
   "/contact",
 ];
-const authOnlyPaths = ["/auth/login", "/auth/register", "/auth/forgot-password"];
+const authOnlyPaths = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/forgot-password",
+  "/auth/verify-otp",
+  "/auth/account-created",
+  "/auth/password-reset-success",
+];
 const rolePaths: Record<string, string[]> = {
   "/admin": ["admin"],
   "/pickup-point": ["pickup_point", "admin"],

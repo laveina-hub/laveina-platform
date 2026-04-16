@@ -107,7 +107,6 @@ export function Step4Parcel() {
               title={fields.length > 1 ? `${t("stepParcel")} #${index + 1}` : t("stepParcel")}
             />
             <CardBody className="space-y-6">
-              {/* Dimensions */}
               <div className="space-y-2">
                 <Label>{t("dimensions")}</Label>
                 <div className="grid grid-cols-3 gap-3">
@@ -174,7 +173,6 @@ export function Step4Parcel() {
                 )}
               </div>
 
-              {/* Weight */}
               <div className="space-y-1.5">
                 <Label htmlFor={`weight_kg_${index}`}>{t("weight")}</Label>
                 <Input
@@ -194,7 +192,6 @@ export function Step4Parcel() {
                 )}
               </div>
 
-              {/* Live weight calculation */}
               {hasDimensions && hasWeight && billableKg > 0 && (
                 <div className="animate-fade-in border-primary-200 bg-primary-50 space-y-2 rounded-lg border p-4">
                   <div className="flex items-center gap-2">
@@ -205,22 +202,36 @@ export function Step4Parcel() {
                   </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                     <span className="text-text-muted">{t("actualWeight")}:</span>
-                    <span className={cn("font-medium", !isVolumetricHigher && "text-primary-700")}>
+                    <span
+                      className={cn(
+                        "font-medium",
+                        (deliveryMode === "sendcloud" || !isVolumetricHigher) && "text-primary-700"
+                      )}
+                    >
                       {weightKg.toFixed(1)} kg
-                      {!isVolumetricHigher && " ✓"}
+                      {(deliveryMode === "sendcloud" || !isVolumetricHigher) && " ✓"}
                     </span>
-                    <span className="text-text-muted">{t("volumetricWeight")}:</span>
-                    <span className={cn("font-medium", isVolumetricHigher && "text-primary-700")}>
-                      {volumetricKg.toFixed(2)} kg
-                      {isVolumetricHigher && " ✓"}
-                    </span>
+                    {deliveryMode !== "sendcloud" && (
+                      <>
+                        <span className="text-text-muted">{t("volumetricWeight")}:</span>
+                        <span
+                          className={cn("font-medium", isVolumetricHigher && "text-primary-700")}
+                        >
+                          {volumetricKg.toFixed(2)} kg
+                          {isVolumetricHigher && " ✓"}
+                        </span>
+                      </>
+                    )}
                     <span className="text-text-muted font-semibold">{t("billableWeight")}:</span>
-                    <span className="text-primary-700 font-bold">{billableKg.toFixed(2)} kg</span>
+                    <span className="text-primary-700 font-bold">
+                      {deliveryMode === "sendcloud"
+                        ? `${weightKg.toFixed(1)} kg`
+                        : `${billableKg.toFixed(2)} kg`}
+                    </span>
                   </div>
                 </div>
               )}
 
-              {/* Insurance */}
               {deliveryMode === "internal" && (
                 <div className="space-y-1.5">
                   <Label htmlFor={`insurance_${index}`}>{t("insuranceOption")}</Label>
@@ -289,14 +300,14 @@ export function Step4Parcel() {
         <Button
           type="button"
           variant="outline"
-          size="lg"
+          size="md"
           onClick={() => setStep(3)}
           className="group gap-2"
         >
           <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
           {t("back")}
         </Button>
-        <Button type="submit" variant="primary" size="lg" className="group gap-2">
+        <Button type="submit" variant="primary" size="md" className="group gap-2">
           {t("next")}
           <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
         </Button>

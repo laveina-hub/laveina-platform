@@ -4,6 +4,8 @@ import { getTranslations } from "next-intl/server";
 import { Heading, SectionContainer } from "@/components/atoms";
 import { TrackingSearchSection } from "@/components/sections/tracking";
 
+export const revalidate = 86400;
+
 type Props = {
   params: Promise<{ locale: string }>;
 };

@@ -1,6 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { sendStatusUpdate } from "@/services/notification.service";
+import {
+  sendDeliveryToReceiver,
+  sendDeliveryToSender,
+  sendReadyForPickup,
+  sendReceivedAtOrigin,
+} from "@/services/notification.service";
 import { generateOtp } from "@/services/otp.service";
 import type { ApiResponse } from "@/types/api";
 import type { Database } from "@/types/database.types";
@@ -121,7 +126,6 @@ export async function processQrScan(
 
   const oldStatus = shipment.status as ShipmentStatus;
   const nextStatus = decision.type === "transition" ? decision.newStatus : null;
-  const newStatus = nextStatus ?? oldStatus;
 
   let updatedShipment = shipment;
   let finalStatus = nextStatus;
@@ -155,7 +159,7 @@ export async function processQrScan(
     .select()
     .single();
 
-  // Auto-transition: arrived → ready_for_pickup
+  // Auto-transition to ready_for_pickup on destination scan
   if (nextStatus === ShipmentStatus.ARRIVED_AT_DESTINATION) {
     const { data: autoUpdated, error: autoError } = await adminSupabase
       .from("shipments")
@@ -188,21 +192,51 @@ export async function processQrScan(
     otpSent = otpResult.error === null;
   }
 
-  if (nextStatus) {
-    void sendStatusUpdate({
+  const isOriginScan = parsed.data.pickup_point_id === shipment.origin_pickup_point_id;
+
+  if (nextStatus && isOriginScan && nextStatus === ShipmentStatus.RECEIVED_AT_ORIGIN) {
+    const { data: originShop } = await adminSupabase
+      .from("pickup_points")
+      .select("name")
+      .eq("id", parsed.data.pickup_point_id)
+      .single();
+
+    void sendReceivedAtOrigin({
       shipmentId: shipment.id,
-      phone: shipment.receiver_phone,
-      recipientName: shipment.receiver_name,
+      senderPhone: shipment.sender_phone,
+      senderName: shipment.sender_name,
       trackingId: shipment.tracking_id,
-      oldStatus,
-      newStatus,
+      shopName: originShop?.name ?? "",
+    }).catch(() => {});
+  }
+
+  if (
+    finalStatus === ShipmentStatus.READY_FOR_PICKUP &&
+    nextStatus === ShipmentStatus.ARRIVED_AT_DESTINATION
+  ) {
+    const { data: destShop } = await adminSupabase
+      .from("pickup_points")
+      .select("name, address, city")
+      .eq("id", parsed.data.pickup_point_id)
+      .single();
+
+    const shopAddress = destShop
+      ? [destShop.address, destShop.city].filter(Boolean).join(", ")
+      : "";
+
+    void sendReadyForPickup({
+      shipmentId: shipment.id,
+      receiverPhone: shipment.receiver_phone,
+      receiverName: shipment.receiver_name,
+      trackingId: shipment.tracking_id,
+      shopName: destShop?.name ?? "",
+      shopAddress,
     }).catch(() => {});
   }
 
   return { data: { shipment: updatedShipment, scanLog, otpSent }, error: null };
 }
 
-/** Confirms delivery after OTP verification. */
 export async function confirmDelivery(
   confirmedBy: string,
   shipmentId: string,
@@ -210,10 +244,11 @@ export async function confirmDelivery(
 ): Promise<ApiResponse<{ shipment: Shipment; scanLog: ScanLog }>> {
   const adminSupabase = createAdminClient();
 
-  // Narrow select — full row comes back from the update below
   const { data: shipment, error: findError } = await adminSupabase
     .from("shipments")
-    .select("id, status, destination_pickup_point_id, receiver_phone, receiver_name, tracking_id")
+    .select(
+      "id, status, destination_pickup_point_id, sender_phone, sender_name, receiver_phone, receiver_name, tracking_id"
+    )
     .eq("id", shipmentId)
     .single();
 
@@ -276,12 +311,18 @@ export async function confirmDelivery(
     return { data: null, error: { message: "Failed to log delivery", status: 500 } };
   }
 
-  void sendStatusUpdate({
-    phone: shipment.receiver_phone,
-    recipientName: shipment.receiver_name,
+  void sendDeliveryToSender({
+    shipmentId: shipment.id,
+    senderPhone: shipment.sender_phone,
+    senderName: shipment.sender_name,
     trackingId: shipment.tracking_id,
-    oldStatus: ShipmentStatus.READY_FOR_PICKUP,
-    newStatus: ShipmentStatus.DELIVERED,
+  }).catch(() => {});
+
+  void sendDeliveryToReceiver({
+    shipmentId: shipment.id,
+    receiverPhone: shipment.receiver_phone,
+    receiverName: shipment.receiver_name,
+    trackingId: shipment.tracking_id,
   }).catch(() => {});
 
   return { data: { shipment: updated, scanLog }, error: null };

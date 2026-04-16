@@ -3,6 +3,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { BookingSuccessSection } from "@/components/sections/book-success";
 
+export const revalidate = 86400;
+
 type Props = {
   params: Promise<{ locale: string }>;
 };

@@ -1,4 +1,3 @@
-// SAFETY: enum casts are backed by DB enum columns
 "use client";
 
 import { ArrowLeft, Clock, ExternalLink, MapPin } from "lucide-react";
@@ -38,11 +37,11 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-64 animate-pulse rounded bg-gray-100" />
+        <div className="skeleton-shimmer h-8 w-64 rounded" />
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="h-40 animate-pulse rounded-xl border border-gray-200 bg-gray-50"
+            className="skeleton-shimmer border-border-default bg-bg-secondary h-40 rounded-xl border"
           />
         ))}
       </div>
@@ -51,7 +50,7 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
 
   if (!shipment) {
     return (
-      <div className="py-16 text-center text-gray-500">
+      <div className="text-text-muted py-16 text-center">
         <p>{t("noShipments")}</p>
       </div>
     );
@@ -62,13 +61,15 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
       <div className="flex items-center gap-3">
         <Link
           href="/customer"
-          className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          className="text-text-muted hover:bg-bg-muted hover:text-text-light rounded-lg p-2"
         >
           <ArrowLeft size={20} />
         </Link>
         <div>
-          <h1 className="font-body text-2xl font-semibold text-gray-900">{t("shipmentDetail")}</h1>
-          <p className="text-sm text-gray-500">{shipment.tracking_id}</p>
+          <h1 className="font-body text-text-primary text-2xl font-semibold">
+            {t("shipmentDetail")}
+          </h1>
+          <p className="text-text-muted text-sm">{shipment.tracking_id}</p>
         </div>
       </div>
 
@@ -86,12 +87,11 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="mb-4 text-base font-semibold text-gray-900">{t("shipmentInfo")}</h2>
+        <div className="border-border-default rounded-xl border bg-white p-5">
+          <h2 className="text-text-primary mb-4 text-base font-semibold">{t("shipmentInfo")}</h2>
           <dl className="space-y-3 text-sm">
             <InfoRow label={t("sender")} value={shipment.sender_name} />
             <InfoRow label={t("receiver")} value={shipment.receiver_name} />
-            <InfoRow label={t("size")} value={shipment.parcel_size} />
             <InfoRow
               label={t("weight")}
               value={tCommon("weightKg", { value: shipment.weight_kg })}
@@ -107,19 +107,19 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
           </dl>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="mb-4 text-base font-semibold text-gray-900">
+        <div className="border-border-default rounded-xl border bg-white p-5">
+          <h2 className="text-text-primary mb-4 text-base font-semibold">
             {t("origin")} / {t("destination2")}
           </h2>
           <dl className="space-y-4 text-sm">
             <div className="flex items-start gap-2">
               <MapPin size={16} className="mt-0.5 shrink-0 text-green-500" />
               <div>
-                <dt className="text-xs text-gray-500">{t("origin")}</dt>
-                <dd className="font-medium text-gray-900">
+                <dt className="text-text-muted text-xs">{t("origin")}</dt>
+                <dd className="text-text-primary font-medium">
                   {shipment.origin_pickup_point?.name ?? "—"}
                 </dd>
-                <dd className="text-xs text-gray-500">
+                <dd className="text-text-muted text-xs">
                   {shipment.origin_pickup_point?.address}, {shipment.origin_pickup_point?.city}
                 </dd>
               </div>
@@ -127,11 +127,11 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
             <div className="flex items-start gap-2">
               <MapPin size={16} className="mt-0.5 shrink-0 text-red-500" />
               <div>
-                <dt className="text-xs text-gray-500">{t("destination2")}</dt>
-                <dd className="font-medium text-gray-900">
+                <dt className="text-text-muted text-xs">{t("destination2")}</dt>
+                <dd className="text-text-primary font-medium">
                   {shipment.destination_pickup_point?.name ?? "—"}
                 </dd>
-                <dd className="text-xs text-gray-500">
+                <dd className="text-text-muted text-xs">
                   {shipment.destination_pickup_point?.address},{" "}
                   {shipment.destination_pickup_point?.city}
                 </dd>
@@ -141,22 +141,24 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
         </div>
 
         {shipment.qr_code_url && (
-          <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="mb-2 text-base font-semibold text-gray-900">{t("qrCode")}</h2>
-            <p className="mb-4 text-xs text-gray-500">{t("qrCodeDesc")}</p>
+          <div className="border-border-default rounded-xl border bg-white p-5">
+            <h2 className="text-text-primary mb-2 text-base font-semibold">{t("qrCode")}</h2>
+            <p className="text-text-muted mb-4 text-xs">{t("qrCodeDesc")}</p>
             <div className="flex justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element -- QR code is a signed Supabase URL, not optimizable via next/image */}
               <img
                 src={shipment.qr_code_url}
                 alt="QR Code"
-                className="h-40 w-40 rounded-lg border border-gray-200"
+                className="border-border-default h-40 w-40 rounded-lg border"
               />
             </div>
           </div>
         )}
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="mb-4 text-base font-semibold text-gray-900">{t("trackingTimeline")}</h2>
+        <div className="border-border-default rounded-xl border bg-white p-5">
+          <h2 className="text-text-primary mb-4 text-base font-semibold">
+            {t("trackingTimeline")}
+          </h2>
           {shipment.scan_logs && shipment.scan_logs.length > 0 ? (
             <div className="space-y-4">
               {shipment.scan_logs
@@ -166,7 +168,7 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
                     <div className="flex flex-col items-center">
                       <div className="bg-primary-500 mt-1 h-2.5 w-2.5 rounded-full" />
                       {i < shipment.scan_logs.length - 1 && (
-                        <div className="h-8 w-px bg-gray-200" />
+                        <div className="bg-border-default h-8 w-px" />
                       )}
                     </div>
                     <div>
@@ -174,7 +176,7 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
                         status={log.new_status as ShipmentStatus}
                         label={tStatus(log.new_status as ShipmentStatus)}
                       />
-                      <p className="mt-1 flex items-center gap-1 text-xs text-gray-500">
+                      <p className="text-text-muted mt-1 flex items-center gap-1 text-xs">
                         <Clock size={12} />
                         {formatDateTime(log.scanned_at)}
                       </p>
@@ -183,7 +185,7 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
                 ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">{t("noTracking")}</p>
+            <p className="text-text-muted text-sm">{t("noTracking")}</p>
           )}
         </div>
       </div>
@@ -203,8 +205,8 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
-      <dt className="text-gray-500">{label}</dt>
-      <dd className="font-medium text-gray-900 capitalize">{value}</dd>
+      <dt className="text-text-muted">{label}</dt>
+      <dd className="text-text-primary font-medium capitalize">{value}</dd>
     </div>
   );
 }

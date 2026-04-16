@@ -28,6 +28,7 @@ type UserListResponse = {
   pageSize: number;
   total: number;
   totalPages: number;
+  roleCounts: Record<string, number>;
 };
 
 async function fetchUsers(filters: UserFilters): Promise<UserListResponse> {

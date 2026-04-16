@@ -9,6 +9,8 @@ const headingVariantStyles = {
   sectionLg: "font-display text-primary text-7xl leading-tight font-bold md:text-7xl lg:text-10xl",
   page: "font-display text-primary text-4xl font-medium sm:text-8xl",
   card: "text-text-primary text-lg font-semibold md:text-xl",
+  dashboard: "font-body text-text-primary text-2xl font-semibold tracking-tight",
+  dashboardSm: "font-body text-text-primary text-lg font-semibold tracking-tight",
 } as const;
 
 type HeadingVariant = keyof typeof headingVariantStyles;

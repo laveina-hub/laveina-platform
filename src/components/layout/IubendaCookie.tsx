@@ -16,7 +16,7 @@ function positionPrivacyWidget(widget: HTMLElement) {
   }
 }
 
-/** Load the Iubenda embed script exactly once across locale changes. */
+/** Loads the Iubenda embed script once (deduped across locale changes). */
 function ensureIubendaScript() {
   if (document.querySelector(`script[src="${IUBENDA_WIDGET_SRC}"]`)) return;
 

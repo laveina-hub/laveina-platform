@@ -54,7 +54,6 @@ export function IndividualsSection() {
             ))}
           </div>
 
-          {/* OTP highlight */}
           <div className="border-success bg-success/5 mt-10 rounded-lg border-l-4 py-4 pr-4 pl-5">
             <div className="mb-1 flex items-center gap-2">
               <CheckCircle className="text-success h-4 w-4 shrink-0" />
@@ -67,7 +66,6 @@ export function IndividualsSection() {
             </Text>
           </div>
 
-          {/* Journey summary */}
           <div className="bg-tertiary-50/10 mt-6 rounded-lg px-5 py-3">
             <Text variant="caption" className="text-text-muted mb-0.5 tracking-wider uppercase">
               {t("journeyLabel")}

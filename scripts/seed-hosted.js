@@ -40,20 +40,10 @@ const sb = createClient(supabaseUrl, serviceKey, {
 });
 
 // ── Test users ───────────────────────────────────────────────────────────────
+// Pickup point owner accounts are now created via CSV import (with default_password).
+// Only admin + customer seed users are needed here.
 const USERS = [
   { email: "admin@laveina-test.com", password: "TestAdmin123!", name: "Test Admin", role: "admin" },
-  {
-    email: "shop-origin@laveina-test.com",
-    password: "TestShop123!",
-    name: "Origin Shop Staff",
-    role: "pickup_point",
-  },
-  {
-    email: "shop-dest@laveina-test.com",
-    password: "TestShop123!",
-    name: "Destination Shop Staff",
-    role: "pickup_point",
-  },
   {
     email: "customer@laveina-test.com",
     password: "TestCustomer123!",
@@ -62,244 +52,15 @@ const USERS = [
   },
 ];
 
-const PICKUP_POINTS = [
-  {
-    id: "a0000000-0000-0000-0000-000000000001",
-    name: "Librería Central",
-    address: "Carrer de Mallorca, 123",
-    postcode: "08036",
-    city: "Barcelona",
-    latitude: 41.3947,
-    longitude: 2.1558,
-    phone: "+34 93 123 4567",
-    email: "central@laveina-test.com",
-    is_active: true,
-    is_open: true,
-    working_hours: {
-      monday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      tuesday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      wednesday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      thursday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      friday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      saturday: { open: true, slots: [["10:00", "14:00"]] },
-      sunday: { open: false, slots: [] },
-    },
-    owner_email: "shop-origin@laveina-test.com",
-  },
-  {
-    id: "a0000000-0000-0000-0000-000000000002",
-    name: "Papelería Sol",
-    address: "Avinguda Diagonal, 456",
-    postcode: "08029",
-    city: "Barcelona",
-    latitude: 41.392,
-    longitude: 2.138,
-    phone: "+34 93 234 5678",
-    email: "sol@laveina-test.com",
-    is_active: true,
-    is_open: true,
-    working_hours: {
-      monday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      tuesday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      wednesday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      thursday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      friday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      saturday: { open: true, slots: [["10:00", "14:00"]] },
-      sunday: { open: false, slots: [] },
-    },
-    owner_email: "shop-dest@laveina-test.com",
-  },
-  {
-    id: "a0000000-0000-0000-0000-000000000003",
-    name: "Kiosko Marina",
-    address: "Passeig de Gràcia, 78",
-    postcode: "08008",
-    city: "Barcelona",
-    latitude: 41.395,
-    longitude: 2.165,
-    phone: "+34 93 345 6789",
-    email: "marina@laveina-test.com",
-    is_active: true,
-    is_open: true,
-    working_hours: {
-      monday: { open: true, slots: [["08:00", "21:00"]] },
-      tuesday: { open: true, slots: [["08:00", "21:00"]] },
-      wednesday: { open: true, slots: [["08:00", "21:00"]] },
-      thursday: { open: true, slots: [["08:00", "21:00"]] },
-      friday: { open: true, slots: [["08:00", "21:00"]] },
-      saturday: { open: true, slots: [["09:00", "14:00"]] },
-      sunday: { open: false, slots: [] },
-    },
-    owner_email: null,
-  },
-  // ── Non-Barcelona pickup points (SendCloud routing) ──
-  {
-    id: "a0000000-0000-0000-0000-000000000004",
-    name: "Papelería Gran Vía",
-    address: "Gran Vía, 42",
-    postcode: "28013",
-    city: "Madrid",
-    latitude: 40.42,
-    longitude: -3.7025,
-    phone: "+34 91 123 4567",
-    email: "madrid@laveina-test.com",
-    is_active: true,
-    is_open: true,
-    working_hours: {
-      monday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      tuesday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      wednesday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      thursday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      friday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      saturday: { open: true, slots: [["10:00", "14:00"]] },
-      sunday: { open: false, slots: [] },
-    },
-    owner_email: null,
-  },
-  {
-    id: "a0000000-0000-0000-0000-000000000005",
-    name: "Librería Ruzafa",
-    address: "Carrer de Russafa, 18",
-    postcode: "46004",
-    city: "Valencia",
-    latitude: 39.463,
-    longitude: -0.374,
-    phone: "+34 96 123 4567",
-    email: "valencia@laveina-test.com",
-    is_active: true,
-    is_open: true,
-    working_hours: {
-      monday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      tuesday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      wednesday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      thursday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      friday: {
-        open: true,
-        slots: [
-          ["09:00", "14:00"],
-          ["16:00", "20:00"],
-        ],
-      },
-      saturday: { open: true, slots: [["10:00", "14:00"]] },
-      sunday: { open: false, slots: [] },
-    },
-    owner_email: null,
-  },
-];
+// ── Pickup points ────────────────────────────────────────────────────────────
+// Pickup points are now imported via CSV through the admin dashboard.
+// The CSV import API supports a `default_password` field for testing:
+//   POST /api/pickup-points/import
+//   { csv: "...", default_password: "TestShop123!" }
+//
+// This creates owner accounts with the given password (email_confirm: true)
+// so they can log in immediately without receiving an invite email.
+// In production, omit default_password to send real invite emails instead.
 
 async function main() {
   // Step 1: Seed reference data
@@ -400,27 +161,21 @@ async function main() {
     }
   }
 
-  // Step 3: Seed pickup points
-  console.log("\n3. Seeding pickup points...");
-  for (const pp of PICKUP_POINTS) {
-    const ownerId = pp.owner_email ? userIdMap[pp.owner_email] || null : null;
-    const row = {
-      id: pp.id,
-      name: pp.name,
-      address: pp.address,
-      postcode: pp.postcode,
-      city: pp.city,
-      latitude: pp.latitude,
-      longitude: pp.longitude,
-      phone: pp.phone,
-      email: pp.email,
-      is_active: pp.is_active,
-      is_open: pp.is_open,
-      working_hours: pp.working_hours,
-      owner_id: ownerId,
-    };
-    const { error: ppErr } = await sb.from("pickup_points").upsert(row, { onConflict: "id" });
-    console.log(ppErr ? `   ${pp.name} — FAILED: ${ppErr.message}` : `   ${pp.name} — OK`);
+  // Step 3: Seed pickup points from CSV
+  console.log("\n3. Seeding pickup points from CSV...");
+  console.log("   Running: node scripts/seed-pickup-points.js");
+  const { execSync } = require("child_process");
+  try {
+    const output = execSync("node scripts/seed-pickup-points.js", {
+      cwd: resolve(__dirname, ".."),
+      encoding: "utf-8",
+      stdio: "pipe",
+    });
+    output.split("\n").forEach((line) => {
+      if (line.trim()) console.log(`   ${line}`);
+    });
+  } catch (err) {
+    console.error(`   FAILED: ${err.message}`);
   }
 
   // Step 4: Verify logins (with delay to avoid Supabase rate limiting)

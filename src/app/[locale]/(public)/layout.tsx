@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Footer } from "@/components/layout/Footer";
 import { FooterInfoBar } from "@/components/layout/FooterInfoBar";
 import { Header } from "@/components/layout/Header";
+import { PageTransition } from "@/components/layout/PageTransition";
 
 type Props = {
   children: React.ReactNode;
@@ -24,7 +25,7 @@ export default async function PublicLayout({ children, params }: Props) {
       </a>
       <Header />
       <main id="main-content" className="flex-1">
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
       <FooterInfoBar />
       <Footer />

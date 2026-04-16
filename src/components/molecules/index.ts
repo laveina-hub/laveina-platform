@@ -1,6 +1,7 @@
 export { BookingStepper, type BookingStepperProps } from "./BookingStepper";
 export { FeatureListItem, type FeatureListItemProps } from "./FeatureListItem";
 export { FormRow, type FormRowProps } from "./FormRow";
+export { GoogleMapsWrapper } from "./GoogleMapsWrapper";
 export {
   IconBadge,
   type IconBadgeProps,
@@ -17,3 +18,5 @@ export {
   DataTableEmptyState,
 } from "./DataTable";
 export { WorkingHoursEditor, type WorkingHoursEditorProps } from "./WorkingHoursEditor";
+export { NotificationBell } from "./NotificationBell";
+export { NotificationPanel } from "./NotificationPanel";

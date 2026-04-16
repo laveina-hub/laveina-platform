@@ -11,16 +11,16 @@ export function HeroSection() {
   const { user, loading } = useAuth();
 
   return (
-    <section className="bg-primary-50 relative overflow-hidden">
-      <div className="mx-auto grid w-full grid-cols-1 px-6 pt-7 md:grid-cols-2 md:pt-16 xl:pl-32 2xl:pt-32">
-        <div className="relative z-10 flex max-w-4xl flex-col items-start gap-6 pb-0 md:pb-50 lg:pb-60 xl:pb-80 2xl:gap-14 2xl:pb-100">
+    <section className="from-primary-50 to-primary-100/60 relative overflow-hidden bg-linear-to-br via-white/80">
+      <div className="max-w-container mx-auto grid w-full grid-cols-1 px-6 pt-10 md:grid-cols-2 md:pt-16 lg:px-10 xl:pt-24 2xl:pt-32">
+        <div className="relative z-10 flex max-w-4xl flex-col items-start gap-6 pb-8 md:pb-50 lg:pb-60 xl:pb-80 2xl:gap-14 2xl:pb-100">
           <Heading variant="hero" as="h1">
             {t("headline")}
           </Heading>
 
           <Text variant="hero">{t("subtext")}</Text>
 
-          <div className="flex flex-wrap gap-2 md:gap-3">
+          <div className="flex flex-wrap gap-3 md:gap-4">
             {loading ? (
               <div className="bg-primary-200 h-12 w-44 animate-pulse rounded-lg md:h-14 md:w-52" />
             ) : user ? (

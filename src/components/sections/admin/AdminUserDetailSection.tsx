@@ -78,8 +78,8 @@ export function AdminUserDetailSection({ userId }: Props) {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <User size={40} className="mb-4 text-gray-300" />
-        <h3 className="text-base font-semibold text-gray-900">{t("userNotFound")}</h3>
+        <User size={40} className="text-border-default mb-4" />
+        <h3 className="text-text-primary text-base font-semibold">{t("userNotFound")}</h3>
         <Link href="/admin/users" className="text-primary-600 mt-2 text-sm hover:underline">
           {t("backToUsers")}
         </Link>
@@ -92,13 +92,13 @@ export function AdminUserDetailSection({ userId }: Props) {
       <div className="flex items-center gap-4">
         <button
           onClick={() => router.push("/admin/users")}
-          className="focus-visible:ring-primary-500 rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus-visible:ring-2 focus-visible:outline-none"
+          className="focus-visible:ring-primary-500 text-text-muted hover:bg-bg-muted hover:text-text-light rounded-lg p-2 focus-visible:ring-2 focus-visible:outline-none"
         >
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1">
-          <h1 className="font-body text-2xl font-semibold text-gray-900">{user.full_name}</h1>
-          <p className="mt-0.5 text-sm text-gray-500">{user.email}</p>
+          <h1 className="font-body text-text-primary text-2xl font-semibold">{user.full_name}</h1>
+          <p className="text-text-muted mt-0.5 text-sm">{user.email}</p>
         </div>
         <div className="bg-primary-500 flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold text-white">
           {user.full_name.charAt(0).toUpperCase()}
@@ -107,11 +107,11 @@ export function AdminUserDetailSection({ userId }: Props) {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <div className="rounded-xl border border-gray-200 bg-white">
-            <div className="border-b border-gray-100 px-6 py-4">
-              <h2 className="text-sm font-semibold text-gray-900">{t("userDetails")}</h2>
+          <div className="border-border-default rounded-xl border bg-white">
+            <div className="border-border-muted border-b px-6 py-4">
+              <h2 className="text-text-primary text-sm font-semibold">{t("userDetails")}</h2>
             </div>
-            <div className="divide-y divide-gray-100 px-6">
+            <div className="divide-border-muted divide-y px-6">
               <DetailRow icon={Mail} label={t("email")}>
                 {user.email}
               </DetailRow>
@@ -124,7 +124,8 @@ export function AdminUserDetailSection({ userId }: Props) {
                     "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset",
                     user.role === "admin" && "bg-purple-50 text-purple-700 ring-purple-600/20",
                     user.role === "pickup_point" && "bg-blue-50 text-blue-700 ring-blue-600/20",
-                    user.role === "customer" && "bg-gray-50 text-gray-600 ring-gray-500/10"
+                    user.role === "customer" &&
+                      "bg-bg-secondary text-text-light ring-border-default"
                   )}
                 >
                   {roleLabelMap[user.role]}
@@ -141,10 +142,10 @@ export function AdminUserDetailSection({ userId }: Props) {
         </div>
 
         <div>
-          <div className="rounded-xl border border-gray-200 bg-white">
-            <div className="border-b border-gray-100 px-6 py-4">
-              <h2 className="text-sm font-semibold text-gray-900">{t("manageRole")}</h2>
-              <p className="mt-0.5 text-xs text-gray-500">{t("manageRoleDesc")}</p>
+          <div className="border-border-default rounded-xl border bg-white">
+            <div className="border-border-muted border-b px-6 py-4">
+              <h2 className="text-text-primary text-sm font-semibold">{t("manageRole")}</h2>
+              <p className="text-text-muted mt-0.5 text-xs">{t("manageRoleDesc")}</p>
             </div>
             <div className="space-y-2 p-4">
               {ALL_ROLES.map((role) => (
@@ -156,13 +157,15 @@ export function AdminUserDetailSection({ userId }: Props) {
                     "flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors",
                     user.role === role
                       ? "border-primary-300 bg-primary-50 ring-primary-500 ring-1"
-                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                      : "border-border-default hover:border-border-default hover:bg-bg-secondary"
                   )}
                 >
                   <div
                     className={cn(
                       "mt-0.5 h-4 w-4 shrink-0 rounded-full border-2",
-                      user.role === role ? "border-primary-500 bg-primary-500" : "border-gray-300"
+                      user.role === role
+                        ? "border-primary-500 bg-primary-500"
+                        : "border-border-default"
                     )}
                   >
                     {user.role === role && (
@@ -172,8 +175,8 @@ export function AdminUserDetailSection({ userId }: Props) {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900">{roleLabelMap[role]}</p>
-                    <p className="mt-0.5 text-xs text-gray-500">{roleDescMap[role]}</p>
+                    <p className="text-text-primary text-sm font-medium">{roleLabelMap[role]}</p>
+                    <p className="text-text-muted mt-0.5 text-xs">{roleDescMap[role]}</p>
                   </div>
                 </button>
               ))}

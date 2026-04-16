@@ -1,9 +1,4 @@
-// Weight-based tier system. Customer enters dimensions + weight;
-// system calculates billable weight and auto-assigns tier.
-
 import type { ParcelSize } from "@/types/enums";
-
-// ---------- Volumetric weight ----------
 
 const VOLUMETRIC_DIVISOR = 6000;
 
@@ -24,8 +19,6 @@ export function calcBillableWeightKg(
   const volumetric = calcVolumetricWeightKg(lengthCm, widthCm, heightCm);
   return Math.max(actualWeightKg, volumetric);
 }
-
-// ---------- Dimension validation ----------
 
 export const MAX_WEIGHT_KG = 30;
 export const MAX_TOTAL_DIMENSIONS_CM = 150;
@@ -51,8 +44,6 @@ export function validateParcelDimensions(
   return { valid: true };
 }
 
-// ---------- Weight tier definitions ----------
-
 export type WeightTier = {
   size: ParcelSize;
   minWeightKg: number;
@@ -68,10 +59,7 @@ export const WEIGHT_TIERS: WeightTier[] = [
   { size: "tier_6", minWeightKg: 20.01, maxWeightKg: 30 },
 ];
 
-/**
- * Determine which weight tier a billable weight falls into.
- * Returns null if weight is out of range (≤0 or >30 kg).
- */
+/** Returns null if weight is out of range (≤0 or >30 kg). */
 export function getTierForWeight(billableWeightKg: number): WeightTier | null {
   if (billableWeightKg <= 0 || billableWeightKg > MAX_WEIGHT_KG) return null;
   return WEIGHT_TIERS.find((t) => billableWeightKg <= t.maxWeightKg) ?? null;

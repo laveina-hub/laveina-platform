@@ -11,12 +11,12 @@ export function DetailRow({
 }) {
   return (
     <div className="flex items-start gap-3 py-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-50">
-        <Icon size={16} className="text-gray-400" />
+      <div className="bg-bg-secondary flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+        <Icon size={16} className="text-text-muted" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-gray-500">{label}</p>
-        <div className="mt-0.5 text-sm text-gray-900">{children}</div>
+        <p className="text-text-muted text-xs font-medium">{label}</p>
+        <div className="text-text-primary mt-0.5 text-sm">{children}</div>
       </div>
     </div>
   );
@@ -25,15 +25,15 @@ export function DetailRow({
 export function DetailSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="h-6 w-32 animate-pulse rounded bg-gray-100" />
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
+      <div className="skeleton-shimmer h-6 w-32 rounded" />
+      <div className="border-border-default rounded-xl border bg-white p-6">
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3">
-              <div className="h-9 w-9 animate-pulse rounded-lg bg-gray-100" />
+              <div className="skeleton-shimmer h-9 w-9 rounded-lg" />
               <div className="flex-1 space-y-1">
-                <div className="h-3 w-20 animate-pulse rounded bg-gray-100" />
-                <div className="h-4 w-40 animate-pulse rounded bg-gray-100" />
+                <div className="skeleton-shimmer h-3 w-20 rounded" />
+                <div className="skeleton-shimmer h-4 w-40 rounded" />
               </div>
             </div>
           ))}

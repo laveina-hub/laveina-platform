@@ -23,8 +23,7 @@ export async function createShipment(
   customerId: string,
   input: CreateShipmentInput
 ): Promise<ApiResponse<Shipment>> {
-  // Bypasses RLS — only called from Stripe webhook after payment
-  const supabase = createAdminClient();
+  const supabase = createAdminClient(); // admin: called from Stripe webhook
 
   const { data, error } = await supabase
     .from("shipments")
@@ -176,7 +175,7 @@ export async function updateShipmentStatus(
   return { data, error: null };
 }
 
-/** Public tracking lookup — bypasses RLS, returns only non-sensitive fields. */
+/** Bypasses RLS — returns only non-sensitive fields for public tracking. */
 export async function getPublicTrackingData(
   trackingId: string
 ): Promise<ApiResponse<PublicTrackingData>> {

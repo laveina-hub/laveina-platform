@@ -36,7 +36,7 @@ export function ConfirmDialog({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white p-6 shadow-lg">
+        <Dialog.Content className="border-border-default shadow-overlay fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-white p-6">
           <div className="flex items-start gap-4">
             <div
               className={cn(
@@ -56,14 +56,16 @@ export function ConfirmDialog({
               />
             </div>
             <div className="flex-1">
-              <Dialog.Title className="text-base font-semibold text-gray-900">{title}</Dialog.Title>
-              <Dialog.Description className="mt-1 text-sm text-gray-500">
+              <Dialog.Title className="text-text-primary text-base font-semibold">
+                {title}
+              </Dialog.Title>
+              <Dialog.Description className="text-text-muted mt-1 text-sm">
                 {description}
               </Dialog.Description>
             </div>
             <Dialog.Close asChild>
               <button
-                className="focus-visible:ring-primary-500 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus-visible:ring-2 focus-visible:outline-none"
+                className="focus-visible:ring-primary-500 text-text-muted hover:bg-bg-muted hover:text-text-primary rounded-md p-1 focus-visible:ring-2 focus-visible:outline-none"
                 aria-label={tCommon("closeDialog")}
               >
                 <X size={16} />

@@ -41,7 +41,7 @@ export async function refreshSession(request: NextRequest) {
       session = result.data.session;
     }
   } catch {
-    // Continue without session
+    // Treat as unauthenticated
   }
 
   return { supabase, session, supabaseResponse: getResponse() };
@@ -64,7 +64,7 @@ export async function updateSession(request: NextRequest) {
     // Treat as unauthenticated
   }
 
-  // From profiles table — user_metadata is user-writable so not trustworthy
+  // Role from profiles table, not user_metadata (user-writable, untrusted)
   let cachedRole: string | null | undefined;
   async function getRole(): Promise<string | null> {
     if (cachedRole !== undefined) return cachedRole;

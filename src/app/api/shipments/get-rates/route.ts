@@ -68,6 +68,8 @@ export async function POST(request: NextRequest) {
           widthCm: parcel.width_cm,
           heightCm: parcel.height_cm,
           insuranceOptionId: parcel.insurance_option_id,
+          originPostcode: origin_postcode,
+          destinationPostcode: destination_postcode,
         })
       )
     );
