@@ -9,7 +9,7 @@ import { Button, ButtonLink } from "@/components/atoms";
 import { CloseIcon } from "@/components/icons";
 import { NAV_LINKS } from "@/constants/nav";
 import { useAuth } from "@/hooks/use-auth";
-import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
 import { LocaleSwitcherMobile } from "./LocaleSwitcherMobile";
@@ -28,7 +28,6 @@ export function MobileMenu() {
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { user, loading, signOut } = useAuth();
-  const router = useRouter();
 
   const close = useCallback(() => {
     setIsAnimating(false);
@@ -117,9 +116,7 @@ export function MobileMenu() {
 
   async function handleSignOut() {
     await signOut();
-    close();
-    router.push("/");
-    router.refresh();
+    window.location.href = "/";
   }
   return (
     <div className="lg:hidden">

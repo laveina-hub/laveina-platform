@@ -7,7 +7,7 @@ import { useCallback, useRef, useState } from "react";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { NotificationBell } from "@/components/molecules/NotificationBell";
 import { useAuth } from "@/hooks/use-auth";
-import { usePathname, useRouter } from "@/i18n/navigation";
+import { usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
 type TopbarProps = {
@@ -20,16 +20,14 @@ export function Topbar({ userFullName, onMenuToggle }: TopbarProps) {
   const tNav = useTranslations("nav");
   const tCommon = useTranslations("common");
   const pathname = usePathname();
-  const router = useRouter();
   const { signOut } = useAuth();
   const [avatarOpen, setAvatarOpen] = useState(false);
   const avatarRef = useRef<HTMLDivElement>(null);
 
   const handleSignOut = useCallback(async () => {
     await signOut();
-    router.push("/");
-    router.refresh();
-  }, [signOut, router]);
+    window.location.href = "/";
+  }, [signOut]);
 
   // Derive page title from the last meaningful segment
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

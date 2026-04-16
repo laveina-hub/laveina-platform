@@ -103,10 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
-    setLoading(true);
     const { error } = await supabase.auth.signOut();
-    setLoading(false);
-
     if (error) {
       throw error;
     }

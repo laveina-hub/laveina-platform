@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
 function getDashboardPath(role?: string): string {
@@ -69,7 +69,6 @@ function LogoutIcon({ className }: { className?: string }) {
 export function UserMenu() {
   const t = useTranslations("nav");
   const { user, signOut } = useAuth();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -108,9 +107,7 @@ export function UserMenu() {
 
   async function handleSignOut() {
     await signOut();
-    close();
-    router.push("/");
-    router.refresh();
+    window.location.href = "/";
   }
 
   return (

@@ -36,7 +36,8 @@ export function CustomerShipmentsSection() {
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useShipments(
-    user ? { customerId: user.id, page, pageSize: 20 } : { page, pageSize: 20 }
+    user ? { customerId: user.id, page, pageSize: 20 } : { page, pageSize: 20 },
+    { enabled: !!user }
   );
 
   const columns: ColumnDef<Shipment, unknown>[] = [
