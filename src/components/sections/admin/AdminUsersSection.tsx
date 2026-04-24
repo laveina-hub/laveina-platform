@@ -1,14 +1,16 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Search, Users } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { Users } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Input } from "@/components/atoms";
+import { SearchIcon } from "@/components/icons";
 import { DataTable } from "@/components/molecules/DataTable";
 import { useUsers, type UserFilters } from "@/hooks/use-users";
 import { useRouter } from "@/i18n/navigation";
+import { formatDateMedium, type Locale } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/types/enums";
 
@@ -39,17 +41,10 @@ function RoleBadge({ role, label }: { role: string; label: string }) {
   );
 }
 
-function formatDate(dateStr: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(dateStr));
-}
-
 export function AdminUsersSection() {
   const t = useTranslations("adminUsers");
   const tDashboard = useTranslations("dashboard");
+  const locale = useLocale() as Locale;
   const router = useRouter();
 
   const [filters, setFilters] = useState<UserFilters>({
@@ -112,7 +107,9 @@ export function AdminUsersSection() {
       accessorKey: "created_at",
       header: t("joined"),
       cell: ({ row }) => (
-        <span className="text-text-muted text-sm">{formatDate(row.original.created_at)}</span>
+        <span className="text-text-muted text-sm">
+          {formatDateMedium(row.original.created_at, locale)}
+        </span>
       ),
     },
   ];
@@ -143,7 +140,10 @@ export function AdminUsersSection() {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 sm:max-w-xs">
-          <Search size={16} className="text-text-muted absolute top-1/2 left-3 -translate-y-1/2" />
+          <SearchIcon
+            size={16}
+            className="text-text-muted absolute top-1/2 left-3 -translate-y-1/2"
+          />
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}

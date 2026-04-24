@@ -16,7 +16,7 @@ export async function GET() {
     supabase
       .from("shipments")
       .select(
-        "id, tracking_id, status, delivery_mode, parcel_size, price_cents, created_at, sender_name, receiver_name"
+        "id, tracking_id, status, delivery_mode, parcel_size, price_cents, created_at, sender_first_name, sender_last_name, receiver_first_name, receiver_last_name"
       )
       .order("created_at", { ascending: false })
       .limit(10),

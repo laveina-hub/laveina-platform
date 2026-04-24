@@ -1,11 +1,10 @@
 "use client";
 
-import { ArrowRight, Mail } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 
-import { CheckIcon } from "@/components/icons";
+import { CheckIcon, ChevronIcon, MailIcon } from "@/components/icons";
 import { Link } from "@/i18n/navigation";
 
 export function AccountCreatedContent() {
@@ -39,7 +38,7 @@ export function AccountCreatedContent() {
           ) : (
             <div className="bg-primary-50 flex h-20 w-20 items-center justify-center rounded-full">
               <div className="bg-primary-100 flex h-14 w-14 items-center justify-center rounded-full">
-                <Mail className="text-primary-500 h-7 w-7" />
+                <MailIcon className="h-7 w-7" />
               </div>
             </div>
           )}
@@ -62,7 +61,7 @@ export function AccountCreatedContent() {
             className="bg-primary-500 hover:bg-primary-600 active:bg-primary-700 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-base font-semibold text-white shadow-xs transition-all duration-150 hover:shadow-sm active:scale-[0.98]"
           >
             {t("backToSignIn")}
-            <ArrowRight className="h-5 w-5" />
+            <ChevronIcon direction="right" className="h-5 w-5" />
           </Link>
         ) : (
           <p className="text-text-muted text-center text-sm">

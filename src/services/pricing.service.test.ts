@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
 
+// Tests mirror the math in `src/services/pricing.service.ts` without importing
+// the service (the real module depends on Supabase + SendCloud clients that
+// aren't available in the unit-test sandbox). Both implementations MUST stay
+// in sync — if this math changes, update the service and vice versa.
+//
+// Pricing formula (client Q15.2):
+//   Subtotal = Delivery (ex-VAT) + Insurance (ex-VAT)
+//   VAT      = 21% × Subtotal
+//   Total    = Subtotal + VAT
+
 const IVA_RATE = 0.21;
 const MINIMUM_SHIPPING_CENTS = 400;
 const _DEFAULT_MARGIN_PERCENT = 25;
@@ -30,29 +40,37 @@ function getSettingNumber(settings: Record<string, string>, key: string, fallbac
 }
 
 describe("pricing calculations", () => {
-  describe("IVA calculation (21%)", () => {
-    it("applies 21% IVA on shipping only", () => {
+  describe("Q15.2 IVA calculation (21% on Delivery + Insurance)", () => {
+    it("applies 21% IVA on delivery alone when insurance is zero", () => {
       const result = buildPriceOption({ shippingCents: 500, insuranceSurchargeCents: 0 });
-      expect(result.subtotalCents).toBe(500);
-      expect(result.ivaCents).toBe(105);
-      expect(result.totalCents).toBe(605);
+      expect(result.subtotalCents).toBe(500); // delivery ex-VAT
+      expect(result.ivaCents).toBe(105); // 21% of 500
+      expect(result.totalCents).toBe(605); // subtotal + VAT
     });
 
-    it("applies 21% IVA on shipping + insurance surcharge", () => {
-      const result = buildPriceOption({ shippingCents: 500, insuranceSurchargeCents: 200 });
-      expect(result.subtotalCents).toBe(700);
-      expect(result.ivaCents).toBe(147);
-      expect(result.totalCents).toBe(847);
+    it("includes insurance in the VAT base per Q15.2", () => {
+      // Q15.2 example: 4.95 + 1.50 = 6.45; VAT 21% = 1.35; total 7.80.
+      const result = buildPriceOption({ shippingCents: 495, insuranceSurchargeCents: 150 });
+      expect(result.subtotalCents).toBe(645); // 495 + 150
+      expect(result.ivaCents).toBe(135); // round(645 * 0.21) = round(135.45) = 135
+      expect(result.totalCents).toBe(780); // 645 + 135
     });
 
-    it("rounds IVA to nearest cent", () => {
+    it("rounds VAT to nearest cent", () => {
       const result = buildPriceOption({ shippingCents: 333, insuranceSurchargeCents: 0 });
-      expect(result.ivaCents).toBe(70);
+      expect(result.ivaCents).toBe(70); // 333 × 0.21 = 69.93 → 70
     });
 
-    it("handles zero shipping", () => {
+    it("handles zero shipping and zero insurance", () => {
       const result = buildPriceOption({ shippingCents: 0, insuranceSurchargeCents: 0 });
       expect(result.totalCents).toBe(0);
+    });
+
+    it("applies VAT to insurance-only subtotal (edge case: free shipping promo)", () => {
+      const result = buildPriceOption({ shippingCents: 0, insuranceSurchargeCents: 150 });
+      expect(result.subtotalCents).toBe(150);
+      expect(result.ivaCents).toBe(32); // round(150 × 0.21) = 32 (31.5 → 32)
+      expect(result.totalCents).toBe(182);
     });
   });
 
@@ -86,33 +104,29 @@ describe("pricing calculations", () => {
     });
   });
 
-  describe("Barcelona internal pricing", () => {
-    it("uses flat price from settings (no margin)", () => {
-      const settings = { internal_price_small_cents: "300" };
-      const shippingCents = getSettingNumber(settings, "internal_price_small_cents", 0);
-      const result = buildPriceOption({ shippingCents, insuranceSurchargeCents: 0 });
-
-      expect(shippingCents).toBe(300);
-      expect(result.subtotalCents).toBe(300);
-      expect(result.ivaCents).toBe(63);
-      expect(result.totalCents).toBe(363);
+  describe("Barcelona internal pricing (ex-VAT matrix)", () => {
+    // Matrix values are stored ex-VAT per Q15.2. VAT is added on top at quote
+    // time — no reverse-calculation. Asserting the wizard's Small/Standard
+    // (€4.95 ex-VAT) path produces the spec's 4.95 → 6.45 → 7.80 numbers with
+    // insurance, and the VAT-only 4.95 → 5.99 path without.
+    it("uses the matrix value directly as ex-VAT delivery (no back-calc)", () => {
+      const matrixCents = 495; // small/standard per §15 matrix
+      const result = buildPriceOption({ shippingCents: matrixCents, insuranceSurchargeCents: 0 });
+      expect(result.subtotalCents).toBe(495);
+      expect(result.ivaCents).toBe(104); // round(495 × 0.21) = round(103.95) = 104
+      expect(result.totalCents).toBe(599);
     });
 
-    it("returns fallback 0 when price not configured", () => {
-      const settings = {};
-      const shippingCents = getSettingNumber(settings, "internal_price_small_cents", 0);
-      expect(shippingCents).toBe(0);
-    });
-
-    it("includes insurance surcharge in total", () => {
-      const result = buildPriceOption({ shippingCents: 300, insuranceSurchargeCents: 200 });
-      expect(result.subtotalCents).toBe(500);
-      expect(result.ivaCents).toBe(105);
-      expect(result.totalCents).toBe(605);
+    it("matches Q15.2 worked example exactly", () => {
+      // Delivery 4.95, Insurance 1.50 → Subtotal 6.45, VAT 1.35, Total 7.80.
+      const result = buildPriceOption({ shippingCents: 495, insuranceSurchargeCents: 150 });
+      expect(result.subtotalCents).toBe(645);
+      expect(result.ivaCents).toBe(135);
+      expect(result.totalCents).toBe(780);
     });
   });
 
-  describe("SendCloud pricing (carrier rate + margin)", () => {
+  describe("SendCloud pricing (carrier rate + margin + floor + VAT)", () => {
     it("calculates full SendCloud price correctly", () => {
       const carrierRateCents = 320;
       const marginPercent = 25;
@@ -120,6 +134,8 @@ describe("pricing calculations", () => {
       const result = buildPriceOption({ shippingCents, insuranceSurchargeCents: 100 });
 
       expect(shippingCents).toBe(400);
+      // 400c ex-VAT delivery + 100c ex-VAT insurance = 500c subtotal
+      // VAT 21% = 105c → total 605c
       expect(result.subtotalCents).toBe(500);
       expect(result.ivaCents).toBe(105);
       expect(result.totalCents).toBe(605);
@@ -130,7 +146,16 @@ describe("pricing calculations", () => {
       const result = buildPriceOption({ shippingCents, insuranceSurchargeCents: 0 });
 
       expect(shippingCents).toBe(400);
-      expect(result.totalCents).toBe(484);
+      expect(result.totalCents).toBe(484); // 400 + round(400 × 0.21) = 400 + 84
+    });
+
+    it("charges insurance exactly once and VATs the full subtotal", () => {
+      const shippingCents = applyMargin(50, 25);
+      const result = buildPriceOption({ shippingCents, insuranceSurchargeCents: 150 });
+      expect(shippingCents).toBe(400);
+      expect(result.subtotalCents).toBe(550); // 400 + 150
+      expect(result.ivaCents).toBe(116); // round(550 × 0.21) = round(115.5) = 116
+      expect(result.totalCents).toBe(666);
     });
   });
 

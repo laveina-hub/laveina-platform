@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 const OTP_LENGTH = 6;
-const OTP_EXPIRY_MINUTES = 10;
+// Mirrors @/constants/app → OTP_EXPIRY_HOURS (M2: 24h).
+const OTP_EXPIRY_HOURS = 24;
 
 function generateOtpCode(length: number): string {
   let otp = "";
@@ -77,11 +78,11 @@ describe("OTP logic", () => {
   });
 
   describe("expiry calculation", () => {
-    it("expires 10 minutes from now", () => {
+    it("expires 24 hours from now (M2)", () => {
       const now = Date.now();
-      const expiresAt = new Date(now + OTP_EXPIRY_MINUTES * 60 * 1000);
+      const expiresAt = new Date(now + OTP_EXPIRY_HOURS * 60 * 60 * 1000);
       const diffMs = expiresAt.getTime() - now;
-      expect(diffMs).toBe(600_000); // 10 minutes in ms
+      expect(diffMs).toBe(86_400_000); // 24 hours in ms
     });
 
     it("expired OTP is detected by date comparison", () => {
@@ -92,7 +93,7 @@ describe("OTP logic", () => {
 
     it("valid OTP is not expired", () => {
       const now = new Date();
-      const expiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes from now
+      const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // 1h from now
       expect(expiresAt >= now).toBe(true);
     });
   });

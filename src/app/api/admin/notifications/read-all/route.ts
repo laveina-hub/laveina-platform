@@ -1,9 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
+import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const rl = adminLimiter.check(getClientIp(request));
+    if (!rl.success) return rateLimitResponse(rl.resetMs);
+
     const auth = await verifyAuth();
     if (auth.error) return auth.error;
     const { supabase, role } = auth;

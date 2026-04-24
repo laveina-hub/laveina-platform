@@ -94,3 +94,7 @@ export const otpLimiter = createRateLimiter({ limit: 3, windowMs: 900_000 });
 export const scanLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 export const publicLimiter = createRateLimiter({ limit: 60, windowMs: 60_000 });
 export const authLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
+// Defense-in-depth cap on admin mutation endpoints — roomy enough for real
+// operator work, tight enough that a leaked session cookie can't flood
+// SendCloud/Stripe/notification queues in a loop.
+export const adminLimiter = createRateLimiter({ limit: 30, windowMs: 60_000 });

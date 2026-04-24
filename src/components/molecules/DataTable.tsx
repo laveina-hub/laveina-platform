@@ -10,10 +10,11 @@ import {
   type RowSelectionState,
   type OnChangeFn,
 } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { ChevronIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 type DataTableColumnHeaderProps<TData, TValue> = {
@@ -86,7 +87,7 @@ export function DataTablePagination({
           disabled={page <= 1}
           className="text-text-muted hover:bg-bg-muted hover:text-text-primary rounded-md p-1.5 disabled:opacity-40 disabled:hover:bg-transparent"
         >
-          <ChevronLeft size={16} />
+          <ChevronIcon size={16} />
         </button>
         <span className="text-text-light min-w-12 text-center text-sm">
           {page} / {totalPages || 1}
@@ -96,7 +97,7 @@ export function DataTablePagination({
           disabled={page >= totalPages}
           className="text-text-muted hover:bg-bg-muted hover:text-text-primary rounded-md p-1.5 disabled:opacity-40 disabled:hover:bg-transparent"
         >
-          <ChevronRight size={16} />
+          <ChevronIcon direction="right" size={16} />
         </button>
       </div>
     </div>

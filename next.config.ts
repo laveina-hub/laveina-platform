@@ -51,7 +51,10 @@ const securityHeaders = [
   },
   {
     key: "Permissions-Policy",
-    value: "camera=(self), microphone=(), geolocation=(), interest-cohort=()",
+    // geolocation=(self): allow the app itself to request location for Q6.3
+    // "Use my location" on the booking flow. `camera=(self)` keeps the QR
+    // scanner path open. Everything else stays denied for defense-in-depth.
+    value: "camera=(self), microphone=(), geolocation=(self), interest-cohort=()",
   },
   {
     key: "Content-Security-Policy",

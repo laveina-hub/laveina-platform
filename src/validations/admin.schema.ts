@@ -35,3 +35,28 @@ export const notificationQuerySchema = z.object({
 export const notificationPatchSchema = z.object({
   status: z.literal("read"),
 });
+
+// POST /api/admin/sendcloud/register-subscription — optional body override
+// for the webhook URL. When omitted the route falls back to
+// NEXT_PUBLIC_APP_URL + /api/webhooks/sendcloud.
+export const registerSendcloudSubscriptionSchema = z.object({
+  webhookUrl: z
+    .string()
+    .url("validation.invalidUrl")
+    .refine(
+      (v) => {
+        try {
+          const p = new URL(v).protocol;
+          return p === "https:" || p === "http:";
+        } catch {
+          return false;
+        }
+      },
+      { message: "validation.invalidUrl" }
+    )
+    .optional(),
+});
+
+export type RegisterSendcloudSubscriptionInput = z.infer<
+  typeof registerSendcloudSubscriptionSchema
+>;

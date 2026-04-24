@@ -1,9 +1,10 @@
 "use client";
 
-import { LogOut, Menu, Search } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState } from "react";
 
+import { SearchIcon } from "@/components/icons";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { NotificationBell } from "@/components/molecules/NotificationBell";
 import { useAuth } from "@/hooks/use-auth";
@@ -58,7 +59,10 @@ export function Topbar({ userFullName, onMenuToggle }: TopbarProps) {
 
       <div className="flex items-center gap-2">
         <div className="relative hidden sm:block">
-          <Search size={16} className="text-text-muted absolute top-1/2 left-3 -translate-y-1/2" />
+          <SearchIcon
+            size={16}
+            className="text-text-muted absolute top-1/2 left-3 -translate-y-1/2"
+          />
           <input
             type="text"
             placeholder={t("searchShipment")}

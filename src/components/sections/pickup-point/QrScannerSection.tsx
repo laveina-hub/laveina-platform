@@ -14,8 +14,10 @@ type ScanResult = {
     id: string;
     tracking_id: string;
     status: string;
-    sender_name: string;
-    receiver_name: string;
+    sender_first_name: string;
+    sender_last_name: string;
+    receiver_first_name: string;
+    receiver_last_name: string;
     parcel_size: string;
   };
   scanLog: { old_status: string; new_status: string };

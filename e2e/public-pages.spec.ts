@@ -28,6 +28,21 @@ test.describe("Public Pages", () => {
     await expect(heading).toBeVisible();
   });
 
+  test("pickup points page exposes both postcode and free-text search inputs (Q6.5)", async ({
+    page,
+  }) => {
+    await page.goto("/es/pickup-points");
+    await page.waitForLoadState("networkidle");
+
+    // Q6.5 — postcode input is still present alongside the new free-text input.
+    await expect(page.getByPlaceholder(/08001/)).toBeVisible();
+    await expect(page.getByPlaceholder(/Buscar por nombre, dirección o ciudad/i)).toBeVisible();
+
+    // Search button is disabled until either input has enough characters; the
+    // initial empty state shows the "enter postcode or name" prompt.
+    await expect(page.getByText(/Introduce un código postal o nombre/i)).toBeVisible();
+  });
+
   test("booking page loads with form", async ({ page }) => {
     await page.goto("/es/book");
     await page.waitForLoadState("networkidle");

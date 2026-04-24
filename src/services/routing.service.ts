@@ -41,3 +41,17 @@ export function isInternalRoute(result: RoutingResult): result is { mode: "inter
 export function isSendcloudRoute(result: RoutingResult): result is { mode: "sendcloud" } {
   return result.mode === "sendcloud";
 }
+
+/**
+ * Lightweight Barcelona-route check used by the Step 2 speed auto-switch (A2).
+ * True only when both postcodes are valid Spanish format AND both start with 08.
+ * Returns false for invalid/partial input so the caller treats unresolved
+ * routes as non-Barcelona (safe default that disables Next Day).
+ */
+export function isBarcelonaRoute(originPostcode: string, destinationPostcode: string): boolean {
+  if (!isValidSpanishPostcode(originPostcode)) return false;
+  if (!isValidSpanishPostcode(destinationPostcode)) return false;
+  return (
+    originPostcode.startsWith(BARCELONA_PREFIX) && destinationPostcode.startsWith(BARCELONA_PREFIX)
+  );
+}

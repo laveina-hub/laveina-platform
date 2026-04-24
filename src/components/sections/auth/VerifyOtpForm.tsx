@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
@@ -8,6 +7,7 @@ import { toast } from "sonner";
 
 import { sendPasswordResetOtp, verifyPasswordResetOtp } from "@/actions/auth";
 import { Button, OtpInput } from "@/components/atoms";
+import { ChevronIcon } from "@/components/icons";
 import { Link, useRouter } from "@/i18n/navigation";
 
 type Props = {
@@ -107,7 +107,7 @@ export function VerifyOtpForm({ email }: Props) {
         {/* Heading with back arrow */}
         <div className="flex items-center gap-3">
           <Link href="/auth/forgot-password" aria-label={t("backToForgotPassword")}>
-            <ArrowLeft className="text-text-primary h-7 w-7" />
+            <ChevronIcon className="text-text-primary h-7 w-7" />
           </Link>
           <h1 className="font-display text-text-primary text-3xl leading-10.5 font-semibold tracking-tight">
             {t("forgotPasswordTitle")}
@@ -148,7 +148,7 @@ export function VerifyOtpForm({ email }: Props) {
           ) : (
             <>
               {t("otpContinue")}
-              <ArrowRight className="h-5 w-5" />
+              <ChevronIcon direction="right" className="h-5 w-5" />
             </>
           )}
         </Button>

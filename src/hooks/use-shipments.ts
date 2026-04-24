@@ -11,6 +11,9 @@ export type ShipmentFilters = {
   page?: number;
   pageSize?: number;
   status?: ShipmentStatus;
+  /** Customer dashboard Active tab: everything except `delivered`. Ignored
+   *  if `status` is also set. */
+  active?: boolean;
   pickupPointId?: string;
   customerId?: string;
   search?: string;
@@ -22,6 +25,7 @@ async function fetchShipments(filters: ShipmentFilters): Promise<PaginatedRespon
   if (filters.page) params.set("page", String(filters.page));
   if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
   if (filters.status) params.set("status", filters.status);
+  if (filters.active) params.set("active", "true");
   if (filters.pickupPointId) params.set("pickupPointId", filters.pickupPointId);
   if (filters.customerId) params.set("customerId", filters.customerId);
   if (filters.search) params.set("search", filters.search);
@@ -59,9 +63,9 @@ async function fetchShipmentByTracking(trackingId: string): Promise<ShipmentWith
 }
 
 export function useShipments(filters: ShipmentFilters = {}, { enabled = true } = {}) {
-  const { page, pageSize, status, pickupPointId, customerId, search } = filters;
+  const { page, pageSize, status, active, pickupPointId, customerId, search } = filters;
   return useQuery({
-    queryKey: ["shipments", page, pageSize, status, pickupPointId, customerId, search],
+    queryKey: ["shipments", page, pageSize, status, active, pickupPointId, customerId, search],
     queryFn: () => fetchShipments(filters),
     placeholderData: (previousData) => previousData,
     enabled,

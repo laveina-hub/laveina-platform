@@ -1,7 +1,7 @@
-import { Mail, Clock, MapPin, ChevronDown } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { Heading, SectionContainer, Text } from "@/components/atoms";
+import { ChevronIcon, ClockIcon, MailIcon, MapPinIcon } from "@/components/icons";
 
 import { ContactForm } from "./ContactForm";
 
@@ -26,7 +26,10 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
         <Heading variant="card" as="h3" className="text-base">
           {question}
         </Heading>
-        <ChevronDown className="chevron text-text-light h-5 w-5 shrink-0 transition-transform duration-200" />
+        <ChevronIcon
+          direction="down"
+          className="chevron text-text-light h-5 w-5 shrink-0 transition-transform duration-200"
+        />
       </summary>
       <div className="px-6 pt-0 pb-5 md:px-8 md:pb-6">
         <Text variant="body" className="text-text-light">
@@ -71,17 +74,17 @@ export async function ContactPageSection() {
                 {t("infoTitle")}
               </Heading>
               <InfoCard
-                icon={<Mail className="text-primary h-5 w-5" />}
+                icon={<MailIcon className="text-primary h-5 w-5" />}
                 title={t("emailTitle")}
                 value={t("emailValue")}
               />
               <InfoCard
-                icon={<Clock className="text-primary h-5 w-5" />}
+                icon={<ClockIcon className="text-primary h-5 w-5" />}
                 title={t("hoursTitle")}
                 value={t("hoursValue")}
               />
               <InfoCard
-                icon={<MapPin className="text-primary h-5 w-5" />}
+                icon={<MapPinIcon className="text-primary h-5 w-5" />}
                 title={t("locationTitle")}
                 value={t("locationValue")}
               />

@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -10,6 +9,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button, Input, Label } from "@/components/atoms";
+import { ChevronIcon } from "@/components/icons";
 import { WorkingHoursEditor } from "@/components/molecules";
 import { usePickupPoint } from "@/hooks/use-pickup-points";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -114,7 +114,7 @@ export function AdminPickupPointFormSection({ pickupPointId }: Props) {
           href="/admin/pickup-points"
           className="text-text-muted hover:bg-bg-muted hover:text-text-light rounded-lg p-2"
         >
-          <ArrowLeft size={20} />
+          <ChevronIcon size={20} />
         </Link>
         <h1 className="font-body text-text-primary text-2xl font-semibold">
           {isEditMode ? t("editPickupPoint") : t("createPickupPoint")}

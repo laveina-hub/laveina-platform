@@ -45,11 +45,63 @@ function isRetryable(status: number): boolean {
   return status === 429 || status >= 500;
 }
 
+/**
+ * DEV-ONLY stub — when `GALLABOX_STUB=true` in the environment, we skip the
+ * real API call entirely and return a synthetic success response. This is the
+ * first stage of the local testing strategy:
+ *
+ *   Stage 1 (GALLABOX_STUB=true)        — no real WhatsApp traffic; payloads
+ *                                          are console-logged for inspection.
+ *                                          Safe to use with fake/Spanish test
+ *                                          numbers; no Meta template approval
+ *                                          required.
+ *   Stage 2 (GALLABOX_STUB=false + your own WhatsApp number) — real API call,
+ *                                          real delivery to a device you own.
+ *                                          Requires approved Meta templates
+ *                                          and a relaxed phone validator (see
+ *                                          `shipment.schema.ts` dev-mode gate).
+ *   Stage 3 (production)                 — real API call to real Spanish
+ *                                          customer numbers.
+ *
+ * The stub still returns the same `GallaboxResponse` shape so downstream code
+ * (notification.service.ts → notifications_log inserts) runs unchanged. The
+ * synthetic `id` is prefixed with `stub:` so it's easy to spot in the DB.
+ */
+function isStubEnabled(): boolean {
+  return process.env.GALLABOX_STUB === "true";
+}
+
+function stubSend(to: string, templateName: string, params: TemplateParam[]): GallaboxResponse {
+  // Verbose log so developers can verify the exact payload that would have
+  // been sent — template name, recipient, and numbered body values mirror
+  // what Gallabox renders into the WhatsApp template variables.
+  console.log("[Gallabox STUB] Skipping real send. Payload:", {
+    to,
+    templateName,
+    params: params.reduce<Record<string, string>>((acc, p, i) => {
+      acc[`{{${i + 1}}} ${p.name}`] = p.value;
+      return acc;
+    }, {}),
+  });
+  return {
+    id: `stub:${templateName}:${Date.now()}`,
+    status: "sent",
+    message: "Stubbed in dev — no real WhatsApp delivery occurred.",
+  };
+}
+
 export async function sendWhatsAppMessage(
   to: string,
   templateName: string,
   params: TemplateParam[]
 ): Promise<GallaboxResponse> {
+  // Dev short-circuit — see `isStubEnabled` docs above. Checked BEFORE
+  // `getConfig()` so the stub works even without Gallabox credentials set,
+  // which is the common local-dev case.
+  if (isStubEnabled()) {
+    return stubSend(to, templateName, params);
+  }
+
   const { apiKey, apiUrl, channelId } = getConfig();
 
   const bodyValues: Record<string, string> = {};

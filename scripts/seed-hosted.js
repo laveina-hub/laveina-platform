@@ -1,5 +1,9 @@
 /**
- * Seeds a hosted Supabase instance with all reference data + test users.
+ * Seeds a hosted Supabase instance with dev-only fixtures (test users + pickup points).
+ *
+ * Reference data (parcel presets, pricing, insurance options, weight tiers,
+ * operational defaults) is owned by the migrations in supabase/migrations/
+ * and is already in place after `npm run db:migrate`. Do not re-seed it here.
  *
  * Usage: node scripts/seed-hosted.js
  *
@@ -8,7 +12,7 @@
  *   NEXT_PUBLIC_SUPABASE_ANON_KEY
  *   SUPABASE_SERVICE_ROLE_KEY
  *
- * This script is idempotent — uses ON CONFLICT and skips existing users.
+ * This script is idempotent — skips existing users and upserts pickup points.
  */
 
 const { createClient } = require("@supabase/supabase-js");
@@ -63,55 +67,8 @@ const USERS = [
 // In production, omit default_password to send real invite emails instead.
 
 async function main() {
-  // Step 1: Seed reference data
-  console.log("1. Seeding reference data (parcel sizes, insurance, admin settings)...");
-
-  console.log("   Seeding parcel_size_config (weight tiers)...");
-  const sizes = [
-    { size: "tier_1", min_weight_kg: 0, max_weight_kg: 2 },
-    { size: "tier_2", min_weight_kg: 2.01, max_weight_kg: 5 },
-    { size: "tier_3", min_weight_kg: 5.01, max_weight_kg: 10 },
-    { size: "tier_4", min_weight_kg: 10.01, max_weight_kg: 15 },
-    { size: "tier_5", min_weight_kg: 15.01, max_weight_kg: 20 },
-    { size: "tier_6", min_weight_kg: 20.01, max_weight_kg: 30 },
-  ];
-  const { error: sizeErr } = await sb
-    .from("parcel_size_config")
-    .upsert(sizes, { onConflict: "size" });
-  console.log(sizeErr ? `   FAILED: ${sizeErr.message}` : "   OK");
-
-  console.log("   Seeding insurance_options...");
-  const insurance = [
-    { coverage_amount_cents: 2500, surcharge_cents: 0, is_active: true, display_order: 1 },
-    { coverage_amount_cents: 5000, surcharge_cents: 100, is_active: true, display_order: 2 },
-    { coverage_amount_cents: 10000, surcharge_cents: 200, is_active: true, display_order: 3 },
-    { coverage_amount_cents: 20000, surcharge_cents: 300, is_active: true, display_order: 4 },
-  ];
-  const { error: insErr } = await sb
-    .from("insurance_options")
-    .upsert(insurance, { onConflict: "coverage_amount_cents" });
-  console.log(insErr ? `   FAILED: ${insErr.message}` : "   OK");
-
-  console.log("   Seeding admin_settings...");
-  const settings = [
-    { key: "sendcloud_margin_percent", value: "25" },
-    { key: "internal_price_tier_1_cents", value: "495" },
-    { key: "internal_price_tier_2_cents", value: "675" },
-    { key: "internal_price_tier_3_cents", value: "990" },
-    { key: "internal_price_tier_4_cents", value: "1440" },
-    { key: "internal_price_tier_5_cents", value: "1800" },
-    { key: "internal_price_tier_6_cents", value: "2520" },
-    { key: "sendcloud_sender_name", value: "Laveina" },
-    { key: "sendcloud_sender_address", value: "Rambla de l'Exposicio 103, Planta 1 - Local" },
-    { key: "sendcloud_sender_city", value: "Vilanova i la Geltru" },
-    { key: "sendcloud_sender_postcode", value: "08800" },
-    { key: "sendcloud_sender_phone", value: "" },
-  ];
-  const { error: setErr } = await sb.from("admin_settings").upsert(settings, { onConflict: "key" });
-  console.log(setErr ? `   FAILED: ${setErr.message}` : "   OK");
-
-  // Step 2: Create test users via Admin API
-  console.log("\n2. Creating test users via Admin API...");
+  // Step 1: Create test users via Admin API
+  console.log("1. Creating test users via Admin API...");
   const userIdMap = {};
   for (const u of USERS) {
     const { data, error } = await sb.auth.admin.createUser({
@@ -161,8 +118,8 @@ async function main() {
     }
   }
 
-  // Step 3: Seed pickup points from CSV
-  console.log("\n3. Seeding pickup points from CSV...");
+  // Step 2: Seed pickup points from CSV
+  console.log("\n2. Seeding pickup points from CSV...");
   console.log("   Running: node scripts/seed-pickup-points.js");
   const { execSync } = require("child_process");
   try {
@@ -178,8 +135,8 @@ async function main() {
     console.error(`   FAILED: ${err.message}`);
   }
 
-  // Step 4: Verify logins (with delay to avoid Supabase rate limiting)
-  console.log("\n4. Verifying logins...");
+  // Step 3: Verify logins (with delay to avoid Supabase rate limiting)
+  console.log("\n3. Verifying logins...");
   const anonSb = createClient(supabaseUrl, anonKey);
   for (const u of USERS) {
     const r = await anonSb.auth.signInWithPassword({ email: u.email, password: u.password });

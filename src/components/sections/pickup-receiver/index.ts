@@ -1,0 +1,1 @@
+export { ReceiverOtpSection } from "./ReceiverOtpSection";

@@ -1,10 +1,11 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/atoms";
+import { CloseIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 type ConfirmDialogProps = {
@@ -68,7 +69,7 @@ export function ConfirmDialog({
                 className="focus-visible:ring-primary-500 text-text-muted hover:bg-bg-muted hover:text-text-primary rounded-md p-1 focus-visible:ring-2 focus-visible:outline-none"
                 aria-label={tCommon("closeDialog")}
               >
-                <X size={16} />
+                <CloseIcon size={16} />
               </button>
             </Dialog.Close>
           </div>

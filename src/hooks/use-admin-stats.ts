@@ -19,8 +19,10 @@ export type AdminStats = {
     parcel_size: string;
     price_cents: number;
     created_at: string;
-    sender_name: string;
-    receiver_name: string;
+    sender_first_name: string;
+    sender_last_name: string;
+    receiver_first_name: string;
+    receiver_last_name: string;
   }[];
 };
 

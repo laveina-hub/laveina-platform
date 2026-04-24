@@ -8,7 +8,12 @@ export const TRACKING_ID_PREFIX = "LAV";
 export const TRACKING_ID_LENGTH = 12;
 
 export const OTP_LENGTH = 6;
-export const OTP_EXPIRY_MINUTES = 10;
+// M2: expiry extended from 10 min → 24 h per Q12.4. Security trade-off
+// documented in README/M2_EXECUTION_PLAN.md (S3.4).
+export const OTP_EXPIRY_HOURS = 24;
+/** @deprecated Use OTP_EXPIRY_HOURS. Kept temporarily for callers that have
+ *  not yet migrated; will be removed when the pre-M2 flow is retired. */
+export const OTP_EXPIRY_MINUTES = OTP_EXPIRY_HOURS * 60;
 
 export const PAGINATION_DEFAULT_PAGE_SIZE = 20;
 export const PAGINATION_MAX_PAGE_SIZE = 100;

@@ -8,6 +8,7 @@ import { Toaster } from "sonner";
 import { CrispChat } from "@/components/layout/CrispChat";
 import { IubendaCookie } from "@/components/layout/IubendaCookie";
 import { routing } from "@/i18n/routing";
+import { createClient } from "@/lib/supabase/server";
 import { AuthProvider } from "@/providers/auth-provider";
 import { QueryProvider } from "@/providers/query-provider";
 
@@ -60,6 +61,14 @@ export default async function LocaleLayout({ children, params }: Props) {
   setRequestLocale(locale);
   const messages = await getMessages();
 
+  const supabase = await createClient();
+  // getSession() reads the cookie locally — no network call. Safe because
+  // middleware already verified and refreshed the JWT. Hydrates AuthProvider
+  // so the initial render matches the server, avoiding a Sign-in-button flash.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
@@ -68,7 +77,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       <body className={`${prostoOne.variable} font-body antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
-            <AuthProvider>
+            <AuthProvider initialSession={session}>
               {children}
               <Toaster
                 richColors

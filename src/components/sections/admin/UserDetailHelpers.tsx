@@ -1,11 +1,13 @@
-import type { LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
+
+type IconComponent = ComponentType<{ size?: number; className?: string; color?: string }>;
 
 export function DetailRow({
   icon: Icon,
   label,
   children,
 }: {
-  icon: LucideIcon;
+  icon: IconComponent;
   label: string;
   children: React.ReactNode;
 }) {
@@ -41,14 +43,4 @@ export function DetailSkeleton() {
       </div>
     </div>
   );
-}
-
-export function formatDate(dateStr: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(dateStr));
 }

@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -21,12 +22,18 @@ export function RegisterForm() {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
+  // Q13.6 — when arriving from the delivery-confirmation soft-register prompt,
+  // the receiver's email rides along as `?email=` so we can pre-fill the form.
+  const searchParams = useSearchParams();
+  const presetEmail = searchParams.get("email") ?? undefined;
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
+    defaultValues: presetEmail ? { email: presetEmail } : undefined,
   });
 
   async function onSubmit(data: RegisterInput) {

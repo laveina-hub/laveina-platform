@@ -1,18 +1,20 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Box, Calendar, Mail, Phone, Shield, User } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { Calendar, Shield, User } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { BoxIcon, ChevronIcon, MailIcon, PhoneIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/molecules/ConfirmDialog";
 import { useUser } from "@/hooks/use-users";
 import { Link, useRouter } from "@/i18n/navigation";
+import { formatDateTimeMedium, type Locale } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/types/enums";
 
-import { DetailRow, DetailSkeleton, formatDate } from "./UserDetailHelpers";
+import { DetailRow, DetailSkeleton } from "./UserDetailHelpers";
 
 const ALL_ROLES = Object.values(UserRole);
 
@@ -24,6 +26,7 @@ export function AdminUserDetailSection({ userId }: Props) {
   const t = useTranslations("adminUsers");
   const tDashboard = useTranslations("dashboard");
   const tCommon = useTranslations("common");
+  const locale = useLocale() as Locale;
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -94,7 +97,7 @@ export function AdminUserDetailSection({ userId }: Props) {
           onClick={() => router.push("/admin/users")}
           className="focus-visible:ring-primary-500 text-text-muted hover:bg-bg-muted hover:text-text-light rounded-lg p-2 focus-visible:ring-2 focus-visible:outline-none"
         >
-          <ArrowLeft size={20} />
+          <ChevronIcon size={20} />
         </button>
         <div className="flex-1">
           <h1 className="font-body text-text-primary text-2xl font-semibold">{user.full_name}</h1>
@@ -112,10 +115,10 @@ export function AdminUserDetailSection({ userId }: Props) {
               <h2 className="text-text-primary text-sm font-semibold">{t("userDetails")}</h2>
             </div>
             <div className="divide-border-muted divide-y px-6">
-              <DetailRow icon={Mail} label={t("email")}>
+              <DetailRow icon={MailIcon} label={t("email")}>
                 {user.email}
               </DetailRow>
-              <DetailRow icon={Phone} label={t("phone")}>
+              <DetailRow icon={PhoneIcon} label={t("phone")}>
                 {user.phone ?? "—"}
               </DetailRow>
               <DetailRow icon={Shield} label={t("currentRole")}>
@@ -131,11 +134,11 @@ export function AdminUserDetailSection({ userId }: Props) {
                   {roleLabelMap[user.role]}
                 </span>
               </DetailRow>
-              <DetailRow icon={Box} label={t("shipments")}>
+              <DetailRow icon={BoxIcon} label={t("shipments")}>
                 {user.shipment_count}
               </DetailRow>
               <DetailRow icon={Calendar} label={t("joined")}>
-                {formatDate(user.created_at)}
+                {formatDateTimeMedium(user.created_at, locale)}
               </DetailRow>
             </div>
           </div>

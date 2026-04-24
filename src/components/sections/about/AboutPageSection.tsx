@@ -1,7 +1,8 @@
-import { Heart, Leaf, MousePointerClick, Eye, MapPin, Building2, ArrowRight } from "lucide-react";
+import { Heart, Leaf, MousePointerClick, Building2 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { Heading, SectionContainer, Text } from "@/components/atoms";
+import { ChevronIcon, EyeIcon, MapPinIcon } from "@/components/icons";
 import { Link } from "@/i18n/navigation";
 
 function ValueCard({
@@ -64,7 +65,7 @@ export async function AboutPageSection() {
           <div className="mx-auto grid max-w-5xl items-center gap-10 md:grid-cols-2 md:gap-16">
             <div>
               <div className="bg-primary-100 mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
-                <MapPin className="text-primary h-6 w-6" />
+                <MapPinIcon className="text-primary h-6 w-6" />
               </div>
               <Heading variant="card" as="h2" className="text-2xl md:text-3xl">
                 {t("missionTitle")}
@@ -147,7 +148,7 @@ export async function AboutPageSection() {
               description={t("valueSimplicityDesc")}
             />
             <ValueCard
-              icon={<Eye className="text-primary h-6 w-6" />}
+              icon={<EyeIcon className="text-primary h-6 w-6" />}
               title={t("valueTransparencyTitle")}
               description={t("valueTransparencyDesc")}
             />
@@ -188,7 +189,7 @@ export async function AboutPageSection() {
                 className="bg-primary hover:bg-primary/90 inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white transition-colors"
               >
                 {t("ctaButton")}
-                <ArrowRight className="h-4 w-4" />
+                <ChevronIcon direction="right" className="h-4 w-4" />
               </Link>
               <Link
                 href="/contact"

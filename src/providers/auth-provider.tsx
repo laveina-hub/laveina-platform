@@ -24,34 +24,24 @@ export type AuthContextValue = {
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+type AuthProviderProps = {
+  children: React.ReactNode;
+  initialSession: Session | null;
+};
+
+export function AuthProvider({ children, initialSession }: AuthProviderProps) {
   const supabase = useMemo(() => createClient(), []);
 
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(initialSession);
+  const [user, setUser] = useState<User | null>(initialSession?.user ?? null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth
-      .getSession()
-      .then(({ data: { session: currentSession } }) => {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-      })
-      .catch(() => {
-        setSession(null);
-        setUser(null);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
-      setLoading(false);
     });
 
     return () => {

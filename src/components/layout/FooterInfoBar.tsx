@@ -5,8 +5,6 @@ import { NAV_LINKS, SOCIAL_LINKS } from "@/constants/nav";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
-import { LocaleSwitcherMobile } from "./LocaleSwitcherMobile";
-
 export async function FooterInfoBar() {
   const t = await getTranslations("footerInfoBar");
 
@@ -103,10 +101,6 @@ export async function FooterInfoBar() {
                 </span>
               </button>
             </form>
-
-            <div className="mt-2 w-full max-w-xs">
-              <LocaleSwitcherMobile />
-            </div>
           </div>
         </div>
       </div>

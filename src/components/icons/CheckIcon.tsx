@@ -4,20 +4,20 @@ interface CheckIconProps {
   className?: string;
 }
 
-/** Custom checkmark icon from design asset check-mark-10127.svg. Pure checkmark only — wrap with a rounded container for background styling. */
+/** Custom checkmark icon from design asset check-mark-2.svg. Pure checkmark only — wrap with a rounded container for background styling. */
 export function CheckIcon({ size = 24, color = "currentColor", className }: CheckIconProps) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 90 90"
+      viewBox="0 0 1024 1024"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden="true"
     >
       <path
-        d="M33 78c-2.303 0-4.606-.879-6.364-2.636l-24-24c-3.515-3.515-3.515-9.213 0-12.728 3.515-3.515 9.213-3.515 12.728 0L33 56.272l41.636-41.636c3.516-3.515 9.213-3.515 12.729 0 3.515 3.515 3.515 9.213 0 12.728l-48 48C37.606 77.121 35.303 78 33 78z"
+        d="M416.832 798.08C400.64 798.08 384.512 791.872 372.16 779.52L119.424 525.76C94.784 500.992 94.784 460.8 119.424 436.032 144.128 411.264 184.128 411.264 208.768 436.032L416.832 644.928 814.4 245.76C839.04 220.928 879.04 220.928 903.744 245.76 928.384 270.528 928.384 310.656 903.744 335.424L461.504 779.52C449.152 791.872 432.96 798.08 416.832 798.08Z"
         fill={color}
       />
     </svg>

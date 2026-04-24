@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -10,6 +9,7 @@ import { toast } from "sonner";
 
 import { sendPasswordResetOtp } from "@/actions/auth";
 import { Button, Input, Label } from "@/components/atoms";
+import { ChevronIcon } from "@/components/icons";
 import { useAuth } from "@/hooks/use-auth";
 import { Link, useRouter } from "@/i18n/navigation";
 import { forgotPasswordSchema, type ForgotPasswordInput } from "@/validations/auth.schema";
@@ -74,7 +74,7 @@ export function ForgotPasswordForm() {
         {/* Heading with back arrow */}
         <div className="flex items-center gap-3">
           <Link href="/auth/login" aria-label={t("backToLogin")}>
-            <ArrowLeft className="text-text-primary h-7 w-7" />
+            <ChevronIcon className="text-text-primary h-7 w-7" />
           </Link>
           <h1 className="font-display text-text-primary text-3xl leading-10.5 font-semibold tracking-tight">
             {t("forgotPasswordTitle")}

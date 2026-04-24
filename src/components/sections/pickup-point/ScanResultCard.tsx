@@ -8,8 +8,10 @@ import { cn } from "@/lib/utils";
 interface ScanResultData {
   shipment: {
     tracking_id: string;
-    sender_name: string;
-    receiver_name: string;
+    sender_first_name: string;
+    sender_last_name: string;
+    receiver_first_name: string;
+    receiver_last_name: string;
     parcel_size: string;
   };
   scanLog: {
@@ -119,8 +121,14 @@ export function ScanResultCard({ result, onScanAnother }: ScanResultCardProps) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <DetailRow label={t("trackingId")} value={result.shipment.tracking_id} />
             <DetailRow label={t("parcelSize")} value={result.shipment.parcel_size} />
-            <DetailRow label={t("sender")} value={result.shipment.sender_name} />
-            <DetailRow label={t("receiver")} value={result.shipment.receiver_name} />
+            <DetailRow
+              label={t("sender")}
+              value={`${result.shipment.sender_first_name} ${result.shipment.sender_last_name}`.trim()}
+            />
+            <DetailRow
+              label={t("receiver")}
+              value={`${result.shipment.receiver_first_name} ${result.shipment.receiver_last_name}`.trim()}
+            />
           </div>
 
           <Button

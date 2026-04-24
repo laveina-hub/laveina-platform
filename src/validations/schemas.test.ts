@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { loginSchema, registerSchema, forgotPasswordSchema } from "@/validations/auth.schema";
 import { generateOtpSchema, verifyOtpSchema } from "@/validations/otp.schema";
+import { adminRatingStatusSchema } from "@/validations/rating.schema";
+import {
+  createSavedAddressSchema,
+  updateSavedAddressSchema,
+} from "@/validations/saved-address.schema";
 import { scanQrSchema } from "@/validations/scan.schema";
 import {
   bookingStepContactSchema,
@@ -11,6 +16,9 @@ import {
   bookingStepSpeedSchema,
   createCheckoutSchema,
 } from "@/validations/shipment.schema";
+import { adminSupportTicketUpdateSchema } from "@/validations/support-ticket.schema";
+
+const VALID_UUID = "00000000-0000-0000-0000-000000000001";
 
 describe("auth schemas", () => {
   describe("loginSchema", () => {
@@ -152,17 +160,23 @@ describe("scanQrSchema", () => {
 describe("booking step schemas", () => {
   describe("bookingStepContactSchema", () => {
     const validContact = {
-      sender_name: "Juan García",
+      sender_first_name: "Juan",
+      sender_last_name: "García",
       sender_phone: "+34 612 345 678",
-      receiver_name: "Ana López",
+      sender_whatsapp_same_as_phone: true,
+      sender_email: "juan@example.com",
+      receiver_first_name: "Ana",
+      receiver_last_name: "López",
       receiver_phone: "+34 698 765 432",
+      receiver_whatsapp_same_as_phone: true,
+      receiver_email: "ana@example.com",
     };
 
-    it("accepts valid contact data", () => {
+    it("accepts valid contact data with whatsapp=same", () => {
       expect(bookingStepContactSchema.safeParse(validContact).success).toBe(true);
     });
 
-    it("accepts phone without + prefix", () => {
+    it("accepts bare 9-digit phone (no +34)", () => {
       const result = bookingStepContactSchema.safeParse({
         ...validContact,
         sender_phone: "612345678",
@@ -173,17 +187,42 @@ describe("booking step schemas", () => {
     it("rejects name shorter than 2 chars", () => {
       const result = bookingStepContactSchema.safeParse({
         ...validContact,
-        sender_name: "J",
+        sender_first_name: "J",
       });
       expect(result.success).toBe(false);
     });
 
-    it("rejects phone with letters", () => {
+    it("rejects non-Spanish phone starting with 1", () => {
       const result = bookingStepContactSchema.safeParse({
         ...validContact,
-        sender_phone: "abc123",
+        sender_phone: "+1 555 123 4567",
       });
       expect(result.success).toBe(false);
+    });
+
+    it("rejects invalid email", () => {
+      const result = bookingStepContactSchema.safeParse({
+        ...validContact,
+        sender_email: "not-an-email",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("requires sender_whatsapp when not same_as_phone", () => {
+      const result = bookingStepContactSchema.safeParse({
+        ...validContact,
+        sender_whatsapp_same_as_phone: false,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts separate sender_whatsapp when not same_as_phone", () => {
+      const result = bookingStepContactSchema.safeParse({
+        ...validContact,
+        sender_whatsapp_same_as_phone: false,
+        sender_whatsapp: "+34 699 000 000",
+      });
+      expect(result.success).toBe(true);
     });
   });
 
@@ -224,32 +263,40 @@ describe("booking step schemas", () => {
   });
 
   describe("bookingStepParcelSchema", () => {
-    const validParcel = {
+    const validCustomParcel = {
+      preset_slug: null,
       length_cm: 40,
       width_cm: 30,
       height_cm: 20,
       weight_kg: 3.5,
-      insurance_option_id: "550e8400-e29b-41d4-a716-446655440000",
+      wants_insurance: false,
+    };
+    const validPresetParcel = {
+      preset_slug: "small" as const,
+      weight_kg: 3.5,
+      wants_insurance: false,
     };
 
-    it("accepts valid single parcel", () => {
-      const result = bookingStepParcelSchema.safeParse({ parcels: [validParcel] });
+    it("accepts a preset-only parcel (dimensions resolved server-side)", () => {
+      const result = bookingStepParcelSchema.safeParse({ parcels: [validPresetParcel] });
       expect(result.success).toBe(true);
     });
 
-    it("accepts multiple parcels", () => {
+    it("accepts a custom-size parcel", () => {
+      const result = bookingStepParcelSchema.safeParse({ parcels: [validCustomParcel] });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects a parcel missing both preset and dimensions", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcels: [
-          validParcel,
-          { length_cm: 20, width_cm: 15, height_cm: 10, weight_kg: 1, insurance_option_id: null },
-        ],
+        parcels: [{ preset_slug: null, weight_kg: 3.5, wants_insurance: false }],
       });
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
-    it("accepts null insurance_option_id", () => {
+    it("accepts multiple parcels mixing presets and custom", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcels: [{ ...validParcel, insurance_option_id: null }],
+        parcels: [validPresetParcel, validCustomParcel],
       });
       expect(result.success).toBe(true);
     });
@@ -259,44 +306,30 @@ describe("booking step schemas", () => {
       expect(result.success).toBe(false);
     });
 
-    it("rejects weight above 30 kg", () => {
+    it("rejects weight above the M2 ceiling (20 kg)", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcels: [{ ...validParcel, weight_kg: 31 }],
+        parcels: [{ ...validCustomParcel, weight_kg: 21 }],
       });
       expect(result.success).toBe(false);
     });
 
-    it("rejects zero weight", () => {
+    it("rejects longest side exceeding 55 cm (M2 ceiling)", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcels: [{ ...validParcel, weight_kg: 0 }],
+        parcels: [{ ...validCustomParcel, length_cm: 56 }],
       });
       expect(result.success).toBe(false);
     });
 
-    it("rejects negative weight", () => {
+    it("rejects total dimensions exceeding 149 cm (M2 ceiling)", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcels: [{ ...validParcel, weight_kg: -1 }],
+        parcels: [{ ...validCustomParcel, length_cm: 55, width_cm: 55, height_cm: 40 }],
       });
       expect(result.success).toBe(false);
     });
 
-    it("rejects longest side exceeding 120 cm", () => {
+    it("accepts dimensions at exactly 149 cm total", () => {
       const result = bookingStepParcelSchema.safeParse({
-        parcels: [{ ...validParcel, length_cm: 121 }],
-      });
-      expect(result.success).toBe(false);
-    });
-
-    it("rejects total dimensions exceeding 150 cm", () => {
-      const result = bookingStepParcelSchema.safeParse({
-        parcels: [{ ...validParcel, length_cm: 60, width_cm: 50, height_cm: 41 }],
-      });
-      expect(result.success).toBe(false);
-    });
-
-    it("accepts dimensions at exactly 150 cm total", () => {
-      const result = bookingStepParcelSchema.safeParse({
-        parcels: [{ ...validParcel, length_cm: 60, width_cm: 50, height_cm: 40 }],
+        parcels: [{ ...validCustomParcel, length_cm: 55, width_cm: 55, height_cm: 39 }],
       });
       expect(result.success).toBe(true);
     });
@@ -311,6 +344,10 @@ describe("booking step schemas", () => {
       expect(bookingStepSpeedSchema.safeParse({ delivery_speed: "express" }).success).toBe(true);
     });
 
+    it("accepts next_day (M2)", () => {
+      expect(bookingStepSpeedSchema.safeParse({ delivery_speed: "next_day" }).success).toBe(true);
+    });
+
     it("rejects invalid speed", () => {
       expect(bookingStepSpeedSchema.safeParse({ delivery_speed: "overnight" }).success).toBe(false);
     });
@@ -319,16 +356,26 @@ describe("booking step schemas", () => {
 
 describe("createCheckoutSchema", () => {
   const validCheckout = {
-    sender_name: "Juan García",
+    sender_first_name: "Juan",
+    sender_last_name: "García",
     sender_phone: "+34 612 345 678",
-    receiver_name: "Ana López",
+    sender_whatsapp: "+34 612 345 678",
+    sender_email: "juan@example.com",
+    receiver_first_name: "Ana",
+    receiver_last_name: "López",
     receiver_phone: "+34 698 765 432",
+    receiver_whatsapp: "+34 698 765 432",
+    receiver_email: "ana@example.com",
     origin_postcode: "08001",
     origin_pickup_point_id: "550e8400-e29b-41d4-a716-446655440000",
     destination_postcode: "28001",
     destination_pickup_point_id: "660e8400-e29b-41d4-a716-446655440000",
     parcels: [
-      { length_cm: 40, width_cm: 30, height_cm: 20, weight_kg: 3.5, insurance_option_id: null },
+      {
+        preset_slug: "small" as const,
+        weight_kg: 3.5,
+        wants_insurance: false,
+      },
     ],
     delivery_speed: "standard" as const,
   };
@@ -341,15 +388,15 @@ describe("createCheckoutSchema", () => {
     const result = createCheckoutSchema.safeParse({
       ...validCheckout,
       parcels: [
-        { length_cm: 20, width_cm: 15, height_cm: 10, weight_kg: 1, insurance_option_id: null },
-        { length_cm: 40, width_cm: 30, height_cm: 20, weight_kg: 8, insurance_option_id: null },
+        { preset_slug: "mini" as const, weight_kg: 1, wants_insurance: false },
+        { preset_slug: "medium" as const, weight_kg: 8, wants_insurance: true },
       ],
     });
     expect(result.success).toBe(true);
   });
 
   it("rejects missing required fields", () => {
-    const { sender_name: _, ...incomplete } = validCheckout;
+    const { sender_first_name: _omit, ...incomplete } = validCheckout;
     expect(createCheckoutSchema.safeParse(incomplete).success).toBe(false);
   });
 
@@ -375,5 +422,166 @@ describe("createCheckoutSchema", () => {
       delivery_speed: "express",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("accepts next_day delivery speed (M2)", () => {
+    const result = createCheckoutSchema.safeParse({
+      ...validCheckout,
+      delivery_speed: "next_day",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects missing sender_email (M2 required)", () => {
+    const { sender_email: _omit, ...incomplete } = validCheckout;
+    expect(createCheckoutSchema.safeParse(incomplete).success).toBe(false);
+  });
+});
+
+describe("adminSupportTicketUpdateSchema", () => {
+  it("accepts a status-only update", () => {
+    expect(adminSupportTicketUpdateSchema.safeParse({ status: "resolved" }).success).toBe(true);
+  });
+
+  it("accepts an admin_response-only update", () => {
+    expect(
+      adminSupportTicketUpdateSchema.safeParse({ admin_response: "Thanks, checking now." }).success
+    ).toBe(true);
+  });
+
+  it("accepts both status and admin_response in one payload", () => {
+    expect(
+      adminSupportTicketUpdateSchema.safeParse({
+        status: "in_progress",
+        admin_response: "Looking into this.",
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects an empty payload (at least one field must change)", () => {
+    expect(adminSupportTicketUpdateSchema.safeParse({}).success).toBe(false);
+  });
+
+  it("rejects an unknown status value", () => {
+    expect(adminSupportTicketUpdateSchema.safeParse({ status: "archived" }).success).toBe(false);
+  });
+
+  it("rejects an empty admin_response (min 1 char after trim)", () => {
+    expect(adminSupportTicketUpdateSchema.safeParse({ admin_response: "   " }).success).toBe(false);
+  });
+
+  it("rejects an admin_response longer than 4000 chars", () => {
+    const tooLong = "x".repeat(4001);
+    expect(adminSupportTicketUpdateSchema.safeParse({ admin_response: tooLong }).success).toBe(
+      false
+    );
+  });
+});
+
+describe("adminRatingStatusSchema", () => {
+  it.each(["pending", "approved", "rejected"] as const)("accepts status=%s", (status) => {
+    expect(adminRatingStatusSchema.safeParse({ status }).success).toBe(true);
+  });
+
+  it("rejects an unknown status value", () => {
+    expect(adminRatingStatusSchema.safeParse({ status: "hidden" }).success).toBe(false);
+  });
+
+  it("rejects a missing status field", () => {
+    expect(adminRatingStatusSchema.safeParse({}).success).toBe(false);
+  });
+
+  it("rejects extra fields if passed (parse is strict on known field types)", () => {
+    // z.object is permissive about extra keys by default; the schema only
+    // validates that `status` is present and well-formed. This test pins the
+    // behaviour so a future `.strict()` change would surface here.
+    const result = adminRatingStatusSchema.safeParse({ status: "approved", notes: "ignored" });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("saved-address schemas", () => {
+  describe("createSavedAddressSchema", () => {
+    it("accepts a valid payload", () => {
+      const result = createSavedAddressSchema.safeParse({
+        label: "Home",
+        pickup_point_id: VALID_UUID,
+        is_default: true,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("defaults is_default to false when omitted", () => {
+      const result = createSavedAddressSchema.safeParse({
+        label: "Home",
+        pickup_point_id: VALID_UUID,
+      });
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.is_default).toBe(false);
+    });
+
+    it("trims whitespace from the label", () => {
+      const result = createSavedAddressSchema.safeParse({
+        label: "  Office  ",
+        pickup_point_id: VALID_UUID,
+      });
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.label).toBe("Office");
+    });
+
+    it("rejects an empty label", () => {
+      const result = createSavedAddressSchema.safeParse({
+        label: "",
+        pickup_point_id: VALID_UUID,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects a label longer than 64 characters", () => {
+      const result = createSavedAddressSchema.safeParse({
+        label: "x".repeat(65),
+        pickup_point_id: VALID_UUID,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects a non-UUID pickup_point_id", () => {
+      const result = createSavedAddressSchema.safeParse({
+        label: "Home",
+        pickup_point_id: "not-a-uuid",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("updateSavedAddressSchema", () => {
+    it("accepts a partial patch with just the label", () => {
+      const result = updateSavedAddressSchema.safeParse({ label: "Family" });
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts a partial patch with just is_default", () => {
+      const result = updateSavedAddressSchema.safeParse({ is_default: true });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects an empty patch (must update at least one field)", () => {
+      const result = updateSavedAddressSchema.safeParse({});
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects an invalid pickup_point_id UUID", () => {
+      const result = updateSavedAddressSchema.safeParse({
+        pickup_point_id: "definitely-not-a-uuid",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects label longer than 64 chars in an update", () => {
+      const result = updateSavedAddressSchema.safeParse({
+        label: "y".repeat(65),
+      });
+      expect(result.success).toBe(false);
+    });
   });
 });

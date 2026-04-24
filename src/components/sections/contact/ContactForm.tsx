@@ -1,10 +1,11 @@
 "use client";
 
-import { CheckCircle, Send } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
 
 import { Button, Heading, Input, Label, Select, Text } from "@/components/atoms";
+import { SendIcon } from "@/components/icons";
 
 export function ContactForm() {
   const t = useTranslations("contactPage");
@@ -82,7 +83,7 @@ export function ContactForm() {
       </div>
 
       <Button type="submit" variant="primary" size="lg" className="w-full gap-2">
-        <Send className="h-4 w-4" />
+        <SendIcon className="h-4 w-4" />
         {t("submitButton")}
       </Button>
     </form>

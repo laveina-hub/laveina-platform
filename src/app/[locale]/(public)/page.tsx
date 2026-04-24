@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
-import { CtaSection } from "@/components/sections/home/CtaSection";
-import { EcoPartnerSection } from "@/components/sections/home/EcoPartnerSection";
+import { ActiveShipmentsCard } from "@/components/sections/home/ActiveShipmentsCard";
 import { HeroSection } from "@/components/sections/home/HeroSection";
-import { PickupPointsNetworkSection } from "@/components/sections/home/PickupPointsNetworkSection";
-import { PricingSection } from "@/components/sections/home/PricingSection";
-import { WhyChooseUsSection } from "@/components/sections/home/WhyChooseUsSection";
+import { createClient } from "@/lib/supabase/server";
 
-export const revalidate = 86400;
+// Per-user shipment preview means no shared cache.
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -23,18 +21,48 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+// Delivered shipments live in the dashboard, not the home preview.
+const ACTIVE_STATUSES = [
+  "payment_confirmed",
+  "waiting_at_origin",
+  "received_at_origin",
+  "in_transit",
+  "arrived_at_destination",
+  "ready_for_pickup",
+] as const;
+
 export default async function HomePage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return (
+      <>
+        <HeroSection />
+        <ActiveShipmentsCard />
+      </>
+    );
+  }
+
+  const activeShipments = await supabase
+    .from("shipments")
+    .select("id, tracking_id, status")
+    .eq("customer_id", user.id)
+    .in("status", ACTIVE_STATUSES)
+    .order("created_at", { ascending: false })
+    // Card shows 3 rows; 4th row only tells us whether to render "View all".
+    .limit(4)
+    .then(({ data }) => data ?? []);
+
   return (
     <>
       <HeroSection />
-      <PricingSection />
-      <EcoPartnerSection />
-      <WhyChooseUsSection />
-      <PickupPointsNetworkSection />
-      <CtaSection />
+      <ActiveShipmentsCard shipments={activeShipments} />
     </>
   );
 }

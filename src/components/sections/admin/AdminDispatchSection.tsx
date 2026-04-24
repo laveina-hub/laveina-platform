@@ -3,23 +3,17 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, RowSelectionState } from "@tanstack/react-table";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Download,
-  FileText,
-  Package,
-  Truck,
-  XCircle,
-} from "lucide-react";
-import { useTranslations } from "next-intl";
+import { AlertTriangle, CheckCircle2, FileText, XCircle } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import { Button, DeliveryModeBadge } from "@/components/atoms";
+import { DownloadIcon, PackageIcon, TrackingTruckIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/molecules/ConfirmDialog";
 import { DataTable } from "@/components/molecules/DataTable";
 import { useShipments } from "@/hooks/use-shipments";
+import { formatDateTimeMedium, type Locale } from "@/lib/format";
 import { ShipmentStatus, type DeliveryMode } from "@/types/enums";
 import type { Shipment } from "@/types/shipment";
 
@@ -40,18 +34,10 @@ type DispatchResponse = {
   results: DispatchResult[];
 };
 
-function formatDate(dateStr: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(dateStr));
-}
-
 export function AdminDispatchSection() {
   const t = useTranslations("adminDispatch");
   const tCommon = useTranslations("common");
+  const locale = useLocale() as Locale;
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useShipments({
@@ -196,7 +182,7 @@ export function AdminDispatchSection() {
     {
       accessorKey: "created_at",
       header: t("received"),
-      cell: ({ row }) => formatDate(row.original.created_at),
+      cell: ({ row }) => formatDateTimeMedium(row.original.created_at, locale),
     },
     {
       id: "action",
@@ -229,7 +215,7 @@ export function AdminDispatchSection() {
 
         {selectedIds.length > 0 && (
           <Button onClick={handleDispatch} disabled={dispatchMutation.isPending} className="gap-2">
-            <Truck size={16} />
+            <TrackingTruckIcon size={16} />
             {dispatchMutation.isPending
               ? t("dispatching")
               : `${t("dispatchSelected")} (${selectedIds.length})`}
@@ -250,12 +236,14 @@ export function AdminDispatchSection() {
               <>
                 {internalCount > 0 && (
                   <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700">
-                    {internalCount}x Barcelona — {t("barcelonaDispatch")}
+                    {internalCount}x {tCommon("deliveryModeLabel.internal")} —{" "}
+                    {t("barcelonaDispatch")}
                   </div>
                 )}
                 {sendcloudCount > 0 && (
                   <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-violet-700">
-                    {sendcloudCount}x SendCloud — {t("sendcloudDispatch")}
+                    {sendcloudCount}x {tCommon("deliveryModeLabel.sendcloud")} —{" "}
+                    {t("sendcloudDispatch")}
                   </div>
                 )}
               </>
@@ -282,7 +270,7 @@ export function AdminDispatchSection() {
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
         emptyState={{
-          icon: <Package size={40} />,
+          icon: <PackageIcon size={40} />,
           title: t("noShipments"),
           description: t("noShipmentsDesc"),
         }}
@@ -351,7 +339,7 @@ function DispatchResultsPanel({
               className="gap-1.5 text-xs"
               onClick={() => onDownloadAll(results.results)}
             >
-              <Download size={14} />
+              <DownloadIcon size={14} />
               {t("downloadAllLabels", { count: labelsAvailable.length })}
             </Button>
           )}

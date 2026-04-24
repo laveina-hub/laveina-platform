@@ -2,12 +2,13 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle, FileUp, Upload, X } from "lucide-react";
+import { AlertTriangle, CheckCircle, FileUp, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/atoms";
+import { CloseIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import {
   parseCsvPickupPoints,
@@ -171,7 +172,7 @@ export function CsvImportDialog({ open, onOpenChange }: CsvImportDialogProps) {
                 className="text-text-muted hover:bg-bg-muted hover:text-text-light rounded-md p-1"
                 aria-label={tCommon("closeDialog")}
               >
-                <X size={16} />
+                <CloseIcon size={16} />
               </button>
             </Dialog.Close>
           </div>

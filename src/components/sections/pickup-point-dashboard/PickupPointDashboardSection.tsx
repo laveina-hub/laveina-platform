@@ -2,29 +2,23 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Box, Package, QrCode, ShieldCheck, TruckIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { QrCode, ShieldCheck } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 
 import { StatusBadge } from "@/components/atoms";
+import { BoxIcon, PackageIcon, TrackingTruckIcon } from "@/components/icons";
 import { DataTable } from "@/components/molecules/DataTable";
 import { usePickupPointId } from "@/hooks/use-pickup-point-id";
 import { useShipments } from "@/hooks/use-shipments";
 import { Link } from "@/i18n/navigation";
+import { formatDateTimeMedium, type Locale } from "@/lib/format";
 import type { ShipmentStatus } from "@/types/enums";
 import type { Shipment } from "@/types/shipment";
-
-function formatDate(dateStr: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(dateStr));
-}
 
 export function PickupPointDashboardSection() {
   const t = useTranslations("pickupPointDashboard");
   const tStatus = useTranslations("shipmentStatus");
+  const locale = useLocale() as Locale;
   const { data: pickupPointId, isLoading: loadingPpId } = usePickupPointId();
 
   const { data: shipments, isLoading: loadingShipments } = useShipments(
@@ -57,12 +51,16 @@ export function PickupPointDashboardSection() {
       ),
     },
     {
-      accessorKey: "sender_name",
+      id: "sender",
       header: t("sender"),
+      cell: ({ row }) =>
+        `${row.original.sender_first_name} ${row.original.sender_last_name}`.trim(),
     },
     {
-      accessorKey: "receiver_name",
+      id: "receiver",
       header: t("receiver"),
+      cell: ({ row }) =>
+        `${row.original.receiver_first_name} ${row.original.receiver_last_name}`.trim(),
     },
     {
       accessorKey: "status",
@@ -77,14 +75,14 @@ export function PickupPointDashboardSection() {
     {
       accessorKey: "created_at",
       header: t("date"),
-      cell: ({ row }) => formatDate(row.original.created_at),
+      cell: ({ row }) => formatDateTimeMedium(row.original.created_at, locale),
     },
   ];
 
   if (!pickupPointId && !loadingPpId) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <Package size={48} className="text-border-default mb-4" />
+        <PackageIcon size={48} className="text-border-default mb-4" />
         <h2 className="text-text-primary text-lg font-semibold">{t("noParcels")}</h2>
         <p className="text-text-muted mt-1 text-sm">{t("noParcelsDesc")}</p>
       </div>
@@ -102,19 +100,19 @@ export function PickupPointDashboardSection() {
         <StatCard
           label={t("todayIncoming")}
           value={todayIncoming}
-          icon={<Box size={20} className="text-blue-600" />}
+          icon={<BoxIcon size={20} className="text-blue-600" />}
           bg="bg-blue-50"
         />
         <StatCard
           label={t("readyForPickup")}
           value={readyForPickup}
-          icon={<Package size={20} className="text-orange-600" />}
+          icon={<PackageIcon size={20} className="text-orange-600" />}
           bg="bg-orange-50"
         />
         <StatCard
           label={t("deliveredToday")}
           value={deliveredToday}
-          icon={<TruckIcon size={20} className="text-green-600" />}
+          icon={<TrackingTruckIcon size={20} className="text-green-600" />}
           bg="bg-green-50"
         />
       </div>
@@ -156,7 +154,7 @@ export function PickupPointDashboardSection() {
           data={pendingParcels}
           isLoading={isLoading}
           emptyState={{
-            icon: <Package size={40} />,
+            icon: <PackageIcon size={40} />,
             title: t("noParcels"),
             description: t("noParcelsDesc"),
           }}

@@ -183,6 +183,7 @@
   --animate-fade-in-up: fade-in-up 0.5s ease-out both;
   --animate-fade-in: fade-in 0.4s ease-out both;
   --animate-scale-in: scale-in 0.3s ease-out both;
+  --animate-success-pop: success-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-slide-in-right: slide-in-right 0.4s ease-out both;
   --animate-slide-in-left: slide-in-left 0.4s ease-out both;
   --animate-progress-fill: progress-fill 0.6s ease-out both;
@@ -249,6 +250,25 @@
   }
   to {
     opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Bouncy entrance for success confirmations (payment-complete badge, etc.).
+   Scales past 1 then settles — draws the eye to the freshly-landed state. */
+@keyframes success-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  70% {
+    transform: scale(0.96);
+  }
+  100% {
     transform: scale(1);
   }
 }
