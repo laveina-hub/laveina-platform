@@ -5,8 +5,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { Button, SectionContainer } from "@/components/atoms";
-import { CheckIcon, ClockIcon, MapPinIcon, SendIcon, StarIcon } from "@/components/icons";
+import { AnimatedCheckBadge, Button, SectionContainer } from "@/components/atoms";
+import { ClockIcon, MapPinIcon, SendIcon, StarIcon } from "@/components/icons";
 import { Link } from "@/i18n/navigation";
 import { formatDateLong, formatTime, type Locale } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -171,17 +171,7 @@ export function DeliveryConfirmationSection({
         <div className="mx-auto flex max-w-lg flex-col">
           <section className="border-border-muted rounded-2xl border bg-white p-6 shadow-sm sm:p-8">
             <div className="flex justify-center">
-              <div className="relative flex h-24 w-24 items-center justify-center">
-                <span
-                  aria-hidden
-                  className="bg-success/20 absolute inset-0 animate-ping rounded-full"
-                  style={{ animationDuration: "2s" }}
-                />
-                <span aria-hidden className="bg-success/15 absolute inset-2 rounded-full" />
-                <div className="bg-success relative flex h-16 w-16 items-center justify-center rounded-full shadow-md">
-                  <CheckIcon className="h-8 w-8 text-white" />
-                </div>
-              </div>
+              <AnimatedCheckBadge />
             </div>
 
             <div className="mt-5 text-center">

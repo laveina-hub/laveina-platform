@@ -32,11 +32,11 @@ export const STATUS_TO_BUCKET: Record<string, TrackingBucket> = {
 };
 
 export const BUCKET_LABEL_KEYS: Record<TrackingBucket, string> = {
-  [TrackingBucket.AWAITING_DROPOFF]: "trackingBucket.awaiting_dropoff",
-  [TrackingBucket.COLLECTED_AT_ORIGIN]: "trackingBucket.collected_at_origin",
-  [TrackingBucket.IN_TRANSIT]: "trackingBucket.in_transit",
-  [TrackingBucket.AT_DESTINATION]: "trackingBucket.at_destination",
-  [TrackingBucket.DELIVERED]: "trackingBucket.delivered",
+  [TrackingBucket.AWAITING_DROPOFF]: "awaiting_dropoff",
+  [TrackingBucket.COLLECTED_AT_ORIGIN]: "collected_at_origin",
+  [TrackingBucket.IN_TRANSIT]: "in_transit",
+  [TrackingBucket.AT_DESTINATION]: "at_destination",
+  [TrackingBucket.DELIVERED]: "delivered",
 };
 
 /**
