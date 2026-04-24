@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { mapSendcloudStatus } from "@/constants/sendcloud-status-map";
+import { mapSendcloudStatusV3 } from "@/constants/sendcloud-status-map";
 import { verifyAuth } from "@/lib/supabase/auth";
 import { getSendcloudParcelStatus } from "@/services/sendcloud.service";
 import { DeliveryMode } from "@/types/enums";
@@ -20,7 +20,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
     const { data: shipment, error: fetchError } = await supabase
       .from("shipments")
-      .select("id, tracking_id, status, delivery_mode, sendcloud_parcel_id, label_url")
+      .select("id, tracking_id, status, delivery_mode, sendcloud_shipment_id, label_url")
       .eq("id", id)
       .single();
 
@@ -35,21 +35,21 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       );
     }
 
-    if (!shipment.sendcloud_parcel_id) {
+    if (!shipment.sendcloud_shipment_id) {
       return NextResponse.json(
         { error: "Shipment has not been dispatched to SendCloud yet" },
         { status: 400 }
       );
     }
 
-    const result = await getSendcloudParcelStatus(shipment.sendcloud_parcel_id);
+    const result = await getSendcloudParcelStatus(shipment.sendcloud_shipment_id);
 
     if (result.error) {
       return NextResponse.json({ error: result.error.message }, { status: 502 });
     }
 
-    const { statusId, statusMessage, trackingNumber, trackingUrl, labelUrl } = result.data;
-    const mappedStatus = mapSendcloudStatus(statusId);
+    const { statusCode, statusMessage, trackingNumber, trackingUrl, labelUrl } = result.data;
+    const mappedStatus = mapSendcloudStatusV3(statusCode);
     // SAFETY: DB column is constrained to ShipmentStatus enum values via CHECK constraint
     const oldStatus = shipment.status as ShipmentStatus;
 
@@ -79,7 +79,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json({
       data: {
-        sendcloudStatusId: statusId,
+        sendcloudStatusCode: statusCode,
         sendcloudStatusMessage: statusMessage,
         mappedStatus: mappedStatus ?? oldStatus,
         statusChanged,

@@ -18,8 +18,10 @@ type ShipmentInfo = {
   id: string;
   tracking_id: string;
   status: string;
-  receiver_name: string;
-  sender_name: string;
+  receiver_first_name: string;
+  receiver_last_name: string;
+  sender_first_name: string;
+  sender_last_name: string;
 };
 
 export function OtpVerifySection({ pickupPointId }: OtpVerifySectionProps) {
@@ -210,7 +212,10 @@ export function OtpVerifySection({ pickupPointId }: OtpVerifySectionProps) {
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <DetailRow label={t("trackingId")} value={shipment.tracking_id} />
-                <DetailRow label={t("receiver")} value={shipment.receiver_name} />
+                <DetailRow
+                  label={t("receiver")}
+                  value={`${shipment.receiver_first_name} ${shipment.receiver_last_name}`.trim()}
+                />
               </div>
               <p className="font-body text-text-muted text-base">{t("sendOtpDesc")}</p>
               <Button

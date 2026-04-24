@@ -1,20 +1,18 @@
 "use client";
 
-import { Check, MapPin, Package, Truck, User } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type ComponentType } from "react";
 
+import { CheckIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
-const STEP_KEYS = [
-  "stepContact",
-  "stepOrigin",
-  "stepDestination",
-  "stepParcel",
-  "stepSpeed",
-] as const;
-
-const STEP_ICONS: ComponentType<{ className?: string }>[] = [User, MapPin, MapPin, Package, Truck];
+// Visual spec (M2 design, Figma node 36756:16445):
+//   - Compact circle (~32px) with 2px border, no pulse/glow.
+//   - Current: primary border + primary number, pending: neutral border + muted number.
+//   - Completed swaps number for a check mark and fills the connector to the next step.
+// 4 steps per A2 UPDATED (2026-04-21): pickup-point picker is a sub-view of
+// Step 2, not a standalone step. Origin/destination selection happens inline
+// on desktop; mobile opens a full-screen picker sheet (see S2.2.3).
+const STEP_KEYS = ["stepSize", "stepRoute", "stepRecipient", "stepConfirmation"] as const;
 
 interface BookingStepperProps {
   currentStep: number;
@@ -28,54 +26,57 @@ function BookingStepper({ currentStep, className }: BookingStepperProps) {
   return (
     <nav
       aria-label={t("stepOf", { current: currentStep, total: totalSteps })}
-      className={cn("mb-10 sm:mb-14", className)}
+      className={cn("mb-8 sm:mb-12", className)}
     >
+      {/* Q4.3 — desktop shows "Step X of N" text above the dots; mobile relies
+          on the dots alone to save space. */}
+      <p className="text-text-muted mb-3 hidden text-sm font-medium sm:block">
+        {t("stepOf", { current: currentStep, total: totalSteps })}
+      </p>
       <ol className="flex w-full items-start">
         {STEP_KEYS.map((key, idx) => {
           const step = idx + 1;
           const isCompleted = currentStep > step;
           const isCurrent = currentStep === step;
-          const Icon = STEP_ICONS[idx];
+          const stepNumber = String(step).padStart(2, "0");
 
           return (
             <li
               key={key}
               className={cn(
-                "relative flex flex-1 flex-col items-center",
+                "relative flex flex-1 flex-col items-center gap-2",
                 idx < totalSteps - 1 &&
-                  "after:absolute after:top-5 after:left-[calc(50%+20px)] after:h-0.5 after:w-[calc(100%-40px)] after:content-[''] sm:after:top-6 sm:after:left-[calc(50%+24px)] sm:after:w-[calc(100%-48px)]",
+                  "after:absolute after:top-4 after:left-[calc(50%+18px)] after:h-0.5 after:w-[calc(100%-36px)] after:content-[''] sm:after:top-5 sm:after:left-[calc(50%+22px)] sm:after:w-[calc(100%-44px)]",
                 idx < totalSteps - 1 &&
-                  (isCompleted ? "after:bg-primary-500" : "after:bg-border-default"),
-                idx < totalSteps - 1 &&
-                  isCompleted &&
-                  "after:animate-progress-fill after:origin-left"
+                  (isCompleted ? "after:bg-primary-500" : "after:bg-border-default")
               )}
             >
               <div
                 aria-current={isCurrent ? "step" : undefined}
                 className={cn(
-                  "relative z-10 flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 sm:h-12 sm:w-12",
-                  isCompleted && "bg-primary-500 shadow-primary-500/30 text-white shadow-md",
-                  isCurrent &&
-                    "bg-primary-500 animate-pulse-ring text-white shadow-[0_0_0_4px_rgba(66,165,245,0.15),0_0_20px_rgba(66,165,245,0.2)]",
-                  !isCompleted &&
-                    !isCurrent &&
-                    "border-border-default text-text-muted border-2 bg-white"
+                  "relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 bg-white text-sm font-medium transition-colors sm:h-10 sm:w-10 sm:text-base",
+                  isCompleted && "border-primary-500 bg-primary-500 text-white",
+                  isCurrent && "border-primary-500 text-primary-600",
+                  !isCompleted && !isCurrent && "border-border-default text-text-muted"
                 )}
               >
                 {isCompleted ? (
-                  <Check className="animate-scale-in h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2.5} />
+                  <CheckIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                 ) : (
-                  <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", isCurrent && "animate-scale-in")} />
+                  <span>{stepNumber}</span>
                 )}
               </div>
 
+              {/* Show labels only for the current step at <sm, then every step
+                  from sm+. At 375px, long labels like "Origin & destination"
+                  would wrap awkwardly under each circle; the current-step
+                  label below is enough context for progress. */}
               <span
                 className={cn(
-                  "mt-2.5 text-center text-xs font-medium transition-colors duration-300 sm:mt-3 sm:text-xs",
-                  isCompleted && "text-primary-600",
-                  isCurrent && "text-primary-700 font-semibold",
-                  !isCompleted && !isCurrent && "text-text-muted"
+                  "text-center text-xs font-medium transition-colors sm:text-sm",
+                  isCompleted && "text-primary-600 hidden sm:inline",
+                  isCurrent && "text-primary-600",
+                  !isCompleted && !isCurrent && "text-text-muted hidden sm:inline"
                 )}
               >
                 {t(key)}

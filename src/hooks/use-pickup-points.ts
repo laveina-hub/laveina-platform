@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { throwApiError } from "@/lib/api-error";
 import type { PaginatedResponse } from "@/types/api";
-import type { PickupPoint } from "@/types/pickup-point";
+import type { PickupPoint, PickupPointWithOverrides } from "@/types/pickup-point";
 
 export type PickupPointFilters = {
   page?: number;
@@ -12,9 +12,13 @@ export type PickupPointFilters = {
   search?: string;
 };
 
-async function fetchPickupPoints(postcode?: string): Promise<PickupPoint[]> {
+async function fetchPickupPoints(
+  postcode?: string,
+  search?: string
+): Promise<PickupPointWithOverrides[]> {
   const params = new URLSearchParams();
   if (postcode) params.set("postcode", postcode);
+  if (search) params.set("search", search);
 
   const url = `/api/pickup-points${params.toString() ? `?${params.toString()}` : ""}`;
   const response = await fetch(url);
@@ -58,11 +62,18 @@ async function fetchPickupPoint(id: string): Promise<PickupPoint> {
   return result.data;
 }
 
-export function usePickupPoints(postcode?: string) {
-  return useQuery({
-    queryKey: ["pickup-points", postcode],
-    queryFn: () => fetchPickupPoints(postcode),
-    enabled: !!postcode,
+/**
+ * Public pickup-point lookup. Either `postcode` or `search` (≥3 chars) must
+ * be provided to enable the query; otherwise we don't bother hitting the
+ * API. The `search` path matches name/address/city/postcode (Q6.5).
+ */
+export function usePickupPoints(postcode?: string, search?: string) {
+  const trimmedSearch = search?.trim() ?? "";
+  const enabled = !!postcode || trimmedSearch.length >= 3;
+  return useQuery<PickupPointWithOverrides[]>({
+    queryKey: ["pickup-points", postcode, trimmedSearch],
+    queryFn: () => fetchPickupPoints(postcode, trimmedSearch || undefined),
+    enabled,
     staleTime: 5 * 60 * 1000,
   });
 }

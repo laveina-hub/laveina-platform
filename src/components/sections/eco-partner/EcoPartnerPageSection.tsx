@@ -1,22 +1,18 @@
-import {
-  Leaf,
-  Zap,
-  Package,
-  Award,
-  BarChart3,
-  TrendingUp,
-  Check,
-  ArrowRight,
-  Phone,
-  MessageCircle,
-  Mail,
-  MapPin,
-  BadgeCheck,
-  Globe,
-} from "lucide-react";
+import { Leaf, Award, BarChart3, TrendingUp, BadgeCheck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { Heading, SectionContainer, Text } from "@/components/atoms";
+import {
+  CheckIcon,
+  ChevronIcon,
+  GlobeIcon,
+  MailIcon,
+  MapPinIcon,
+  MessageIcon,
+  PackageIcon,
+  PhoneIcon,
+  ZapIcon,
+} from "@/components/icons";
 import { Link } from "@/i18n/navigation";
 
 function FeatureCard({
@@ -47,7 +43,7 @@ function FeatureCard({
       <ul className="space-y-2.5">
         {features.map((feature, i) => (
           <li key={i} className="flex items-start gap-2.5">
-            <Check className="text-success mt-0.5 h-4 w-4 shrink-0" />
+            <CheckIcon className="text-success mt-0.5 h-4 w-4 shrink-0" />
             <span className="text-text-secondary text-sm font-medium">{feature}</span>
           </li>
         ))}
@@ -93,7 +89,7 @@ export async function EcoPartnerPageSection() {
         <SectionContainer>
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
             <FeatureCard
-              icon={<Zap className="text-primary h-6 w-6" />}
+              icon={<ZapIcon className="text-primary h-6 w-6" />}
               title={t("electricTitle")}
               description={t("electricP1")}
               features={[
@@ -112,7 +108,7 @@ export async function EcoPartnerPageSection() {
             />
 
             <FeatureCard
-              icon={<Package className="text-success h-6 w-6" />}
+              icon={<PackageIcon className="text-success h-6 w-6" />}
               title={t("packagingTitle")}
               description={t("packagingP1")}
               features={[t("packagingResult"), t("packagingP3")]}
@@ -165,7 +161,7 @@ export async function EcoPartnerPageSection() {
               </div>
 
               <div className="border-border-default rounded-2xl border p-6 md:p-8">
-                <Globe className="text-primary mb-4 h-8 w-8" />
+                <GlobeIcon className="text-primary mb-4 h-8 w-8" />
                 <Heading variant="card" as="h3" className="mb-2">
                   {t("certDigitalTitle")}
                 </Heading>
@@ -181,7 +177,7 @@ export async function EcoPartnerPageSection() {
                     t("certDigitalItem5"),
                   ].map((item, i) => (
                     <li key={i} className="flex items-center gap-2.5">
-                      <Check className="text-success h-4 w-4 shrink-0" />
+                      <CheckIcon className="text-success h-4 w-4 shrink-0" />
                       <span className="text-text-secondary text-sm font-medium">{item}</span>
                     </li>
                   ))}
@@ -212,7 +208,7 @@ export async function EcoPartnerPageSection() {
               <ul className="space-y-2.5">
                 {Array.from({ length: 10 }, (_, i) => (
                   <li key={i} className="flex items-start gap-2.5">
-                    <Check className="text-success mt-0.5 h-4 w-4 shrink-0" />
+                    <CheckIcon className="text-success mt-0.5 h-4 w-4 shrink-0" />
                     <span className="text-text-secondary text-sm font-medium">
                       {t(`benefit${i + 1}`)}
                     </span>
@@ -238,24 +234,24 @@ export async function EcoPartnerPageSection() {
               className="bg-primary hover:bg-primary/90 inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold text-white transition-colors"
             >
               {t("ctaButton")}
-              <ArrowRight className="h-4 w-4" />
+              <ChevronIcon direction="right" className="h-4 w-4" />
             </Link>
 
             <div className="mt-10 grid grid-cols-1 gap-3 text-left sm:grid-cols-2">
               <div className="flex items-center gap-2.5">
-                <Phone className="text-primary h-4 w-4 shrink-0" />
+                <PhoneIcon className="text-primary h-4 w-4 shrink-0" />
                 <span className="text-text-secondary text-sm">{t("contactPhone")}</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <MessageCircle className="text-success h-4 w-4 shrink-0" />
+                <MessageIcon className="text-success h-4 w-4 shrink-0" />
                 <span className="text-text-secondary text-sm">{t("contactWhatsApp")}</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <Mail className="text-primary h-4 w-4 shrink-0" />
+                <MailIcon className="text-primary h-4 w-4 shrink-0" />
                 <span className="text-text-secondary text-sm">{t("contactEmail")}</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <MapPin className="text-primary h-4 w-4 shrink-0" />
+                <MapPinIcon className="text-primary h-4 w-4 shrink-0" />
                 <span className="text-text-secondary text-sm">{t("contactAddress")}</span>
               </div>
             </div>

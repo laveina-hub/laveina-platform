@@ -1,10 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
 import { notificationPatchSchema } from "@/validations/admin.schema";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const rl = adminLimiter.check(getClientIp(request));
+    if (!rl.success) return rateLimitResponse(rl.resetMs);
+
     const auth = await verifyAuth();
     if (auth.error) return auth.error;
     const { supabase, role } = auth;

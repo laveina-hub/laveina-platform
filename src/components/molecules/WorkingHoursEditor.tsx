@@ -1,9 +1,9 @@
 "use client";
 
-import { Minus, Plus } from "lucide-react";
 import { useCallback } from "react";
 
 import { Label } from "@/components/atoms";
+import { MinusIcon, PlusIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import type {
   DaySchedule,
@@ -134,7 +134,7 @@ function DayRow({ day, schedule, onChange, t }: DayRowProps) {
                   className="text-text-muted hover:bg-bg-muted hover:text-error ml-0.5 rounded p-0.5"
                   aria-label={t("removeSlot")}
                 >
-                  <Minus size={14} />
+                  <MinusIcon size={14} />
                 </button>
               )}
             </div>
@@ -146,7 +146,7 @@ function DayRow({ day, schedule, onChange, t }: DayRowProps) {
               className="border-border-default text-text-muted hover:border-text-muted hover:text-text-primary flex h-8 items-center gap-1 rounded-md border border-dashed px-2 text-xs"
               aria-label={t("addSlot")}
             >
-              <Plus size={14} />
+              <PlusIcon size={14} />
               {t("addSlot")}
             </button>
           )}

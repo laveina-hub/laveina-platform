@@ -2,32 +2,21 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { AlertTriangle, Box, Search } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { AlertTriangle } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { Input } from "@/components/atoms";
-import { StatusBadge, DeliveryModeBadge } from "@/components/atoms";
+import { DeliveryModeBadge, DeliverySpeedBadge, Input, StatusBadge } from "@/components/atoms";
+import { BoxIcon, SearchIcon } from "@/components/icons";
 import { DataTable } from "@/components/molecules/DataTable";
 import { useShipments, type ShipmentFilters } from "@/hooks/use-shipments";
 import { useRouter } from "@/i18n/navigation";
-import { ShipmentStatus, type DeliveryMode } from "@/types/enums";
+import { formatCents, formatDateMedium, type Locale } from "@/lib/format";
+import { ShipmentStatus, type DeliveryMode, type DeliverySpeed } from "@/types/enums";
 import type { Shipment } from "@/types/shipment";
 
-function formatCents(cents: number): string {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "EUR",
-  }).format(cents / 100);
-}
-
-function formatDate(dateStr: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(dateStr));
-}
+type ParcelPresetKey = "mini" | "small" | "medium" | "large";
+const PRESET_KEYS: readonly ParcelPresetKey[] = ["mini", "small", "medium", "large"];
 
 const ALL_STATUSES = Object.values(ShipmentStatus);
 
@@ -35,6 +24,9 @@ export function AdminShipmentsSection() {
   const t = useTranslations("adminShipments");
   const tCommon = useTranslations("common");
   const tStatus = useTranslations("shipmentStatus");
+  const locale = useLocale() as Locale;
+  const tSpeed = useTranslations("deliverySpeed");
+  const tPresets = useTranslations("parcelPresets");
   const router = useRouter();
 
   const [filters, setFilters] = useState<ShipmentFilters>({
@@ -45,6 +37,16 @@ export function AdminShipmentsSection() {
 
   const { data, isLoading, isError } = useShipments(filters);
 
+  // Count siblings per Stripe checkout session so the list can surface a
+  // "×N" badge for multi-parcel bookings. Scoped to the current page — two
+  // siblings on different pages would under-count, acceptable for MVP.
+  const siblingCounts = new Map<string, number>();
+  for (const row of data?.data ?? []) {
+    const key = row.stripe_checkout_session_id;
+    if (!key) continue;
+    siblingCounts.set(key, (siblingCounts.get(key) ?? 0) + 1);
+  }
+
   const handleSearch = () => {
     setFilters((prev) => ({ ...prev, search: searchInput || undefined, page: 1 }));
   };
@@ -53,17 +55,48 @@ export function AdminShipmentsSection() {
     {
       accessorKey: "tracking_id",
       header: t("trackingId"),
-      cell: ({ row }) => (
-        <span className="text-primary-600 font-medium">{row.original.tracking_id}</span>
-      ),
+      cell: ({ row }) => {
+        const session = row.original.stripe_checkout_session_id;
+        const count = session ? (siblingCounts.get(session) ?? 0) : 0;
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-primary-600 font-medium">{row.original.tracking_id}</span>
+            {count > 1 ? (
+              <span
+                className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-600/20 ring-inset"
+                title={t("parcelsInBookingLong", { count })}
+              >
+                {t("parcelsInBooking", { count })}
+              </span>
+            ) : null}
+          </div>
+        );
+      },
     },
     {
-      accessorKey: "sender_name",
+      id: "sender",
       header: t("sender"),
+      cell: ({ row }) =>
+        `${row.original.sender_first_name} ${row.original.sender_last_name}`.trim(),
     },
     {
-      accessorKey: "receiver_name",
+      id: "receiver",
       header: t("receiver"),
+      cell: ({ row }) =>
+        `${row.original.receiver_first_name} ${row.original.receiver_last_name}`.trim(),
+    },
+    {
+      id: "size",
+      header: t("size"),
+      cell: ({ row }) => {
+        const slug = row.original.parcel_preset_slug;
+        if (slug && (PRESET_KEYS as readonly string[]).includes(slug)) {
+          return (
+            <span className="text-text-primary">{tPresets(`${slug as ParcelPresetKey}.name`)}</span>
+          );
+        }
+        return <span className="text-text-muted">{row.original.parcel_size}</span>;
+      },
     },
     {
       accessorKey: "status",
@@ -88,6 +121,14 @@ export function AdminShipmentsSection() {
       ),
     },
     {
+      accessorKey: "delivery_speed",
+      header: t("speed"),
+      cell: ({ row }) => {
+        const speed = row.original.delivery_speed as DeliverySpeed;
+        return <DeliverySpeedBadge speed={speed} label={tSpeed(speed)} />;
+      },
+    },
+    {
       accessorKey: "price_cents",
       header: t("price"),
       cell: ({ row }) => formatCents(row.original.price_cents),
@@ -95,7 +136,7 @@ export function AdminShipmentsSection() {
     {
       accessorKey: "created_at",
       header: t("date"),
-      cell: ({ row }) => formatDate(row.original.created_at),
+      cell: ({ row }) => formatDateMedium(row.original.created_at, locale),
     },
   ];
 
@@ -108,7 +149,10 @@ export function AdminShipmentsSection() {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 sm:max-w-xs">
-          <Search size={16} className="text-text-muted absolute top-1/2 left-3 -translate-y-1/2" />
+          <SearchIcon
+            size={16}
+            className="text-text-muted absolute top-1/2 left-3 -translate-y-1/2"
+          />
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -151,7 +195,7 @@ export function AdminShipmentsSection() {
         isLoading={isLoading}
         onRowClick={(row) => router.push(`/admin/shipments/${row.id}`)}
         emptyState={{
-          icon: <Box size={40} />,
+          icon: <BoxIcon size={40} />,
           title: t("noShipments"),
           description: t("noShipmentsDesc"),
         }}

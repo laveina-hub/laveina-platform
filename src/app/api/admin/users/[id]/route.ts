@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
 import { logAuditEvent } from "@/services/audit.service";
 import { getUserById, updateUserRole } from "@/services/user.service";
@@ -29,6 +30,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function PUT(request: NextRequest, context: RouteContext) {
+  const rl = adminLimiter.check(getClientIp(request));
+  if (!rl.success) return rateLimitResponse(rl.resetMs);
+
   const auth = await verifyAuth();
   if (auth.error) return auth.error;
 

@@ -2,15 +2,20 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Box, DollarSign, MapPin, PackageCheck, Truck, type LucideIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { DollarSign, PackageCheck } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import type { ComponentType } from "react";
 
 import { StatusBadge, DeliveryModeBadge } from "@/components/atoms";
+import { BoxIcon, MapPinIcon, TrackingTruckIcon } from "@/components/icons";
 import { DataTable } from "@/components/molecules/DataTable";
 import { useAdminStats, type AdminStats } from "@/hooks/use-admin-stats";
 import { useCountUp } from "@/hooks/use-count-up";
 import { Link } from "@/i18n/navigation";
+import { formatCents, formatDateTimeMedium, type Locale } from "@/lib/format";
 import type { ShipmentStatus, DeliveryMode } from "@/types/enums";
+
+type StatIcon = ComponentType<{ size?: number; className?: string }>;
 
 function AnimatedNumber({ value }: { value: number }) {
   const animated = useCountUp(value);
@@ -20,7 +25,7 @@ function AnimatedNumber({ value }: { value: number }) {
 type StatsCardProps = {
   label: string;
   value: string | number;
-  icon: LucideIcon;
+  icon: StatIcon;
   iconColor: string;
   iconBg: string;
 };
@@ -41,28 +46,13 @@ function StatsCard({ label, value, icon: Icon, iconColor, iconBg }: StatsCardPro
   );
 }
 
-function formatCents(cents: number): string {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "EUR",
-  }).format(cents / 100);
-}
-
-function formatDate(dateStr: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(dateStr));
-}
-
 type RecentShipment = AdminStats["recentShipments"][number];
 
 export function AdminOverviewSection() {
   const t = useTranslations("adminOverview");
   const tCommon = useTranslations("common");
   const tStatus = useTranslations("shipmentStatus");
+  const locale = useLocale() as Locale;
   const { data: stats, isLoading } = useAdminStats();
 
   const columns: ColumnDef<RecentShipment, unknown>[] = [
@@ -79,12 +69,16 @@ export function AdminOverviewSection() {
       ),
     },
     {
-      accessorKey: "sender_name",
+      id: "sender",
       header: t("sender"),
+      cell: ({ row }) =>
+        `${row.original.sender_first_name} ${row.original.sender_last_name}`.trim(),
     },
     {
-      accessorKey: "receiver_name",
+      id: "receiver",
       header: t("receiver"),
+      cell: ({ row }) =>
+        `${row.original.receiver_first_name} ${row.original.receiver_last_name}`.trim(),
     },
     {
       accessorKey: "status",
@@ -116,7 +110,7 @@ export function AdminOverviewSection() {
     {
       accessorKey: "created_at",
       header: t("date"),
-      cell: ({ row }) => formatDate(row.original.created_at),
+      cell: ({ row }) => formatDateTimeMedium(row.original.created_at, locale),
     },
   ];
 
@@ -137,14 +131,14 @@ export function AdminOverviewSection() {
         <StatsCard
           label={t("totalShipments")}
           value={stats.totalShipments}
-          icon={Box}
+          icon={BoxIcon}
           iconColor="text-primary-600"
           iconBg="bg-primary-50"
         />
         <StatsCard
           label={t("inTransit")}
           value={stats.inTransit}
-          icon={Truck}
+          icon={TrackingTruckIcon}
           iconColor="text-purple-600"
           iconBg="bg-purple-50"
         />
@@ -188,21 +182,21 @@ export function AdminOverviewSection() {
           href="/admin/dispatch"
           className="bg-primary-500 hover:bg-primary-600 active:bg-primary-700 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-xs transition-all duration-150 hover:shadow-sm active:scale-[0.98]"
         >
-          <Truck size={16} />
+          <TrackingTruckIcon size={16} />
           {t("goToDispatch")}
         </Link>
         <Link
           href="/admin/shipments"
           className="border-border-default text-text-primary hover:bg-bg-muted inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-medium transition-all duration-150 hover:shadow-xs active:scale-[0.98]"
         >
-          <Box size={16} />
+          <BoxIcon size={16} />
           {t("viewAllShipments")}
         </Link>
         <Link
           href="/admin/pickup-points"
           className="border-border-default text-text-primary hover:bg-bg-muted inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-medium transition-all duration-150 hover:shadow-xs active:scale-[0.98]"
         >
-          <MapPin size={16} />
+          <MapPinIcon size={16} />
           {t("managePickupPoints")}
         </Link>
       </div>

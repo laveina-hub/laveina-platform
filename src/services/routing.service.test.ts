@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { getDeliveryMode, isInternalRoute, isSendcloudRoute } from "@/services/routing.service";
+import {
+  getDeliveryMode,
+  isBarcelonaRoute,
+  isInternalRoute,
+  isSendcloudRoute,
+} from "@/services/routing.service";
 
 describe("routing.service", () => {
   describe("getDeliveryMode", () => {
@@ -92,6 +97,32 @@ describe("routing.service", () => {
     it("returns false for internal routes", () => {
       const result = getDeliveryMode("08001", "08036");
       expect(isSendcloudRoute(result)).toBe(false);
+    });
+  });
+
+  describe("isBarcelonaRoute", () => {
+    it("returns true when both postcodes start with 08", () => {
+      expect(isBarcelonaRoute("08001", "08036")).toBe(true);
+      expect(isBarcelonaRoute("08800", "08910")).toBe(true);
+    });
+
+    it("returns false when only origin is Barcelona", () => {
+      expect(isBarcelonaRoute("08001", "28001")).toBe(false);
+    });
+
+    it("returns false when only destination is Barcelona", () => {
+      expect(isBarcelonaRoute("28001", "08001")).toBe(false);
+    });
+
+    it("returns false when neither is Barcelona", () => {
+      expect(isBarcelonaRoute("28001", "41001")).toBe(false);
+    });
+
+    it("returns false for invalid / partial postcodes", () => {
+      expect(isBarcelonaRoute("0800", "08001")).toBe(false);
+      expect(isBarcelonaRoute("08001", "080361")).toBe(false);
+      expect(isBarcelonaRoute("", "08001")).toBe(false);
+      expect(isBarcelonaRoute("ABCDE", "08001")).toBe(false);
     });
   });
 });

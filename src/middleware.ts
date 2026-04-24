@@ -17,6 +17,9 @@ const publicPaths = [
   "/eco-partner",
   "/about",
   "/contact",
+  // M2 receiver-facing public landings — no login required, gated by URL token.
+  "/pickup",
+  "/delivery-confirm",
 ];
 const authOnlyPaths = [
   "/auth/login",

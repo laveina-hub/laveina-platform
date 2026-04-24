@@ -18,7 +18,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
     const { data: shipment, error: fetchError } = await supabase
       .from("shipments")
-      .select("id, tracking_id, status, delivery_mode, sendcloud_parcel_id")
+      .select("id, tracking_id, status, delivery_mode, sendcloud_shipment_id")
       .eq("id", id)
       .single();
 
@@ -33,14 +33,14 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       );
     }
 
-    if (!shipment.sendcloud_parcel_id) {
+    if (!shipment.sendcloud_shipment_id) {
       return NextResponse.json(
         { error: "Shipment has not been dispatched to SendCloud yet" },
         { status: 400 }
       );
     }
 
-    const result = await cancelSendcloudParcel(shipment.sendcloud_parcel_id);
+    const result = await cancelSendcloudParcel(shipment.sendcloud_shipment_id);
 
     if (result.error) {
       return NextResponse.json({ error: result.error.message }, { status: 400 });

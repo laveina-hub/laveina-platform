@@ -1,11 +1,12 @@
 "use client";
 
 import { useMapsLibrary } from "@vis.gl/react-google-maps";
-import { Loader2, MapPin, Search } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { Button, Input } from "@/components/atoms";
+import { MapPinIcon, SearchIcon, SpinnerIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 const POSTCODE_REGEX = /^[0-9]{5}$/;
@@ -26,6 +27,10 @@ interface PostcodeSearchProps {
   errorId?: string;
   defaultValue?: string;
   className?: string;
+  /** Hides the trailing search Button — relies on debounced auto-resolve + Enter. */
+  hideButton?: boolean;
+  /** Overrides the default MapPinIcon shown inside the input. */
+  leftIcon?: ReactNode;
   onPostcodeResolved: (postcode: string) => void;
 }
 
@@ -37,9 +42,16 @@ function PostcodeSearch({
   errorId,
   defaultValue = "",
   className,
+  hideButton = false,
+  leftIcon,
   onPostcodeResolved,
 }: PostcodeSearchProps) {
+  const t = useTranslations("booking");
   const placesLib = useMapsLibrary("places");
+  // Geocoding is required as a reverse-lookup fallback: when the user picks a
+  // broad place like "Barcelona" or "Madrid", the Place has no postal_code in
+  // addressComponents, so we reverse-geocode its center to find one.
+  const geocodingLib = useMapsLibrary("geocoding");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputWrapperRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
@@ -49,6 +61,9 @@ function PostcodeSearch({
   const [isResolving, setIsResolving] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+  // Q6.9 — surface a clear error when place resolution succeeds but yields no
+  // postcode (e.g. user picked a whole city), so users know why nothing loaded.
+  const [resolveError, setResolveError] = useState<"no_postcode" | null>(null);
 
   const updateDropdownPosition = useCallback(() => {
     if (!inputWrapperRef.current) return;
@@ -112,32 +127,54 @@ function PostcodeSearch({
       setIsOpen(false);
       setSuggestions([]);
       setIsResolving(true);
+      setResolveError(null);
 
       try {
         const place = new placesLib.Place({ id: placeId });
-        await place.fetchFields({ fields: ["addressComponents"] });
+        await place.fetchFields({ fields: ["addressComponents", "location"] });
 
+        // Path 1 — Place has a postal_code component (most addresses do).
         const postcodeComponent = place.addressComponents?.find((c: { types: string[] }) =>
           c.types.includes("postal_code")
         );
-
         if (postcodeComponent?.longText) {
           const postcode = postcodeComponent.longText;
           setInputValue(postcode);
           resolvePostcode(postcode);
+          return;
         }
+
+        // Path 2 — City-level results ("Barcelona", "Madrid") have no direct
+        // postal_code. Reverse-geocode the place's center to find the postcode
+        // of whatever neighborhood Google considers the city's centroid.
+        if (place.location && geocodingLib) {
+          const geocoder = new geocodingLib.Geocoder();
+          const { results } = await geocoder.geocode({ location: place.location });
+          for (const r of results) {
+            const comp = r.address_components.find((c) => c.types.includes("postal_code"));
+            if (comp?.long_name) {
+              setInputValue(comp.long_name);
+              resolvePostcode(comp.long_name);
+              return;
+            }
+          }
+        }
+
+        // Both paths failed — the area is too broad to map to a single postcode.
+        setResolveError("no_postcode");
       } catch {
-        // Place resolution failed
+        setResolveError("no_postcode");
       } finally {
         setIsResolving(false);
       }
     },
-    [placesLib, resolvePostcode]
+    [placesLib, geocodingLib, resolvePostcode]
   );
 
   const handleInputChange = useCallback(
     (value: string) => {
       setInputValue(value);
+      setResolveError(null);
 
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
@@ -263,97 +300,111 @@ function PostcodeSearch({
   const isSearchDisabled = isResolving || inputValue.trim().length < 2;
 
   return (
-    <div ref={inputWrapperRef} className={cn("flex gap-2", className)}>
-      <div className="relative flex-1">
-        <span className="text-text-muted pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2">
-          <MapPin className="h-4 w-4" />
-        </span>
-        <Input
-          id={id}
-          type="text"
-          autoComplete="off"
-          inputMode={PARTIAL_POSTCODE_REGEX.test(inputValue) ? "numeric" : "text"}
-          placeholder={placeholder}
-          value={inputValue}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => {
-            if (suggestions.length > 0) {
-              updateDropdownPosition();
-              setIsOpen(true);
-            }
-          }}
-          hasError={hasError}
-          aria-invalid={hasError}
-          aria-describedby={errorId}
-          aria-expanded={isOpen}
-          aria-autocomplete="list"
-          aria-controls={isOpen ? `${id}-suggestions` : undefined}
-          aria-activedescendant={activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined}
-          role="combobox"
-          className="pl-10"
-        />
-      </div>
-      <Button
-        type="button"
-        variant="secondary"
-        onClick={handleSearchClick}
-        disabled={isSearchDisabled}
-        className="gap-2"
-      >
-        {isResolving ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Search className="h-4 w-4" />
-        )}
-        <span className="hidden sm:inline">{searchLabel}</span>
-      </Button>
-
-      {isOpen &&
-        suggestions.length > 0 &&
-        createPortal(
-          <ul
-            ref={dropdownRef}
-            id={`${id}-suggestions`}
-            role="listbox"
-            style={{
-              position: "fixed",
-              top: dropdownPos.top,
-              left: dropdownPos.left,
-              width: dropdownPos.width,
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <div ref={inputWrapperRef} className="flex gap-2">
+        <div className="relative flex-1">
+          <span className="text-text-muted pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2">
+            {leftIcon ?? <MapPinIcon className="h-4 w-4" />}
+          </span>
+          <Input
+            id={id}
+            type="text"
+            autoComplete="off"
+            inputMode={PARTIAL_POSTCODE_REGEX.test(inputValue) ? "numeric" : "text"}
+            placeholder={placeholder}
+            value={inputValue}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => {
+              if (suggestions.length > 0) {
+                updateDropdownPosition();
+                setIsOpen(true);
+              }
             }}
-            className="border-border-default z-9999 max-h-52 overflow-auto rounded-xl border bg-white py-1 shadow-(--shadow-overlay)"
+            hasError={hasError}
+            aria-invalid={hasError}
+            aria-describedby={errorId}
+            aria-expanded={isOpen}
+            aria-autocomplete="list"
+            aria-controls={isOpen ? `${id}-suggestions` : undefined}
+            aria-activedescendant={activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined}
+            role="combobox"
+            className="pl-10"
+          />
+          {hideButton && isResolving && (
+            <span className="text-text-muted pointer-events-none absolute top-1/2 right-3 -translate-y-1/2">
+              <SpinnerIcon className="h-4 w-4 animate-spin" />
+            </span>
+          )}
+        </div>
+        {!hideButton && (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleSearchClick}
+            disabled={isSearchDisabled}
+            className="gap-2"
           >
-            {suggestions.map((suggestion, idx) => (
-              <li
-                key={suggestion.placeId}
-                id={`${id}-option-${idx}`}
-                role="option"
-                aria-selected={activeIndex === idx}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  handleSelectSuggestion(suggestion);
-                }}
-                onMouseEnter={() => setActiveIndex(idx)}
-                className={cn(
-                  "flex cursor-pointer items-start gap-3 px-4 py-2.5 transition-colors",
-                  activeIndex === idx
-                    ? "bg-primary-50 text-primary-700"
-                    : "text-text-primary hover:bg-primary-50/50"
-                )}
-              >
-                <MapPin className="text-text-muted mt-0.5 h-4 w-4 shrink-0" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{suggestion.mainText}</p>
-                  {suggestion.secondaryText && (
-                    <p className="text-text-muted truncate text-xs">{suggestion.secondaryText}</p>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>,
-          document.body
+            {isResolving ? (
+              <SpinnerIcon className="h-4 w-4 animate-spin" />
+            ) : (
+              <SearchIcon className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">{searchLabel}</span>
+          </Button>
         )}
+
+        {isOpen &&
+          suggestions.length > 0 &&
+          createPortal(
+            <ul
+              ref={dropdownRef}
+              id={`${id}-suggestions`}
+              role="listbox"
+              style={{
+                position: "fixed",
+                top: dropdownPos.top,
+                left: dropdownPos.left,
+                width: dropdownPos.width,
+              }}
+              className="border-border-default z-9999 max-h-52 overflow-auto rounded-xl border bg-white py-1 shadow-(--shadow-overlay)"
+            >
+              {suggestions.map((suggestion, idx) => (
+                <li
+                  key={suggestion.placeId}
+                  id={`${id}-option-${idx}`}
+                  role="option"
+                  aria-selected={activeIndex === idx}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleSelectSuggestion(suggestion);
+                  }}
+                  onMouseEnter={() => setActiveIndex(idx)}
+                  className={cn(
+                    "flex cursor-pointer items-start gap-3 px-4 py-2.5 transition-colors",
+                    activeIndex === idx
+                      ? "bg-primary-50 text-primary-700"
+                      : "text-text-primary hover:bg-primary-50/50"
+                  )}
+                >
+                  <MapPinIcon className="text-text-muted mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{suggestion.mainText}</p>
+                    {suggestion.secondaryText && (
+                      <p className="text-text-muted truncate text-xs">{suggestion.secondaryText}</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>,
+            document.body
+          )}
+      </div>
+      {resolveError === "no_postcode" && (
+        <p role="alert" className="text-xs font-medium text-amber-700">
+          {t("postcodeTooBroad")}
+        </p>
+      )}
     </div>
   );
 }

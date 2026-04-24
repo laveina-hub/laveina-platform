@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
-import type { PickupPoint } from "@/types/pickup-point";
+import type { PickupPoint, PickupPointWithOverrides } from "@/types/pickup-point";
 import {
   createPickupPointSchema,
   updatePickupPointSchema,
@@ -21,15 +21,18 @@ export type ListPickupPointsFilters = {
 
 export async function listPickupPoints(
   filters: ListPickupPointsFilters = {}
-): Promise<ApiResponse<PickupPoint[]>> {
+): Promise<ApiResponse<PickupPointWithOverrides[]>> {
   const { postcode, is_active, search } = filters;
 
   const supabase = await createClient();
 
+  // Nested select on `pickup_point_overrides` — RLS allows public SELECT so the
+  // relation is visible to guests. `getActiveOverride()` filters to the
+  // currently-active row client-side so callers stay pure.
   let query = supabase
     .from("pickup_points")
     .select(
-      "id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
+      "id, name, address, city, postcode, phone, email, image_url, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at, pickup_point_overrides(id, starts_at, ends_at, reason)"
     )
     .order("name")
     .limit(200);
@@ -41,7 +44,16 @@ export async function listPickupPoints(
   }
 
   if (postcode) query = query.eq("postcode", postcode);
-  if (search) query = query.ilike("name", `%${search}%`);
+  // Q6.5 — free-text search hits name / address / city / postcode so the
+  // user can find a shop by any of the labels they actually see on a card.
+  // `escapeForIlike` neutralises the postgrest meta-chars (% _ ,) so a
+  // pasted address with a comma can't fork the OR expression.
+  if (search) {
+    const term = escapeForIlike(search);
+    query = query.or(
+      `name.ilike.%${term}%,address.ilike.%${term}%,city.ilike.%${term}%,postcode.ilike.%${term}%`
+    );
+  }
 
   const { data, error } = await query;
 
@@ -49,7 +61,16 @@ export async function listPickupPoints(
     return { data: null, error: { message: error.message, status: 500 } };
   }
 
-  return { data: data ?? [], error: null };
+  // SAFETY: explicit .select() column list matches PickupPointWithOverrides shape
+  return { data: (data ?? []) as unknown as PickupPointWithOverrides[], error: null };
+}
+
+function escapeForIlike(value: string): string {
+  // Strip characters that have meaning inside a PostgREST `.or()` value list
+  // (commas split conditions, parens delimit them) and the SQL LIKE
+  // wildcards (% _) so a literal search term never matches more than the
+  // user intended.
+  return value.replace(/[,()%_]/g, " ").trim();
 }
 
 export async function listPickupPointsPaginated(
@@ -62,7 +83,7 @@ export async function listPickupPointsPaginated(
   let query = supabase
     .from("pickup_points")
     .select(
-      "id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at",
+      "id, name, address, city, postcode, phone, email, image_url, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at",
       { count: "exact" }
     )
     .order("name");
@@ -74,7 +95,13 @@ export async function listPickupPointsPaginated(
   }
 
   if (postcode) query = query.eq("postcode", postcode);
-  if (search) query = query.ilike("name", `%${search}%`);
+  // Same multi-column search as `listPickupPoints` so pagination is in lockstep.
+  if (search) {
+    const term = escapeForIlike(search);
+    query = query.or(
+      `name.ilike.%${term}%,address.ilike.%${term}%,city.ilike.%${term}%,postcode.ilike.%${term}%`
+    );
+  }
 
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
@@ -106,7 +133,7 @@ export async function getPickupPointById(pickupPointId: string): Promise<ApiResp
   const { data, error } = await supabase
     .from("pickup_points")
     .select(
-      "id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
+      "id, name, address, city, postcode, phone, email, image_url, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
     )
     .eq("id", pickupPointId)
     .single();
@@ -154,7 +181,7 @@ export async function createPickupPoint(
     .from("pickup_points")
     .insert({ ...parsed.data, owner_id: ownerId })
     .select(
-      "id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
+      "id, name, address, city, postcode, phone, email, image_url, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
     )
     .single();
 
@@ -184,7 +211,7 @@ export async function updatePickupPoint(
     .update(parsed.data)
     .eq("id", pickupPointId)
     .select(
-      "id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
+      "id, name, address, city, postcode, phone, email, image_url, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
     )
     .single();
 
@@ -274,7 +301,7 @@ export async function toggleAvailability(pickupPointId: string): Promise<ApiResp
     .update({ is_active: !current.is_active })
     .eq("id", pickupPointId)
     .select(
-      "id, name, address, city, postcode, phone, email, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
+      "id, name, address, city, postcode, phone, email, image_url, latitude, longitude, is_active, is_open, working_hours, owner_id, created_at, updated_at"
     )
     .single();
 

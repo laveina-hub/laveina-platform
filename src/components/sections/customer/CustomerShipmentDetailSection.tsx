@@ -1,28 +1,14 @@
 "use client";
 
-import { ArrowLeft, Clock, ExternalLink, MapPin } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { useState } from "react";
 
 import { Button, StatusBadge, DeliveryModeBadge } from "@/components/atoms";
+import { ChevronIcon, ClockIcon, ExternalLinkIcon, MapPinIcon } from "@/components/icons";
 import { useShipment } from "@/hooks/use-shipments";
 import { Link } from "@/i18n/navigation";
+import { formatCents, formatDateTimeMedium, type Locale } from "@/lib/format";
 import type { ShipmentStatus, DeliveryMode } from "@/types/enums";
-
-function formatCents(cents: number): string {
-  return new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR" }).format(
-    cents / 100
-  );
-}
-
-function formatDateTime(dateStr: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(dateStr));
-}
 
 type Props = {
   shipmentId: string;
@@ -32,6 +18,7 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
   const t = useTranslations("customerDashboard");
   const tCommon = useTranslations("common");
   const tStatus = useTranslations("shipmentStatus");
+  const locale = useLocale() as Locale;
   const { data: shipment, isLoading } = useShipment(shipmentId);
 
   if (isLoading) {
@@ -63,7 +50,7 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
           href="/customer"
           className="text-text-muted hover:bg-bg-muted hover:text-text-light rounded-lg p-2"
         >
-          <ArrowLeft size={20} />
+          <ChevronIcon size={20} />
         </Link>
         <div>
           <h1 className="font-body text-text-primary text-2xl font-semibold">
@@ -90,8 +77,14 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
         <div className="border-border-default rounded-xl border bg-white p-5">
           <h2 className="text-text-primary mb-4 text-base font-semibold">{t("shipmentInfo")}</h2>
           <dl className="space-y-3 text-sm">
-            <InfoRow label={t("sender")} value={shipment.sender_name} />
-            <InfoRow label={t("receiver")} value={shipment.receiver_name} />
+            <InfoRow
+              label={t("sender")}
+              value={`${shipment.sender_first_name} ${shipment.sender_last_name}`}
+            />
+            <InfoRow
+              label={t("receiver")}
+              value={`${shipment.receiver_first_name} ${shipment.receiver_last_name}`}
+            />
             <InfoRow
               label={t("weight")}
               value={tCommon("weightKg", { value: shipment.weight_kg })}
@@ -113,7 +106,7 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
           </h2>
           <dl className="space-y-4 text-sm">
             <div className="flex items-start gap-2">
-              <MapPin size={16} className="mt-0.5 shrink-0 text-green-500" />
+              <MapPinIcon size={16} className="mt-0.5 shrink-0 text-green-500" />
               <div>
                 <dt className="text-text-muted text-xs">{t("origin")}</dt>
                 <dd className="text-text-primary font-medium">
@@ -125,7 +118,7 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <MapPin size={16} className="mt-0.5 shrink-0 text-red-500" />
+              <MapPinIcon size={16} className="mt-0.5 shrink-0 text-red-500" />
               <div>
                 <dt className="text-text-muted text-xs">{t("destination2")}</dt>
                 <dd className="text-text-primary font-medium">
@@ -140,17 +133,28 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
           </dl>
         </div>
 
+        {shipment.status === "ready_for_pickup" && <OtpPanel shipmentId={shipment.id} />}
+
         {shipment.qr_code_url && (
           <div className="border-border-default rounded-xl border bg-white p-5">
             <h2 className="text-text-primary mb-2 text-base font-semibold">{t("qrCode")}</h2>
             <p className="text-text-muted mb-4 text-xs">{t("qrCodeDesc")}</p>
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element -- QR code is a signed Supabase URL, not optimizable via next/image */}
               <img
                 src={shipment.qr_code_url}
-                alt="QR Code"
+                alt={t("qrCode")}
                 className="border-border-default h-40 w-40 rounded-lg border"
               />
+              <a
+                href={shipment.qr_code_url}
+                download={`laveina-qr-${shipment.tracking_id}.png`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-700 hover:text-primary-800 text-xs font-semibold"
+              >
+                {t("qrDownload")}
+              </a>
             </div>
           </div>
         )}
@@ -177,8 +181,8 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
                         label={tStatus(log.new_status as ShipmentStatus)}
                       />
                       <p className="text-text-muted mt-1 flex items-center gap-1 text-xs">
-                        <Clock size={12} />
-                        {formatDateTime(log.scanned_at)}
+                        <ClockIcon size={12} />
+                        {formatDateTimeMedium(log.scanned_at, locale)}
                       </p>
                     </div>
                   </div>
@@ -193,7 +197,7 @@ export function CustomerShipmentDetailSection({ shipmentId }: Props) {
       <div className="flex gap-3">
         <Link href={`/tracking/${shipment.tracking_id}`}>
           <Button variant="outline" size="sm" className="gap-2">
-            <ExternalLink size={14} />
+            <ExternalLinkIcon size={14} />
             {t("viewTracking")}
           </Button>
         </Link>
@@ -207,6 +211,50 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between">
       <dt className="text-text-muted">{label}</dt>
       <dd className="text-text-primary font-medium capitalize">{value}</dd>
+    </div>
+  );
+}
+
+// Q14.1.6 — sender-side OTP panel. Shown only when the shipment reaches
+// `ready_for_pickup`. We never display the plaintext code to the sender;
+// the receiver already has it via WhatsApp. The button re-issues a fresh
+// OTP via `/api/otp/resend` (sender-auth branch) in case the receiver
+// lost the original message.
+function OtpPanel({ shipmentId }: { shipmentId: string }) {
+  const t = useTranslations("customerDashboard");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  async function handleResend() {
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/otp/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shipment_id: shipmentId }),
+      });
+      setStatus(res.ok ? "success" : "error");
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  return (
+    <div className="border-primary-200 bg-primary-50/50 rounded-xl border p-5">
+      <h2 className="text-text-primary mb-1 text-base font-semibold">{t("otpTitle")}</h2>
+      <p className="text-text-muted mb-3 text-xs">{t("otpSenderDesc")}</p>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={handleResend}
+        disabled={status === "loading"}
+      >
+        {status === "loading" ? t("otpResending") : t("otpResend")}
+      </Button>
+      {status === "success" && (
+        <p className="text-primary-700 mt-2 text-xs">{t("otpResendSuccess")}</p>
+      )}
+      {status === "error" && <p className="text-error mt-2 text-xs">{t("otpResendError")}</p>}
     </div>
   );
 }

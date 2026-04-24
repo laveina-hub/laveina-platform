@@ -57,3 +57,31 @@ export function DeliveryModeBadge({ mode, label, className }: DeliveryModeBadgeP
     </span>
   );
 }
+
+const speedStyles = {
+  standard: "bg-slate-50 text-slate-700 ring-slate-600/20",
+  express: "bg-amber-50 text-amber-700 ring-amber-600/20",
+  next_day: "bg-rose-50 text-rose-700 ring-rose-600/20",
+} as const;
+
+type DeliverySpeedBadgeProps = {
+  speed: "standard" | "express" | "next_day";
+  label?: string;
+  className?: string;
+};
+
+export function DeliverySpeedBadge({ speed, label, className }: DeliverySpeedBadgeProps) {
+  const displayLabel = label ?? speed;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset",
+        speedStyles[speed],
+        className
+      )}
+    >
+      {displayLabel}
+    </span>
+  );
+}

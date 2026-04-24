@@ -78,3 +78,79 @@ export const SENDCLOUD_PROBLEM_STATUSES = new Set([4, 8, 13, 15, 80, 62991, 6299
 export function isSendcloudProblemStatus(statusId: number): boolean {
   return SENDCLOUD_PROBLEM_STATUSES.has(statusId);
 }
+
+// --- v3 Shipments API status codes (strings) ---
+// v3 /shipments returns status as `{ code: "ANNOUNCED", message: "..." }`
+// instead of v2's numeric id. This map is used by the admin sendcloud-sync
+// endpoint; the SendCloud webhook continues to receive v2-shaped payloads.
+
+export const SENDCLOUD_V3_STATUS_MAP: Record<string, ShipmentStatusType | null> = {
+  // Announcement / Pre-transit
+  ANNOUNCED: null,
+  ANNOUNCING: null,
+  ANNOUNCEMENT_FAILED: null,
+  NO_LABEL: null,
+  READY_TO_SEND: null,
+
+  // In Transit
+  EN_ROUTE_TO_SORTING_CENTER: ShipmentStatus.IN_TRANSIT,
+  SORTED: ShipmentStatus.IN_TRANSIT,
+  NOT_SORTED: ShipmentStatus.IN_TRANSIT,
+  BEING_SORTED: ShipmentStatus.IN_TRANSIT,
+  AT_SORTING_CENTRE: ShipmentStatus.IN_TRANSIT,
+  SHIPMENT_PICKED_UP_BY_DRIVER: ShipmentStatus.IN_TRANSIT,
+  PARCEL_EN_ROUTE: ShipmentStatus.IN_TRANSIT,
+  DRIVER_EN_ROUTE: ShipmentStatus.IN_TRANSIT,
+  AT_CUSTOMS: ShipmentStatus.IN_TRANSIT,
+  IN_TRANSIT: ShipmentStatus.IN_TRANSIT,
+
+  // At Destination / Ready
+  AWAITING_CUSTOMER_PICKUP: ShipmentStatus.READY_FOR_PICKUP,
+
+  // Delivered (terminal)
+  DELIVERED: ShipmentStatus.DELIVERED,
+  SHIPMENT_COLLECTED_BY_CUSTOMER: ShipmentStatus.DELIVERED,
+
+  // Delivery Issues — stay in_transit, admin handles
+  DELIVERY_DELAYED: ShipmentStatus.IN_TRANSIT,
+  DELIVERY_ATTEMPT_FAILED: ShipmentStatus.IN_TRANSIT,
+  ANNOUNCED_NOT_COLLECTED: ShipmentStatus.IN_TRANSIT,
+  ERROR_COLLECTING: ShipmentStatus.IN_TRANSIT,
+  UNABLE_TO_DELIVER: ShipmentStatus.IN_TRANSIT,
+  DELIVERY_METHOD_CHANGED: ShipmentStatus.IN_TRANSIT,
+  DELIVERY_DATE_CHANGED: ShipmentStatus.IN_TRANSIT,
+  DELIVERY_ADDRESS_CHANGED: ShipmentStatus.IN_TRANSIT,
+  ADDRESS_INVALID: ShipmentStatus.IN_TRANSIT,
+
+  // Exceptions (null — logged but no auto-transition)
+  REFUSED_BY_RECIPIENT: null,
+  RETURNED_TO_SENDER: null,
+  EXCEPTION: null,
+
+  // Cancellations
+  CANCELLED: null,
+  CANCELLATION_REQUESTED: null,
+  SUBMITTING_CANCELLATION_REQUEST: null,
+  CANCELLED_UPSTREAM: null,
+  PARCEL_CANCELLATION_FAILED: null,
+};
+
+export function mapSendcloudStatusV3(statusCode: string): ShipmentStatusType | null {
+  return SENDCLOUD_V3_STATUS_MAP[statusCode.toUpperCase()] ?? null;
+}
+
+export const SENDCLOUD_V3_PROBLEM_STATUSES = new Set<string>([
+  "DELIVERY_DELAYED",
+  "DELIVERY_ATTEMPT_FAILED",
+  "ANNOUNCED_NOT_COLLECTED",
+  "ERROR_COLLECTING",
+  "UNABLE_TO_DELIVER",
+  "REFUSED_BY_RECIPIENT",
+  "RETURNED_TO_SENDER",
+  "EXCEPTION",
+  "ADDRESS_INVALID",
+]);
+
+export function isSendcloudV3ProblemStatus(statusCode: string): boolean {
+  return SENDCLOUD_V3_PROBLEM_STATUSES.has(statusCode.toUpperCase());
+}

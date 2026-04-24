@@ -1,5 +1,16 @@
+import { env } from "@/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  buildDeliveryConfirmationUrl,
+  issueDeliveryConfirmationToken,
+} from "@/services/delivery-confirmation.service";
+import {
+  sendDeliveryToReceiverEmail,
+  sendDeliveryToSenderEmail,
+  sendReadyForPickupEmail,
+  sendReceivedAtOriginEmail,
+} from "@/services/email-templates.service";
 import {
   sendDeliveryToReceiver,
   sendDeliveryToSender,
@@ -99,7 +110,7 @@ export async function processQrScan(
   const { data: shipment, error: shipmentError } = await supabase
     .from("shipments")
     .select(
-      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_first_name, sender_last_name, sender_phone, sender_whatsapp, sender_email, receiver_first_name, receiver_last_name, receiver_phone, receiver_whatsapp, receiver_email, parcel_size, parcel_preset_slug, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, preferred_locale, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, shipping_option_code, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, sendcloud_shipment_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
     )
     .eq("tracking_id", parsed.data.tracking_id)
     .single();
@@ -139,7 +150,7 @@ export async function processQrScan(
       .update({ status: nextStatus })
       .eq("id", shipment.id)
       .select(
-        "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+        "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_first_name, sender_last_name, sender_phone, sender_whatsapp, sender_email, receiver_first_name, receiver_last_name, receiver_phone, receiver_whatsapp, receiver_email, parcel_size, parcel_preset_slug, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, preferred_locale, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, shipping_option_code, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, sendcloud_shipment_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
       )
       .single();
 
@@ -172,7 +183,7 @@ export async function processQrScan(
       .update({ status: ShipmentStatus.READY_FOR_PICKUP })
       .eq("id", shipment.id)
       .select(
-        "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+        "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_first_name, sender_last_name, sender_phone, sender_whatsapp, sender_email, receiver_first_name, receiver_last_name, receiver_phone, receiver_whatsapp, receiver_email, parcel_size, parcel_preset_slug, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, preferred_locale, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, shipping_option_code, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, sendcloud_shipment_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
       )
       .single();
 
@@ -209,12 +220,21 @@ export async function processQrScan(
       .eq("id", parsed.data.pickup_point_id)
       .single();
 
+    const senderName = `${shipment.sender_first_name} ${shipment.sender_last_name}`.trim();
     void sendReceivedAtOrigin({
       shipmentId: shipment.id,
       senderPhone: shipment.sender_phone,
-      senderName: shipment.sender_name,
+      senderName,
       trackingId: shipment.tracking_id,
       shopName: originShop?.name ?? "",
+    }).catch(() => {});
+    void sendReceivedAtOriginEmail({
+      shipmentId: shipment.id,
+      to: shipment.sender_email,
+      senderName,
+      trackingId: shipment.tracking_id,
+      shopName: originShop?.name ?? "",
+      locale: shipment.preferred_locale,
     }).catch(() => {});
   }
 
@@ -232,13 +252,23 @@ export async function processQrScan(
       ? [destShop.address, destShop.city].filter(Boolean).join(", ")
       : "";
 
+    const receiverName = `${shipment.receiver_first_name} ${shipment.receiver_last_name}`.trim();
     void sendReadyForPickup({
       shipmentId: shipment.id,
       receiverPhone: shipment.receiver_phone,
-      receiverName: shipment.receiver_name,
+      receiverName,
       trackingId: shipment.tracking_id,
       shopName: destShop?.name ?? "",
       shopAddress,
+    }).catch(() => {});
+    void sendReadyForPickupEmail({
+      shipmentId: shipment.id,
+      to: shipment.receiver_email,
+      receiverName,
+      trackingId: shipment.tracking_id,
+      shopName: destShop?.name ?? "",
+      shopAddress,
+      locale: shipment.preferred_locale,
     }).catch(() => {});
   }
 
@@ -255,7 +285,7 @@ export async function confirmDelivery(
   const { data: shipment, error: findError } = await adminSupabase
     .from("shipments")
     .select(
-      "id, status, destination_pickup_point_id, sender_phone, sender_name, receiver_phone, receiver_name, tracking_id"
+      "id, status, destination_pickup_point_id, sender_phone, sender_email, sender_first_name, sender_last_name, receiver_phone, receiver_email, receiver_first_name, receiver_last_name, tracking_id, preferred_locale"
     )
     .eq("id", shipmentId)
     .single();
@@ -294,7 +324,7 @@ export async function confirmDelivery(
     .update({ status: ShipmentStatus.DELIVERED })
     .eq("id", shipment.id)
     .select(
-      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_name, sender_phone, receiver_name, receiver_phone, parcel_size, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
+      "id, tracking_id, customer_id, status, origin_pickup_point_id, destination_pickup_point_id, origin_postcode, destination_postcode, sender_first_name, sender_last_name, sender_phone, sender_whatsapp, sender_email, receiver_first_name, receiver_last_name, receiver_phone, receiver_whatsapp, receiver_email, parcel_size, parcel_preset_slug, weight_kg, billable_weight_kg, parcel_length_cm, parcel_width_cm, parcel_height_cm, delivery_mode, delivery_speed, preferred_locale, price_cents, carrier_rate_cents, margin_percent, carrier_name, carrier_tracking_number, shipping_method_id, shipping_option_code, insurance_option_id, insurance_amount_cents, insurance_surcharge_cents, qr_code_url, label_url, sendcloud_parcel_id, sendcloud_shipment_id, stripe_checkout_session_id, stripe_payment_intent_id, created_at, updated_at"
     )
     .single();
 
@@ -321,18 +351,52 @@ export async function confirmDelivery(
     return { data: null, error: { message: "Failed to log delivery", status: 500 } };
   }
 
+  const deliverySenderName = `${shipment.sender_first_name} ${shipment.sender_last_name}`.trim();
+  const deliveryReceiverName =
+    `${shipment.receiver_first_name} ${shipment.receiver_last_name}`.trim();
+
   void sendDeliveryToSender({
     shipmentId: shipment.id,
     senderPhone: shipment.sender_phone,
-    senderName: shipment.sender_name,
+    senderName: deliverySenderName,
     trackingId: shipment.tracking_id,
   }).catch(() => {});
+
+  void sendDeliveryToSenderEmail({
+    shipmentId: shipment.id,
+    to: shipment.sender_email,
+    senderName: deliverySenderName,
+    trackingId: shipment.tracking_id,
+    locale: shipment.preferred_locale,
+  }).catch(() => {});
+
+  // Q13.2 — issue a 7-day tokenized link so the receiver can rate the delivery
+  // without a login. Token creation is best-effort: if it fails we still fire
+  // the receiver notifications without the rate CTA rather than blocking the
+  // delivered status update.
+  const tokenResult = await issueDeliveryConfirmationToken(shipment.id).catch(() => null);
+  const confirmationUrl = tokenResult?.data
+    ? buildDeliveryConfirmationUrl(
+        shipment.tracking_id,
+        tokenResult.data.token,
+        env.NEXT_PUBLIC_APP_URL ?? null
+      )
+    : undefined;
 
   void sendDeliveryToReceiver({
     shipmentId: shipment.id,
     receiverPhone: shipment.receiver_phone,
-    receiverName: shipment.receiver_name,
+    receiverName: deliveryReceiverName,
     trackingId: shipment.tracking_id,
+  }).catch(() => {});
+
+  void sendDeliveryToReceiverEmail({
+    shipmentId: shipment.id,
+    to: shipment.receiver_email,
+    receiverName: deliveryReceiverName,
+    trackingId: shipment.tracking_id,
+    confirmationUrl,
+    locale: shipment.preferred_locale,
   }).catch(() => {});
 
   return { data: { shipment: updated, scanLog }, error: null };

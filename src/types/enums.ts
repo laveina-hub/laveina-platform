@@ -28,6 +28,7 @@ export type DeliveryMode = (typeof DeliveryMode)[keyof typeof DeliveryMode];
 export const DeliverySpeed = {
   STANDARD: "standard",
   EXPRESS: "express",
+  NEXT_DAY: "next_day",
 } as const;
 
 export type DeliverySpeed = (typeof DeliverySpeed)[keyof typeof DeliverySpeed];

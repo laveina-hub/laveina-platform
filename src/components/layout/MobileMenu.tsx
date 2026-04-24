@@ -4,10 +4,11 @@ import { Menu } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 import { Button, ButtonLink } from "@/components/atoms";
 import { CloseIcon } from "@/components/icons";
-import { NAV_LINKS } from "@/constants/nav";
+import { CUSTOMER_MENU_LINKS, PUBLIC_MENU_LINKS } from "@/constants/nav";
 import { useAuth } from "@/hooks/use-auth";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -106,6 +107,11 @@ export function MobileMenu() {
 
   // SAFETY: user_metadata values are untyped
   const role = user?.user_metadata?.role as string | undefined;
+  // Logged-in customers get the account-oriented menu. Admin & pickup_point
+  // roles still see the public menu here — their ops UI lives in dashboard
+  // shells, not the marketing hamburger.
+  const menuLinks =
+    user && (!role || role === "customer") ? CUSTOMER_MENU_LINKS : PUBLIC_MENU_LINKS;
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "";
   const initials = displayName
     .split(" ")
@@ -131,119 +137,114 @@ export function MobileMenu() {
         <Menu size={24} className="text-text-primary" aria-hidden="true" />
       </button>
 
-      {isOpen && (
-        <>
-          <div
-            className={cn(
-              "bg-text-primary/40 fixed inset-0 z-40 transition-opacity duration-300",
-              isAnimating ? "opacity-100" : "opacity-0"
-            )}
-            aria-hidden="true"
-            onClick={close}
-          />
+      {isOpen &&
+        createPortal(
+          <>
+            <div
+              className={cn(
+                "bg-text-primary/40 fixed inset-0 z-40 transition-opacity duration-300",
+                isAnimating ? "opacity-100" : "opacity-0"
+              )}
+              aria-hidden="true"
+              onClick={close}
+            />
 
-          <nav
-            ref={panelRef}
-            id="mobile-nav"
-            role="dialog"
-            aria-modal="true"
-            aria-label={tCommon("mobileNavigation")}
-            className={cn(
-              "bg-bg-primary fixed top-0 right-0 z-50 flex h-full w-72 flex-col shadow-xl transition-transform duration-300 ease-out sm:w-80",
-              isAnimating ? "translate-x-0" : "translate-x-full"
-            )}
-          >
-            <div className="border-border-default flex h-19 shrink-0 items-center justify-between border-b px-6">
-              <Image
-                src="/images/header/logo-laveina.svg"
-                alt={t("home")}
-                width={120}
-                height={35}
-                unoptimized
-                className="h-9 w-auto"
-              />
-              <button
-                onClick={close}
-                className="hover:bg-bg-muted active:bg-border-muted flex h-10 w-10 items-center justify-center rounded-md transition-colors"
-                aria-label={t("closeMenu")}
-              >
-                <CloseIcon size={20} className="text-text-primary" />
-              </button>
-            </div>
-
-            {user && (
-              <div className="border-border-default flex items-center gap-3 border-b px-6 py-4">
-                <span className="bg-primary-500 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white">
-                  {initials}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-text-primary truncate text-sm font-medium">{displayName}</p>
-                  <p className="text-text-muted truncate text-xs">{user.email}</p>
-                </div>
+            <nav
+              ref={panelRef}
+              id="mobile-nav"
+              role="dialog"
+              aria-modal="true"
+              aria-label={tCommon("mobileNavigation")}
+              className={cn(
+                "bg-bg-primary fixed top-0 right-0 z-50 flex h-full w-72 flex-col shadow-xl transition-transform duration-300 ease-out sm:w-80",
+                isAnimating ? "translate-x-0" : "translate-x-full"
+              )}
+            >
+              <div className="border-border-default flex h-19 shrink-0 items-center justify-between border-b px-6">
+                <Image
+                  src="/images/header/logo-laveina.svg"
+                  alt={t("home")}
+                  width={120}
+                  height={35}
+                  unoptimized
+                  className="h-9 w-auto"
+                />
+                <button
+                  onClick={close}
+                  className="hover:bg-bg-muted active:bg-border-muted flex h-10 w-10 items-center justify-center rounded-md transition-colors"
+                  aria-label={t("closeMenu")}
+                >
+                  <CloseIcon size={20} className="text-text-primary" />
+                </button>
               </div>
-            )}
-
-            <ul className="flex-1 overflow-y-auto px-4 py-4">
-              {NAV_LINKS.map(({ key, href }) => {
-                const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
-                return (
-                  <li key={key}>
-                    <Link
-                      href={href}
-                      prefetch={true}
-                      className={cn(
-                        "flex items-center rounded-lg px-3 py-3 text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-primary-50 text-primary-500"
-                          : "text-text-primary hover:bg-bg-muted hover:text-primary-500"
-                      )}
-                    >
-                      {t(key)}
-                    </Link>
-                  </li>
-                );
-              })}
 
               {user && (
-                <li>
-                  <Link
-                    href={DASHBOARD_PATHS[role ?? ""] ?? "/customer"}
-                    className="text-text-primary hover:bg-bg-muted hover:text-primary-500 flex items-center rounded-lg px-3 py-3 text-sm font-medium transition-colors"
+                <div className="border-border-default flex items-center gap-3 border-b px-6 py-4">
+                  <span className="bg-primary-500 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white">
+                    {initials}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-text-primary truncate text-sm font-medium">{displayName}</p>
+                    <p className="text-text-muted truncate text-xs">{user.email}</p>
+                  </div>
+                </div>
+              )}
+
+              <ul className="flex-1 overflow-y-auto px-4 py-4">
+                {menuLinks.map(({ key, href }) => {
+                  const resolvedHref =
+                    key === "dashboard" ? (DASHBOARD_PATHS[role ?? ""] ?? href) : href;
+                  const isActive =
+                    pathname === resolvedHref ||
+                    (resolvedHref !== "/" && pathname.startsWith(resolvedHref));
+                  return (
+                    <li key={key}>
+                      <Link
+                        href={resolvedHref}
+                        prefetch={true}
+                        className={cn(
+                          "flex items-center rounded-lg px-3 py-3 text-sm font-medium transition-colors",
+                          isActive
+                            ? "bg-primary-50 text-primary-500"
+                            : "text-text-primary hover:bg-bg-muted hover:text-primary-500"
+                        )}
+                      >
+                        {t(key)}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <div className="border-border-default shrink-0 space-y-3 border-t p-4">
+                <LocaleSwitcherMobile />
+
+                {loading ? (
+                  <div className="bg-primary-200 h-10 animate-pulse rounded-lg" />
+                ) : user ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-red-300 bg-red-50 py-3 font-semibold text-red-600 hover:bg-red-100 active:bg-red-200 active:text-red-700"
+                    onClick={handleSignOut}
                   >
-                    {t("dashboard")}
-                  </Link>
-                </li>
-              )}
-            </ul>
-
-            <div className="border-border-default shrink-0 space-y-3 border-t p-4">
-              <LocaleSwitcherMobile />
-
-              {loading ? (
-                <div className="bg-primary-200 h-10 animate-pulse rounded-lg" />
-              ) : user ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-red-300 bg-red-50 py-3 font-semibold text-red-600 hover:bg-red-100 active:bg-red-200 active:text-red-700"
-                  onClick={handleSignOut}
-                >
-                  {t("logout")}
-                </Button>
-              ) : (
-                <ButtonLink
-                  href="/auth/login"
-                  variant="primary"
-                  size="sm"
-                  className="block w-full py-3 text-center font-semibold"
-                >
-                  {t("signIn")}
-                </ButtonLink>
-              )}
-            </div>
-          </nav>
-        </>
-      )}
+                    {t("logout")}
+                  </Button>
+                ) : (
+                  <ButtonLink
+                    href="/auth/login"
+                    variant="primary"
+                    size="sm"
+                    className="block w-full py-3 text-center font-semibold"
+                  >
+                    {t("signIn")}
+                  </ButtonLink>
+                )}
+              </div>
+            </nav>
+          </>,
+          document.body
+        )}
     </div>
   );
 }

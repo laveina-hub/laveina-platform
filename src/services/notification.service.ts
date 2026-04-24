@@ -1,8 +1,24 @@
-import { STATUS_DISPLAY_LABELS, WHATSAPP_TEMPLATES } from "@/constants/notifications";
+import { getTranslations } from "next-intl/server";
+
+import {
+  isChannelAllowed,
+  isMandatoryTemplate,
+  type NotificationTemplate,
+} from "@/constants/notification-prefs";
+import { WHATSAPP_TEMPLATES } from "@/constants/notifications";
 import { sendWhatsAppMessage } from "@/lib/gallabox/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ApiResponse } from "@/types/api";
 import type { ShipmentStatus } from "@/types/enums";
+
+// A10 (client answer 2026-04-21): customers can opt out of non-mandatory
+// notifications via `/customer/notifications`. Every public sender here
+// checks the customer's prefs first; mandatory templates
+// (order_confirmation, ready_for_pickup, pickup_otp) bypass the check.
+//
+// Receiver-facing templates (pickup_otp, ready_for_pickup, delivery receiver
+// copy) always fire — receivers don't have accounts and these are
+// operationally critical.
 
 async function logNotification(params: {
   shipmentId: string;
@@ -27,6 +43,46 @@ async function logNotification(params: {
 }
 
 type NotificationResult = ApiResponse<{ messageId: string }>;
+
+/**
+ * Resolves the shipment's customer and checks whether they allow the given
+ * WhatsApp template to fire. Defaults to "allowed" when anything goes wrong
+ * — we'd rather over-notify on infra hiccups than silently drop messages
+ * the customer actually wants.
+ */
+async function isWhatsappAllowedForShipment(
+  shipmentId: string,
+  template: NotificationTemplate
+): Promise<boolean> {
+  if (isMandatoryTemplate(template)) return true;
+
+  try {
+    const supabase = createAdminClient();
+    const { data: shipment } = await supabase
+      .from("shipments")
+      .select("customer_id")
+      .eq("id", shipmentId)
+      .maybeSingle();
+
+    if (!shipment?.customer_id) return true;
+
+    const { data: prefsRow } = await supabase
+      .from("notification_preferences")
+      .select("prefs")
+      .eq("customer_id", shipment.customer_id)
+      .maybeSingle();
+
+    return isChannelAllowed(prefsRow?.prefs, template, "whatsapp");
+  } catch (err) {
+    console.error("prefs gate failed, defaulting to allow:", err);
+    return true;
+  }
+}
+
+/** Stable "skipped" result for when prefs block an optional notification. */
+function skippedByPrefs(template: NotificationTemplate): NotificationResult {
+  return { data: { messageId: `skipped:prefs:${template}` }, error: null };
+}
 
 /** Sends a WhatsApp template and logs the result. All public functions delegate here. */
 async function sendAndLog(params: {
@@ -74,6 +130,11 @@ export async function sendShipmentConfirmation(params: {
   destinationPickupPointName: string;
   priceCents: number;
 }): Promise<NotificationResult> {
+  // order_confirmation is mandatory per A10 — gate returns true, call fires.
+  // Kept for documentation + future-proofing.
+  const allowed = await isWhatsappAllowedForShipment(params.shipmentId, "order_confirmation");
+  if (!allowed) return skippedByPrefs("order_confirmation");
+
   return sendAndLog({
     shipmentId: params.shipmentId,
     phone: params.senderPhone,
@@ -95,6 +156,11 @@ export async function sendReceivedAtOrigin(params: {
   trackingId: string;
   shopName: string;
 }): Promise<NotificationResult> {
+  // Classified as shipment_update (operational progress, not a mandatory
+  // transactional receipt) — gated by prefs.
+  const allowed = await isWhatsappAllowedForShipment(params.shipmentId, "shipment_update");
+  if (!allowed) return skippedByPrefs("shipment_update");
+
   return sendAndLog({
     shipmentId: params.shipmentId,
     phone: params.senderPhone,
@@ -113,6 +179,9 @@ export async function sendInTransit(params: {
   senderName: string;
   trackingId: string;
 }): Promise<NotificationResult> {
+  const allowed = await isWhatsappAllowedForShipment(params.shipmentId, "in_transit");
+  if (!allowed) return skippedByPrefs("in_transit");
+
   return sendAndLog({
     shipmentId: params.shipmentId,
     phone: params.senderPhone,
@@ -164,6 +233,9 @@ export async function sendDeliveryToSender(params: {
   senderName: string;
   trackingId: string;
 }): Promise<NotificationResult> {
+  const allowed = await isWhatsappAllowedForShipment(params.shipmentId, "delivered");
+  if (!allowed) return skippedByPrefs("delivered");
+
   return sendAndLog({
     shipmentId: params.shipmentId,
     phone: params.senderPhone,
@@ -200,8 +272,21 @@ export async function sendStatusUpdate(params: {
   trackingId: string;
   oldStatus: ShipmentStatus;
   newStatus: ShipmentStatus;
+  /** Customer's preferred locale — accepted for API compatibility but
+   *  currently ignored: A8 (Laveina M2 Answers Final) locks M2 WhatsApp to
+   *  Spanish, so the status label below always resolves via `es`. Remove
+   *  this override once multilingual WhatsApp templates are approved. */
+  locale?: string | null;
 }): Promise<NotificationResult> {
-  const statusLabel = STATUS_DISPLAY_LABELS[params.newStatus] ?? params.newStatus;
+  const allowed = await isWhatsappAllowedForShipment(params.shipmentId, "shipment_update");
+  if (!allowed) return skippedByPrefs("shipment_update");
+
+  // A8 — force Spanish for WhatsApp status label at M2 launch.
+  const tStatus = await getTranslations({
+    locale: "es",
+    namespace: "shipmentStatus",
+  });
+  const statusLabel = tStatus(params.newStatus);
 
   return sendAndLog({
     shipmentId: params.shipmentId,

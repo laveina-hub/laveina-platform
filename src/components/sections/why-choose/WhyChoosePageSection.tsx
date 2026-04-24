@@ -1,7 +1,8 @@
-import { Cpu, Leaf, Eye, ShieldCheck, Check, Package } from "lucide-react";
+import { Cpu, Leaf, ShieldCheck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { ButtonLink, Heading, SectionContainer, Text } from "@/components/atoms";
+import { CheckIcon, EyeIcon, PackageIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 interface FeatureCardProps {
@@ -35,7 +36,7 @@ function FeatureCard({ icon, title, description, features, className }: FeatureC
       <ul className="space-y-2.5">
         {features.map((feature, i) => (
           <li key={i} className="flex items-start gap-2.5">
-            <Check className="text-success mt-0.5 h-4 w-4 shrink-0" />
+            <CheckIcon className="text-success mt-0.5 h-4 w-4 shrink-0" />
             <Text variant="body" as="span" className="text-text-secondary text-sm font-medium">
               {feature}
             </Text>
@@ -120,7 +121,7 @@ export async function WhyChoosePageSection() {
               <div className="flex flex-col gap-8 md:flex-row md:items-start md:gap-12">
                 <div className="flex-1">
                   <div className="bg-primary-100 mb-5 flex h-12 w-12 items-center justify-center rounded-xl">
-                    <Eye className="text-primary-500 h-6 w-6" />
+                    <EyeIcon className="text-primary-500 h-6 w-6" />
                   </div>
                   <Heading variant="card" as="h3" className="mb-2">
                     {t("transparencyTitle")}
@@ -149,7 +150,7 @@ export async function WhyChoosePageSection() {
             />
 
             <div className="bg-primary flex flex-col items-center justify-center rounded-2xl p-6 text-center md:p-8">
-              <Package className="mb-4 h-10 w-10 text-white/80" />
+              <PackageIcon className="mb-4 h-10 w-10 text-white/80" />
               <Heading variant="card" as="h3" className="mb-2 text-white">
                 {t("promiseTitle")}
               </Heading>

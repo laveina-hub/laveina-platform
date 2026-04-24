@@ -9,6 +9,12 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
+  // tsconfig sets `jsx: "preserve"` (Next.js compiles JSX itself). Under
+  // vitest's esbuild pipeline we need the automatic runtime so .tsx test
+  // files render without a manual `import React`.
+  esbuild: {
+    jsx: "automatic",
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

@@ -120,6 +120,41 @@ export type Database = {
           },
         ];
       };
+      delivery_confirmation_tokens: {
+        Row: {
+          consumed_at: string | null;
+          created_at: string;
+          expires_at: string;
+          id: string;
+          shipment_id: string;
+          token_hash: string;
+        };
+        Insert: {
+          consumed_at?: string | null;
+          created_at?: string;
+          expires_at: string;
+          id?: string;
+          shipment_id: string;
+          token_hash: string;
+        };
+        Update: {
+          consumed_at?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          shipment_id?: string;
+          token_hash?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "delivery_confirmation_tokens_shipment_id_fkey";
+            columns: ["shipment_id"];
+            isOneToOne: false;
+            referencedRelation: "shipments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       insurance_options: {
         Row: {
           coverage_amount_cents: number;
@@ -149,6 +184,32 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      notification_preferences: {
+        Row: {
+          customer_id: string;
+          prefs: Json;
+          updated_at: string;
+        };
+        Insert: {
+          customer_id: string;
+          prefs?: Json;
+          updated_at?: string;
+        };
+        Update: {
+          customer_id?: string;
+          prefs?: Json;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: true;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       notifications_log: {
         Row: {
@@ -191,9 +252,45 @@ export type Database = {
           },
         ];
       };
+      otp_receiver_tokens: {
+        Row: {
+          created_at: string;
+          expires_at: string;
+          id: string;
+          last_accessed_at: string | null;
+          shipment_id: string;
+          token_hash: string;
+        };
+        Insert: {
+          created_at?: string;
+          expires_at: string;
+          id?: string;
+          last_accessed_at?: string | null;
+          shipment_id: string;
+          token_hash: string;
+        };
+        Update: {
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          last_accessed_at?: string | null;
+          shipment_id?: string;
+          token_hash?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "otp_receiver_tokens_shipment_id_fkey";
+            columns: ["shipment_id"];
+            isOneToOne: false;
+            referencedRelation: "shipments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       otp_verifications: {
         Row: {
           created_at: string;
+          display_code: string | null;
           expires_at: string;
           id: string;
           otp_hash: string;
@@ -202,6 +299,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          display_code?: string | null;
           expires_at: string;
           id?: string;
           otp_hash: string;
@@ -210,6 +308,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          display_code?: string | null;
           expires_at?: string;
           id?: string;
           otp_hash?: string;
@@ -225,6 +324,51 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      parcel_presets: {
+        Row: {
+          created_at: string;
+          display_order: number;
+          example_key: string;
+          height_cm: number;
+          is_active: boolean;
+          length_cm: number;
+          max_weight_kg: number;
+          min_weight_kg: number;
+          name_key: string;
+          slug: string;
+          updated_at: string;
+          width_cm: number;
+        };
+        Insert: {
+          created_at?: string;
+          display_order?: number;
+          example_key: string;
+          height_cm: number;
+          is_active?: boolean;
+          length_cm: number;
+          max_weight_kg: number;
+          min_weight_kg: number;
+          name_key: string;
+          slug: string;
+          updated_at?: string;
+          width_cm: number;
+        };
+        Update: {
+          created_at?: string;
+          display_order?: number;
+          example_key?: string;
+          height_cm?: number;
+          is_active?: boolean;
+          length_cm?: number;
+          max_weight_kg?: number;
+          min_weight_kg?: number;
+          name_key?: string;
+          slug?: string;
+          updated_at?: string;
+          width_cm?: number;
+        };
+        Relationships: [];
       };
       parcel_size_config: {
         Row: {
@@ -277,6 +421,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      pickup_point_overrides: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          ends_at: string | null;
+          id: string;
+          pickup_point_id: string;
+          reason: string | null;
+          starts_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          ends_at?: string | null;
+          id?: string;
+          pickup_point_id: string;
+          reason?: string | null;
+          starts_at: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          ends_at?: string | null;
+          id?: string;
+          pickup_point_id?: string;
+          reason?: string | null;
+          starts_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "pickup_point_overrides_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "pickup_point_overrides_pickup_point_id_fkey";
+            columns: ["pickup_point_id"];
+            isOneToOne: false;
+            referencedRelation: "pickup_points";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       pickup_points: {
         Row: {
           address: string;
@@ -284,6 +473,7 @@ export type Database = {
           created_at: string;
           email: string | null;
           id: string;
+          image_url: string | null;
           is_active: boolean;
           is_open: boolean;
           latitude: number;
@@ -301,6 +491,7 @@ export type Database = {
           created_at?: string;
           email?: string | null;
           id?: string;
+          image_url?: string | null;
           is_active?: boolean;
           is_open?: boolean;
           latitude: number;
@@ -318,6 +509,7 @@ export type Database = {
           created_at?: string;
           email?: string | null;
           id?: string;
+          image_url?: string | null;
           is_active?: boolean;
           is_open?: boolean;
           latitude?: number;
@@ -341,33 +533,148 @@ export type Database = {
       };
       profiles: {
         Row: {
+          city: string | null;
           created_at: string;
           email: string;
           full_name: string;
           id: string;
           phone: string | null;
+          preferred_locale: string;
           role: Database["public"]["Enums"]["user_role"];
           updated_at: string;
+          whatsapp: string | null;
         };
         Insert: {
+          city?: string | null;
           created_at?: string;
           email: string;
           full_name: string;
           id: string;
           phone?: string | null;
+          preferred_locale?: string;
           role?: Database["public"]["Enums"]["user_role"];
           updated_at?: string;
+          whatsapp?: string | null;
         };
         Update: {
+          city?: string | null;
           created_at?: string;
           email?: string;
           full_name?: string;
           id?: string;
           phone?: string | null;
+          preferred_locale?: string;
           role?: Database["public"]["Enums"]["user_role"];
           updated_at?: string;
+          whatsapp?: string | null;
         };
         Relationships: [];
+      };
+      ratings: {
+        Row: {
+          breakdown: Json | null;
+          comment: string | null;
+          created_at: string;
+          customer_id: string;
+          id: string;
+          pickup_point_id: string | null;
+          shipment_id: string;
+          stars: number;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          breakdown?: Json | null;
+          comment?: string | null;
+          created_at?: string;
+          customer_id: string;
+          id?: string;
+          pickup_point_id?: string | null;
+          shipment_id: string;
+          stars: number;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          breakdown?: Json | null;
+          comment?: string | null;
+          created_at?: string;
+          customer_id?: string;
+          id?: string;
+          pickup_point_id?: string | null;
+          shipment_id?: string;
+          stars?: number;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ratings_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ratings_pickup_point_id_fkey";
+            columns: ["pickup_point_id"];
+            isOneToOne: false;
+            referencedRelation: "pickup_points";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ratings_shipment_id_fkey";
+            columns: ["shipment_id"];
+            isOneToOne: false;
+            referencedRelation: "shipments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      saved_addresses: {
+        Row: {
+          created_at: string;
+          customer_id: string;
+          id: string;
+          is_default: boolean;
+          label: string;
+          pickup_point_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          customer_id: string;
+          id?: string;
+          is_default?: boolean;
+          label: string;
+          pickup_point_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          customer_id?: string;
+          id?: string;
+          is_default?: boolean;
+          label?: string;
+          pickup_point_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "saved_addresses_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "saved_addresses_pickup_point_id_fkey";
+            columns: ["pickup_point_id"];
+            isOneToOne: false;
+            referencedRelation: "pickup_points";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       scan_logs: {
         Row: {
@@ -443,16 +750,26 @@ export type Database = {
           origin_postcode: string;
           parcel_height_cm: number;
           parcel_length_cm: number;
+          parcel_preset_slug: string | null;
           parcel_size: Database["public"]["Enums"]["parcel_size"];
           parcel_width_cm: number;
+          preferred_locale: string;
           price_cents: number;
           qr_code_url: string | null;
-          receiver_name: string;
+          receiver_email: string;
+          receiver_first_name: string;
+          receiver_last_name: string;
           receiver_phone: string;
+          receiver_whatsapp: string | null;
           sendcloud_parcel_id: number | null;
-          sender_name: string;
+          sendcloud_shipment_id: string | null;
+          sender_email: string;
+          sender_first_name: string;
+          sender_last_name: string;
           sender_phone: string;
+          sender_whatsapp: string | null;
           shipping_method_id: number | null;
+          shipping_option_code: string | null;
           status: Database["public"]["Enums"]["shipment_status"];
           stripe_checkout_session_id: string | null;
           stripe_payment_intent_id: string | null;
@@ -481,16 +798,26 @@ export type Database = {
           origin_postcode: string;
           parcel_height_cm: number;
           parcel_length_cm: number;
+          parcel_preset_slug?: string | null;
           parcel_size: Database["public"]["Enums"]["parcel_size"];
           parcel_width_cm: number;
+          preferred_locale?: string;
           price_cents: number;
           qr_code_url?: string | null;
-          receiver_name: string;
+          receiver_email: string;
+          receiver_first_name: string;
+          receiver_last_name: string;
           receiver_phone: string;
+          receiver_whatsapp?: string | null;
           sendcloud_parcel_id?: number | null;
-          sender_name: string;
+          sendcloud_shipment_id?: string | null;
+          sender_email: string;
+          sender_first_name: string;
+          sender_last_name: string;
           sender_phone: string;
+          sender_whatsapp?: string | null;
           shipping_method_id?: number | null;
+          shipping_option_code?: string | null;
           status?: Database["public"]["Enums"]["shipment_status"];
           stripe_checkout_session_id?: string | null;
           stripe_payment_intent_id?: string | null;
@@ -519,16 +846,26 @@ export type Database = {
           origin_postcode?: string;
           parcel_height_cm?: number;
           parcel_length_cm?: number;
+          parcel_preset_slug?: string | null;
           parcel_size?: Database["public"]["Enums"]["parcel_size"];
           parcel_width_cm?: number;
+          preferred_locale?: string;
           price_cents?: number;
           qr_code_url?: string | null;
-          receiver_name?: string;
+          receiver_email?: string;
+          receiver_first_name?: string;
+          receiver_last_name?: string;
           receiver_phone?: string;
+          receiver_whatsapp?: string | null;
           sendcloud_parcel_id?: number | null;
-          sender_name?: string;
+          sendcloud_shipment_id?: string | null;
+          sender_email?: string;
+          sender_first_name?: string;
+          sender_last_name?: string;
           sender_phone?: string;
+          sender_whatsapp?: string | null;
           shipping_method_id?: number | null;
+          shipping_option_code?: string | null;
           status?: Database["public"]["Enums"]["shipment_status"];
           stripe_checkout_session_id?: string | null;
           stripe_payment_intent_id?: string | null;
@@ -565,6 +902,64 @@ export type Database = {
             referencedRelation: "pickup_points";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "shipments_parcel_preset_slug_fkey";
+            columns: ["parcel_preset_slug"];
+            isOneToOne: false;
+            referencedRelation: "parcel_presets";
+            referencedColumns: ["slug"];
+          },
+        ];
+      };
+      support_tickets: {
+        Row: {
+          admin_response: string | null;
+          created_at: string;
+          customer_id: string;
+          id: string;
+          message: string;
+          shipment_id: string | null;
+          status: string;
+          subject: string;
+          updated_at: string;
+        };
+        Insert: {
+          admin_response?: string | null;
+          created_at?: string;
+          customer_id: string;
+          id?: string;
+          message: string;
+          shipment_id?: string | null;
+          status?: string;
+          subject: string;
+          updated_at?: string;
+        };
+        Update: {
+          admin_response?: string | null;
+          created_at?: string;
+          customer_id?: string;
+          id?: string;
+          message?: string;
+          shipment_id?: string | null;
+          status?: string;
+          subject?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "support_tickets_shipment_id_fkey";
+            columns: ["shipment_id"];
+            isOneToOne: false;
+            referencedRelation: "shipments";
+            referencedColumns: ["id"];
+          },
         ];
       };
     };
@@ -582,7 +977,7 @@ export type Database = {
     };
     Enums: {
       delivery_mode: "internal" | "sendcloud";
-      delivery_speed: "standard" | "express";
+      delivery_speed: "standard" | "express" | "next_day";
       notification_priority: "low" | "normal" | "high" | "critical";
       notification_type:
         | "new_booking_paid"
@@ -727,7 +1122,7 @@ export const Constants = {
   public: {
     Enums: {
       delivery_mode: ["internal", "sendcloud"],
-      delivery_speed: ["standard", "express"],
+      delivery_speed: ["standard", "express", "next_day"],
       notification_priority: ["low", "normal", "high", "critical"],
       notification_type: [
         "new_booking_paid",

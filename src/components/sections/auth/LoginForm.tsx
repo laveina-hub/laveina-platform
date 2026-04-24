@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -11,6 +10,7 @@ import { toast } from "sonner";
 
 import { loginAction } from "@/actions/auth";
 import { Button, Divider, Input, Label, PasswordInput } from "@/components/atoms";
+import { ChevronIcon } from "@/components/icons";
 import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { loginSchema, type LoginInput } from "@/validations/auth.schema";
@@ -162,7 +162,7 @@ export function LoginForm() {
               ) : (
                 <>
                   {t("signIn")}
-                  <ArrowRight className="h-5 w-5" />
+                  <ChevronIcon direction="right" className="h-5 w-5" />
                 </>
               )}
             </Button>

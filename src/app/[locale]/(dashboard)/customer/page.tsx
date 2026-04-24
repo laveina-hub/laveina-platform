@@ -1,6 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 
-import { CustomerShipmentsSection } from "@/components/sections/customer/CustomerShipmentsSection";
+import { CustomerOverviewSection } from "@/components/sections/customer/CustomerOverviewSection";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -10,5 +10,5 @@ export default async function CustomerDashboardPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <CustomerShipmentsSection />;
+  return <CustomerOverviewSection />;
 }

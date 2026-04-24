@@ -2,12 +2,13 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MapPin, Plus, Search, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button, Input } from "@/components/atoms";
+import { MapPinIcon, PlusIcon, SearchIcon } from "@/components/icons";
 import { DataTable } from "@/components/molecules/DataTable";
 import { CsvImportDialog } from "@/components/sections/admin/CsvImportDialog";
 import { useAdminPickupPoints, type PickupPointFilters } from "@/hooks/use-pickup-points";
@@ -112,7 +113,7 @@ export function AdminPickupPointsSection() {
           </Button>
           <Link href="/admin/pickup-points/new">
             <Button size="sm" className="gap-2">
-              <Plus size={16} />
+              <PlusIcon size={16} />
               {t("addNew")}
             </Button>
           </Link>
@@ -120,7 +121,10 @@ export function AdminPickupPointsSection() {
       </div>
 
       <div className="relative max-w-xs">
-        <Search size={16} className="text-text-muted absolute top-1/2 left-3 -translate-y-1/2" />
+        <SearchIcon
+          size={16}
+          className="text-text-muted absolute top-1/2 left-3 -translate-y-1/2"
+        />
         <Input
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -136,7 +140,7 @@ export function AdminPickupPointsSection() {
         isLoading={isLoading}
         onRowClick={(row) => router.push(`/admin/pickup-points/${row.id}`)}
         emptyState={{
-          icon: <MapPin size={40} />,
+          icon: <MapPinIcon size={40} />,
           title: t("noPickupPoints"),
           description: t("noPickupPointsDesc"),
         }}

@@ -1,6 +1,6 @@
 -- ============================================================
 -- LAVEINA PLATFORM — COMPLETE DATABASE SCHEMA
--- Phase 1: Dual Delivery Model (Barcelona Internal + SendCloud)
+-- Dual Delivery Model (Barcelona Internal + SendCloud) + M2
 -- ============================================================
 -- This is the single source of truth for the database schema.
 -- Deploy this once to create all tables, enums, functions,
@@ -44,10 +44,12 @@ CREATE TYPE public.delivery_mode AS ENUM (
 -- Delivery speed option
 CREATE TYPE public.delivery_speed AS ENUM (
   'standard',    -- Cheapest carrier (default)
-  'express'      -- Fastest 24h carrier (optional upgrade)
+  'express',     -- Fastest 24h carrier (optional upgrade)
+  'next_day'     -- Barcelona-only Next Day tier
 );
 
--- Weight-based tiers (6 tiers per Pricing Report)
+-- Weight-based tiers (legacy 6-tier enum kept for Phase 1 compatibility;
+-- Phase 2 app code uses parcel_presets instead)
 CREATE TYPE public.parcel_size AS ENUM (
   'tier_1',        -- 0–2 kg
   'tier_2',        -- 2–5 kg
@@ -102,13 +104,16 @@ $$ LANGUAGE plpgsql;
 -- ----- PROFILES -----
 -- Extends Supabase Auth users with app-specific data
 CREATE TABLE public.profiles (
-  id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email       TEXT NOT NULL,
-  full_name   TEXT NOT NULL,
-  phone       TEXT,
-  role        public.user_role NOT NULL DEFAULT 'customer',
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email             TEXT NOT NULL,
+  full_name         TEXT NOT NULL,
+  phone             TEXT,
+  whatsapp          TEXT,
+  city              TEXT,
+  role              public.user_role NOT NULL DEFAULT 'customer',
+  preferred_locale  TEXT NOT NULL DEFAULT 'es' CHECK (preferred_locale IN ('es', 'ca', 'en')),
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_profiles_role ON public.profiles(role);
@@ -158,6 +163,7 @@ CREATE TABLE public.pickup_points (
   longitude       DOUBLE PRECISION NOT NULL,
   phone           TEXT,
   email           TEXT,
+  image_url       TEXT,
   is_active       BOOLEAN NOT NULL DEFAULT true,
   is_open         BOOLEAN NOT NULL DEFAULT true,
   working_hours   JSONB,
@@ -195,18 +201,63 @@ CREATE TRIGGER set_insurance_options_updated_at
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
+-- ----- PARCEL PRESETS (M2) -----
+-- Source of truth for the 4 M2 bands. The legacy parcel_size enum and
+-- parcel_size_config table stay in place for Phase 1 compatibility;
+-- app code moves to presets in Phase 2.
+CREATE TABLE public.parcel_presets (
+  slug           TEXT PRIMARY KEY,
+  name_key       TEXT NOT NULL,                         -- i18n key e.g. 'parcelPresets.mini.name'
+  example_key    TEXT NOT NULL,                         -- i18n key e.g. 'parcelPresets.mini.example'
+  min_weight_kg  NUMERIC(5,2) NOT NULL CHECK (min_weight_kg >= 0),
+  max_weight_kg  NUMERIC(5,2) NOT NULL CHECK (max_weight_kg > 0),
+  length_cm      NUMERIC(5,1) NOT NULL CHECK (length_cm > 0),
+  width_cm       NUMERIC(5,1) NOT NULL CHECK (width_cm > 0),
+  height_cm      NUMERIC(5,1) NOT NULL CHECK (height_cm > 0),
+  display_order  INTEGER NOT NULL DEFAULT 0,
+  is_active      BOOLEAN NOT NULL DEFAULT true,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (max_weight_kg > min_weight_kg)
+);
+
+CREATE INDEX idx_parcel_presets_active_order
+  ON public.parcel_presets(is_active, display_order);
+
+CREATE TRIGGER set_parcel_presets_updated_at
+  BEFORE UPDATE ON public.parcel_presets
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- Weight bands per Q5.1–5.4. Dimensions are the reference cap shown to the user;
+-- the absolute ceiling is enforced by CHECK constraints on shipments.
+INSERT INTO public.parcel_presets
+  (slug, name_key, example_key, min_weight_kg, max_weight_kg, length_cm, width_cm, height_cm, display_order)
+VALUES
+  ('mini',   'parcelPresets.mini.name',   'parcelPresets.mini.example',    0, 2,  30, 20, 20, 1),
+  ('small',  'parcelPresets.small.name',  'parcelPresets.small.example',   2, 5,  35, 35, 24, 2),
+  ('medium', 'parcelPresets.medium.name', 'parcelPresets.medium.example',  5, 10, 40, 40, 37, 3),
+  ('large',  'parcelPresets.large.name',  'parcelPresets.large.example',  10, 20, 55, 55, 39, 4);
+
+
 -- ----- SHIPMENTS -----
 -- Core domain entity: tracks a parcel from payment to delivery
+-- Size constraints (M2): weight ≤ 20 kg, L+W+H ≤ 149 cm, longest side ≤ 55 cm.
 CREATE TABLE public.shipments (
   id                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tracking_id                 TEXT NOT NULL UNIQUE,
   customer_id                 UUID NOT NULL REFERENCES public.profiles(id),
 
-  -- Sender & Receiver
-  sender_name                 TEXT NOT NULL,
+  -- Sender & Receiver (split first/last names, WhatsApp + email per M2)
+  sender_first_name           TEXT NOT NULL,
+  sender_last_name            TEXT NOT NULL,
   sender_phone                TEXT NOT NULL,
-  receiver_name               TEXT NOT NULL,
+  sender_whatsapp             TEXT,
+  sender_email                TEXT NOT NULL,
+  receiver_first_name         TEXT NOT NULL,
+  receiver_last_name          TEXT NOT NULL,
   receiver_phone              TEXT NOT NULL,
+  receiver_whatsapp           TEXT,
+  receiver_email              TEXT NOT NULL,
 
   -- Pickup Points
   origin_pickup_point_id      UUID NOT NULL REFERENCES public.pickup_points(id),
@@ -216,7 +267,8 @@ CREATE TABLE public.shipments (
 
   -- Parcel Details
   parcel_size                 public.parcel_size NOT NULL,
-  weight_kg                   NUMERIC(5,2) NOT NULL CHECK (weight_kg > 0 AND weight_kg <= 30),
+  parcel_preset_slug          TEXT REFERENCES public.parcel_presets(slug),
+  weight_kg                   NUMERIC(5,2) NOT NULL CHECK (weight_kg > 0 AND weight_kg <= 20),
   parcel_length_cm            NUMERIC(5,1) NOT NULL,
   parcel_width_cm             NUMERIC(5,1) NOT NULL,
   parcel_height_cm            NUMERIC(5,1) NOT NULL,
@@ -237,8 +289,10 @@ CREATE TABLE public.shipments (
   -- Carrier / SendCloud (NULL for Barcelona internal)
   carrier_name                TEXT,              -- e.g. 'gls', 'dhl'
   carrier_tracking_number     TEXT,
-  sendcloud_parcel_id         INTEGER,
-  shipping_method_id          INTEGER,
+  sendcloud_parcel_id         INTEGER,           -- v2 parcel id (kept — v3 parcel ids inside a shipment are still integers, used by the tracking webhook)
+  sendcloud_shipment_id       TEXT,              -- v3 shipment id (string UUID) — used for cancel + GET shipment endpoints
+  shipping_method_id          INTEGER,           -- v2 numeric selector (legacy)
+  shipping_option_code        TEXT,              -- v3 carrier+service selector (e.g. 'correos:standard/signature'); persisted at booking, replayed at dispatch
   label_url                   TEXT,
 
   -- Payment
@@ -249,9 +303,17 @@ CREATE TABLE public.shipments (
   status                      public.shipment_status NOT NULL DEFAULT 'payment_confirmed',
   qr_code_url                 TEXT,
 
+  -- Locale for transactional emails (copied from pending_bookings at webhook time)
+  preferred_locale            TEXT NOT NULL DEFAULT 'es' CHECK (preferred_locale IN ('es', 'ca', 'en')),
+
   -- Timestamps
   created_at                  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at                  TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at                  TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  CONSTRAINT shipments_total_dimensions_check
+    CHECK (parcel_length_cm + parcel_width_cm + parcel_height_cm <= 149),
+  CONSTRAINT shipments_longest_side_check
+    CHECK (GREATEST(parcel_length_cm, parcel_width_cm, parcel_height_cm) <= 55)
 );
 
 CREATE INDEX idx_shipments_tracking ON public.shipments(tracking_id);
@@ -263,18 +325,31 @@ CREATE INDEX idx_shipments_destination ON public.shipments(destination_pickup_po
 CREATE INDEX idx_shipments_created ON public.shipments(created_at DESC);
 CREATE INDEX idx_shipments_stripe_session ON public.shipments(stripe_checkout_session_id);
 CREATE INDEX idx_shipments_sendcloud_parcel ON public.shipments(sendcloud_parcel_id) WHERE sendcloud_parcel_id IS NOT NULL;
+CREATE INDEX idx_shipments_sendcloud_shipment ON public.shipments(sendcloud_shipment_id) WHERE sendcloud_shipment_id IS NOT NULL;
 CREATE INDEX idx_shipments_customer_created ON public.shipments(customer_id, created_at DESC);
+CREATE INDEX idx_shipments_parcel_preset ON public.shipments(parcel_preset_slug);
 
--- Generate unique tracking ID (LAV-XXXXXXXX format)
--- Defined after shipments table exists
+-- Generate unique tracking ID (LAV-XXXX-XXXX format).
+-- Unambiguous charset excludes 0, O, 1, I, L to prevent misreads.
 CREATE OR REPLACE FUNCTION public.generate_tracking_id()
 RETURNS TEXT AS $$
 DECLARE
-  new_id TEXT;
+  safe_chars     CONSTANT TEXT := '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  charset_len    CONSTANT INTEGER := length(safe_chars);
+  new_id         TEXT;
+  part1          TEXT;
+  part2          TEXT;
+  i              INTEGER;
   exists_already BOOLEAN;
 BEGIN
   LOOP
-    new_id := 'LAV-' || upper(substr(md5(random()::text || clock_timestamp()::text), 1, 8));
+    part1 := '';
+    part2 := '';
+    FOR i IN 1..4 LOOP
+      part1 := part1 || substr(safe_chars, 1 + floor(random() * charset_len)::int, 1);
+      part2 := part2 || substr(safe_chars, 1 + floor(random() * charset_len)::int, 1);
+    END LOOP;
+    new_id := 'LAV-' || part1 || '-' || part2;
     SELECT EXISTS(SELECT 1 FROM public.shipments WHERE tracking_id = new_id) INTO exists_already;
     EXIT WHEN NOT exists_already;
   END LOOP;
@@ -327,12 +402,13 @@ CREATE INDEX idx_scan_logs_webhook_dedup ON public.scan_logs(shipment_id, new_st
 -- ----- OTP VERIFICATIONS -----
 -- WhatsApp OTP for final delivery verification
 CREATE TABLE public.otp_verifications (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  shipment_id UUID NOT NULL REFERENCES public.shipments(id) ON DELETE CASCADE,
-  otp_hash    TEXT NOT NULL,
-  expires_at  TIMESTAMPTZ NOT NULL,
-  verified    BOOLEAN NOT NULL DEFAULT false,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  shipment_id   UUID NOT NULL REFERENCES public.shipments(id) ON DELETE CASCADE,
+  otp_hash      TEXT NOT NULL,
+  display_code  VARCHAR(6),       -- short-lived plaintext for /pickup/[trackingId]/[token]; nulled on verify
+  expires_at    TIMESTAMPTZ NOT NULL,
+  verified      BOOLEAN NOT NULL DEFAULT false,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_otp_shipment ON public.otp_verifications(shipment_id);
@@ -362,10 +438,9 @@ CREATE TRIGGER set_admin_settings_updated_at
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
--- ----- WEIGHT TIER CONFIG -----
--- Weight-based pricing tiers (6 tiers per Pricing Report).
--- Customer enters actual dimensions + weight; system calculates billable weight
--- and auto-assigns the matching tier. Admin can adjust max weight per tier.
+-- ----- WEIGHT TIER CONFIG (legacy) -----
+-- Legacy 6-tier weight config. Kept for Phase 1 compatibility; Phase 2 app
+-- code reads from parcel_presets instead.
 CREATE TABLE public.parcel_size_config (
   size          public.parcel_size PRIMARY KEY,
   min_weight_kg NUMERIC(5,2)  NOT NULL CHECK (min_weight_kg >= 0),
@@ -388,15 +463,55 @@ INSERT INTO public.parcel_size_config (size, min_weight_kg, max_weight_kg) VALUE
   ('tier_5', 15.01, 20),
   ('tier_6', 20.01, 30);
 
--- Seed Barcelona fixed prices (IVA 21% included, stored as cents)
+-- Seed Barcelona M2 pricing: 4 bands × 3 speeds (EUR ex-VAT, cents, per Q15.2).
+-- Values are the ex-VAT "Delivery" line shown to the customer; VAT (21%) is
+-- added on top at checkout (Subtotal = Delivery + Insurance, VAT = 21% × Subtotal).
+-- next_day is Barcelona-only — SendCloud routes read standard/express only.
 INSERT INTO public.admin_settings (key, value) VALUES
-  ('internal_price_tier_1_cents', '495'),
-  ('internal_price_tier_2_cents', '675'),
-  ('internal_price_tier_3_cents', '990'),
-  ('internal_price_tier_4_cents', '1440'),
-  ('internal_price_tier_5_cents', '1800'),
-  ('internal_price_tier_6_cents', '2520')
+  -- Mini (0–2 kg)
+  ('bcn_price_mini_standard_cents',   '395'),
+  ('bcn_price_mini_express_cents',    '690'),
+  ('bcn_price_mini_next_day_cents',   '890'),
+  -- Small (2–5 kg)
+  ('bcn_price_small_standard_cents',  '495'),
+  ('bcn_price_small_express_cents',   '790'),
+  ('bcn_price_small_next_day_cents',  '990'),
+  -- Medium (5–10 kg)
+  ('bcn_price_medium_standard_cents', '595'),
+  ('bcn_price_medium_express_cents',  '890'),
+  ('bcn_price_medium_next_day_cents', '1090'),
+  -- Large (10–20 kg)
+  ('bcn_price_large_standard_cents',  '795'),
+  ('bcn_price_large_express_cents',   '1090'),
+  ('bcn_price_large_next_day_cents',  '1290')
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+
+-- Operational defaults. Warehouse address fields default to empty strings
+-- and are filled via client confirmation. Cutoff times are the "order-by"
+-- wall-clock hours (24h, local to the configured timezone) that gate which
+-- delivery speeds the booking wizard offers.
+--
+-- SendCloud pricing knobs (Q15.1, Q16.1):
+--   sendcloud_min_shipping_cents      — €4 floor applied after margin so
+--                                       carrier rates below handling cost
+--                                       don't reach customers. Parity with
+--                                       BCN's cheapest €3.95.
+--   sendcloud_quote_cache_ttl_seconds — server-side TTL for the in-memory
+--                                       quote cache; smooths SendCloud API
+--                                       load for repeated identical lookups.
+INSERT INTO public.admin_settings (key, value) VALUES
+  ('sendcloud_margin_percent',           '25'),
+  ('sendcloud_min_shipping_cents',       '400'),
+  ('sendcloud_quote_cache_ttl_seconds',  '300'),
+  ('sendcloud_sender_name',              'Laveina'),
+  ('sendcloud_sender_address',           ''),
+  ('sendcloud_sender_city',              ''),
+  ('sendcloud_sender_postcode',          ''),
+  ('sendcloud_sender_phone',             ''),
+  ('cutoff_next_day_hour_local',         '18'),
+  ('cutoff_express_hour_local',          '20'),
+  ('cutoff_timezone',                    'Europe/Madrid')
+ON CONFLICT (key) DO NOTHING;
 
 
 -- ----- NOTIFICATIONS LOG -----
@@ -454,6 +569,148 @@ CREATE INDEX idx_audit_logs_resource ON public.audit_logs(resource, resource_id)
 CREATE INDEX idx_audit_logs_created_at ON public.audit_logs(created_at DESC);
 
 
+-- ----- RATINGS (M2) -----
+-- Sender rating for a delivered shipment. Optional detailed breakdown.
+-- A11: ratings publish immediately (default 'approved'); the customer can edit
+-- their own rating for 7 days after creation. Admins can still moderate via
+-- the admin_all policy.
+CREATE TABLE public.ratings (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  shipment_id         UUID NOT NULL REFERENCES public.shipments(id) ON DELETE CASCADE,
+  customer_id         UUID NOT NULL REFERENCES public.profiles(id),
+  pickup_point_id     UUID REFERENCES public.pickup_points(id),   -- rated pickup point (destination)
+  stars               INTEGER NOT NULL CHECK (stars BETWEEN 1 AND 5),
+  comment             TEXT,
+  breakdown           JSONB,        -- { on_time, packaging, communication, pickup_experience } each 1–5
+  status              TEXT NOT NULL DEFAULT 'approved' CHECK (status IN ('pending','approved','rejected')),
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (shipment_id, customer_id)
+);
+
+CREATE INDEX idx_ratings_pickup_point ON public.ratings(pickup_point_id);
+CREATE INDEX idx_ratings_customer     ON public.ratings(customer_id);
+CREATE INDEX idx_ratings_status       ON public.ratings(status);
+
+CREATE TRIGGER set_ratings_updated_at
+  BEFORE UPDATE ON public.ratings
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+-- ----- SAVED ADDRESSES (M2) -----
+-- Customer saved pickup points for reuse in the booking flow.
+CREATE TABLE public.saved_addresses (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id       UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  label             TEXT NOT NULL,
+  pickup_point_id   UUID NOT NULL REFERENCES public.pickup_points(id),
+  is_default        BOOLEAN NOT NULL DEFAULT false,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_saved_addresses_customer ON public.saved_addresses(customer_id);
+-- Only one default per customer.
+CREATE UNIQUE INDEX idx_saved_addresses_one_default
+  ON public.saved_addresses(customer_id)
+  WHERE is_default = true;
+
+CREATE TRIGGER set_saved_addresses_updated_at
+  BEFORE UPDATE ON public.saved_addresses
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+-- ----- NOTIFICATION PREFERENCES (M2) -----
+-- 6 template × 3 channel matrix per customer. Defaults blocked on A10.
+CREATE TABLE public.notification_preferences (
+  customer_id       UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  prefs             JSONB NOT NULL DEFAULT '{}'::jsonb,      -- { [template]: { dashboard, whatsapp, email } }
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TRIGGER set_notification_preferences_updated_at
+  BEFORE UPDATE ON public.notification_preferences
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+-- ----- SUPPORT TICKETS (M2) -----
+-- Customer → admin contact form. Live chat is handled by Crisp.
+CREATE TABLE public.support_tickets (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id       UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  shipment_id       UUID REFERENCES public.shipments(id) ON DELETE SET NULL,
+  subject           TEXT NOT NULL,
+  message           TEXT NOT NULL,
+  status            TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','in_progress','resolved','closed')),
+  admin_response    TEXT,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_support_tickets_customer ON public.support_tickets(customer_id);
+CREATE INDEX idx_support_tickets_status   ON public.support_tickets(status);
+
+CREATE TRIGGER set_support_tickets_updated_at
+  BEFORE UPDATE ON public.support_tickets
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+-- ----- DELIVERY CONFIRMATION TOKENS (M2) -----
+-- Signed tokens used to gate the public /delivery-confirm/[trackingId]/[token] page.
+-- Tokens are single-use; service role issues + verifies them.
+CREATE TABLE public.delivery_confirmation_tokens (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  shipment_id       UUID NOT NULL REFERENCES public.shipments(id) ON DELETE CASCADE,
+  token_hash        TEXT NOT NULL UNIQUE,
+  expires_at        TIMESTAMPTZ NOT NULL,
+  consumed_at       TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_delivery_confirmation_tokens_shipment
+  ON public.delivery_confirmation_tokens(shipment_id);
+CREATE INDEX idx_delivery_confirmation_tokens_active
+  ON public.delivery_confirmation_tokens(shipment_id, expires_at)
+  WHERE consumed_at IS NULL;
+
+
+-- ----- OTP RECEIVER TOKENS (M2) -----
+-- Public receiver-facing /pickup/[trackingId]/[token] landing. The 6-digit OTP
+-- still lives in otp_verifications; this table holds the one-time URL token.
+CREATE TABLE public.otp_receiver_tokens (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  shipment_id       UUID NOT NULL REFERENCES public.shipments(id) ON DELETE CASCADE,
+  token_hash        TEXT NOT NULL UNIQUE,
+  expires_at        TIMESTAMPTZ NOT NULL,
+  last_accessed_at  TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_otp_receiver_tokens_shipment
+  ON public.otp_receiver_tokens(shipment_id);
+CREATE INDEX idx_otp_receiver_tokens_active
+  ON public.otp_receiver_tokens(shipment_id, expires_at);
+
+
+-- ----- PICKUP POINT OVERRIDES (M2) -----
+-- Admin / shop owner toggle for "temporarily closed" (vacations, incidents).
+-- Replaces runtime use of pickup_points.is_open — that column is kept as a fast
+-- default and will be recomputed from this table + weekly hours in Phase 8.2.
+CREATE TABLE public.pickup_point_overrides (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pickup_point_id   UUID NOT NULL REFERENCES public.pickup_points(id) ON DELETE CASCADE,
+  starts_at         TIMESTAMPTZ NOT NULL,
+  ends_at           TIMESTAMPTZ,                          -- NULL = indefinite
+  reason            TEXT,
+  created_by        UUID REFERENCES public.profiles(id),
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (ends_at IS NULL OR ends_at > starts_at)
+);
+
+CREATE INDEX idx_pickup_point_overrides_active
+  ON public.pickup_point_overrides(pickup_point_id, starts_at, ends_at);
+
+
 -- ============================================================
 -- 4. ROW LEVEL SECURITY (RLS)
 -- ============================================================
@@ -462,6 +719,7 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pickup_points ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.insurance_options ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.parcel_size_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.parcel_presets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shipments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.scan_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.otp_verifications ENABLE ROW LEVEL SECURITY;
@@ -469,6 +727,13 @@ ALTER TABLE public.admin_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pending_bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ratings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.saved_addresses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notification_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.delivery_confirmation_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.otp_receiver_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pickup_point_overrides ENABLE ROW LEVEL SECURITY;
 
 -- ===== PROFILES =====
 CREATE POLICY profiles_select_own ON public.profiles
@@ -515,6 +780,13 @@ CREATE POLICY parcel_size_config_select_all ON public.parcel_size_config
 
 CREATE POLICY parcel_size_config_admin_update ON public.parcel_size_config
   FOR UPDATE USING (public.get_user_role() = 'admin');
+
+-- ===== PARCEL PRESETS =====
+CREATE POLICY parcel_presets_select_all ON public.parcel_presets
+  FOR SELECT USING (true);
+
+CREATE POLICY parcel_presets_admin_all ON public.parcel_presets
+  FOR ALL USING (public.get_user_role() = 'admin');
 
 -- ===== SHIPMENTS =====
 CREATE POLICY shipments_select_own ON public.shipments
@@ -585,6 +857,83 @@ CREATE POLICY pending_bookings_service_role ON public.pending_bookings
   FOR ALL TO service_role
   USING (true) WITH CHECK (true);
 
+-- ===== RATINGS =====
+CREATE POLICY ratings_select_approved ON public.ratings
+  FOR SELECT USING (status = 'approved');
+
+CREATE POLICY ratings_select_own ON public.ratings
+  FOR SELECT USING (customer_id = auth.uid());
+
+CREATE POLICY ratings_insert_own ON public.ratings
+  FOR INSERT WITH CHECK (customer_id = auth.uid());
+
+CREATE POLICY ratings_update_own ON public.ratings
+  FOR UPDATE
+  USING (customer_id = auth.uid() AND created_at > now() - INTERVAL '7 days')
+  WITH CHECK (customer_id = auth.uid() AND created_at > now() - INTERVAL '7 days');
+
+CREATE POLICY ratings_admin_all ON public.ratings
+  FOR ALL USING (public.get_user_role() = 'admin');
+
+-- ===== SAVED ADDRESSES =====
+CREATE POLICY saved_addresses_own ON public.saved_addresses
+  FOR ALL USING (customer_id = auth.uid()) WITH CHECK (customer_id = auth.uid());
+
+CREATE POLICY saved_addresses_admin ON public.saved_addresses
+  FOR SELECT USING (public.get_user_role() = 'admin');
+
+-- ===== NOTIFICATION PREFERENCES =====
+CREATE POLICY notification_preferences_own ON public.notification_preferences
+  FOR ALL USING (customer_id = auth.uid()) WITH CHECK (customer_id = auth.uid());
+
+CREATE POLICY notification_preferences_admin ON public.notification_preferences
+  FOR SELECT USING (public.get_user_role() = 'admin');
+
+-- ===== SUPPORT TICKETS =====
+CREATE POLICY support_tickets_select_own ON public.support_tickets
+  FOR SELECT USING (customer_id = auth.uid());
+
+CREATE POLICY support_tickets_insert_own ON public.support_tickets
+  FOR INSERT WITH CHECK (customer_id = auth.uid());
+
+CREATE POLICY support_tickets_admin_all ON public.support_tickets
+  FOR ALL USING (public.get_user_role() = 'admin');
+
+-- ===== DELIVERY CONFIRMATION TOKENS =====
+-- Service role only — webhook/issuer creates, API route verifies via service role.
+CREATE POLICY delivery_confirmation_tokens_service_role
+  ON public.delivery_confirmation_tokens
+  FOR ALL TO service_role
+  USING (true) WITH CHECK (true);
+
+-- ===== OTP RECEIVER TOKENS =====
+CREATE POLICY otp_receiver_tokens_service_role
+  ON public.otp_receiver_tokens
+  FOR ALL TO service_role
+  USING (true) WITH CHECK (true);
+
+-- ===== PICKUP POINT OVERRIDES =====
+-- Everyone can read (UI needs to show "closed" badge); only admin / owner writes.
+CREATE POLICY pickup_point_overrides_select_all
+  ON public.pickup_point_overrides
+  FOR SELECT USING (true);
+
+CREATE POLICY pickup_point_overrides_admin_all
+  ON public.pickup_point_overrides
+  FOR ALL USING (public.get_user_role() = 'admin');
+
+CREATE POLICY pickup_point_overrides_owner_write
+  ON public.pickup_point_overrides
+  FOR INSERT WITH CHECK (
+    pickup_point_id IN (SELECT id FROM public.pickup_points WHERE owner_id = auth.uid())
+  );
+
+CREATE POLICY pickup_point_overrides_owner_update
+  ON public.pickup_point_overrides
+  FOR UPDATE USING (
+    pickup_point_id IN (SELECT id FROM public.pickup_points WHERE owner_id = auth.uid())
+  );
+
 
 -- ============================================================
 -- 5. RPC FUNCTIONS
@@ -627,11 +976,9 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.get_total_revenue_cents() TO authenticated;
 
+
 -- ============================================================
--- 9. TABLE GRANTS
--- ============================================================
--- ============================================================
--- 10. ADMIN NOTIFICATIONS
+-- 6. ADMIN NOTIFICATIONS
 -- ============================================================
 
 CREATE TYPE public.notification_type AS ENUM (
@@ -677,10 +1024,51 @@ CREATE POLICY admin_notifications_admin_all
 
 ALTER PUBLICATION supabase_realtime ADD TABLE public.admin_notifications;
 
+
 -- ============================================================
--- 11. TABLE GRANTS
+-- 7. STORAGE: PICKUP POINT PHOTOS BUCKET
 -- ============================================================
-GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
-GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+-- Public-read bucket for pickup-point photos. Uploads restricted to
+-- authenticated admin via the storage policies below.
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('pickup-point-photos', 'pickup-point-photos', true)
+ON CONFLICT (id) DO UPDATE SET public = EXCLUDED.public;
+
+DROP POLICY IF EXISTS "pickup_point_photos_public_read" ON storage.objects;
+CREATE POLICY "pickup_point_photos_public_read"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'pickup-point-photos');
+
+DROP POLICY IF EXISTS "pickup_point_photos_admin_write" ON storage.objects;
+CREATE POLICY "pickup_point_photos_admin_write"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'pickup-point-photos'
+    AND public.get_user_role() = 'admin'
+  );
+
+DROP POLICY IF EXISTS "pickup_point_photos_admin_update" ON storage.objects;
+CREATE POLICY "pickup_point_photos_admin_update"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'pickup-point-photos'
+    AND public.get_user_role() = 'admin'
+  );
+
+DROP POLICY IF EXISTS "pickup_point_photos_admin_delete" ON storage.objects;
+CREATE POLICY "pickup_point_photos_admin_delete"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'pickup-point-photos'
+    AND public.get_user_role() = 'admin'
+  );
+
+
+-- ============================================================
+-- 8. TABLE GRANTS
+-- ============================================================
+GRANT ALL ON ALL TABLES    IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL TABLES    IN SCHEMA public TO service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
