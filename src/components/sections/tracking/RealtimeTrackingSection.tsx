@@ -13,6 +13,7 @@ import {
   ShareIcon,
   TrackingTruckIcon,
 } from "@/components/icons";
+import { GoogleMapsWrapper } from "@/components/molecules/GoogleMapsWrapper";
 import {
   BUCKET_LABEL_KEYS,
   getBucketState,
@@ -45,6 +46,7 @@ const VISIBLE_BUCKETS = TRACKING_BUCKET_ORDER;
 
 export function RealtimeTrackingSection({ data }: Props) {
   const t = useTranslations("tracking");
+  const tBucket = useTranslations("trackingBucket");
   const locale = useLocale() as Locale;
 
   const bucketState = (bucket: (typeof VISIBLE_BUCKETS)[number]): BucketState =>
@@ -195,11 +197,13 @@ export function RealtimeTrackingSection({ data }: Props) {
         <div className="border-border-muted relative overflow-hidden rounded-2xl border bg-white shadow-sm">
           <div className="relative h-72 sm:h-80">
             {markers.length > 0 ? (
-              <PickupPointMap
-                groups={[{ side: "origin", points: markers }]}
-                mapAriaLabel={t("title")}
-                className="h-full"
-              />
+              <GoogleMapsWrapper>
+                <PickupPointMap
+                  groups={[{ side: "origin", points: markers }]}
+                  mapAriaLabel={t("title")}
+                  className="h-full"
+                />
+              </GoogleMapsWrapper>
             ) : (
               <div className="bg-primary-50 flex h-full items-center justify-center">
                 <p className="text-text-muted text-sm">{t("etaUnknown")}</p>
@@ -211,7 +215,7 @@ export function RealtimeTrackingSection({ data }: Props) {
                 badgeTone
               )}
             >
-              {t(BUCKET_LABEL_KEYS[currentBucket])}
+              {tBucket(BUCKET_LABEL_KEYS[currentBucket])}
             </span>
             <MapStageOverlay
               bucket={currentBucket}
@@ -235,7 +239,7 @@ export function RealtimeTrackingSection({ data }: Props) {
             return (
               <TimelineRow
                 key={bucket}
-                label={t(BUCKET_LABEL_KEYS[bucket])}
+                label={tBucket(BUCKET_LABEL_KEYS[bucket])}
                 state={state}
                 timestamp={ts ? formatDateTime(ts, locale) : undefined}
                 activeLabel={t("timelineNow")}
