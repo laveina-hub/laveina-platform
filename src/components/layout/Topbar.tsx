@@ -44,7 +44,7 @@ export function Topbar({ userFullName, onMenuToggle }: TopbarProps) {
     .join("");
 
   return (
-    <header className="border-border-default flex h-16 shrink-0 items-center justify-between border-b bg-white px-4 sm:px-6">
+    <header className="border-border-default sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-white px-4 sm:px-6">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuToggle}

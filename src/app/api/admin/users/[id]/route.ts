@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 
 import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
@@ -22,8 +22,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   const result = await getUserById(id);
 
   if (result.error) {
-    const status = result.error.code === "NOT_FOUND" ? 404 : 400;
-    return NextResponse.json({ error: result.error }, { status });
+    return NextResponse.json({ error: result.error }, { status: result.error.status });
   }
 
   return NextResponse.json({ data: result.data });
@@ -45,7 +44,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   // Prevent admins from demoting themselves
   if (id === auth.user.id) {
     return NextResponse.json(
-      { error: { message: "Cannot change your own role", code: "SELF_ROLE_CHANGE" } },
+      {
+        error: {
+          message: "adminUsers.cannotChangeOwnRole",
+          code: "SELF_ROLE_CHANGE",
+          status: 400,
+        },
+      },
       { status: 400 }
     );
   }
@@ -62,16 +67,18 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   const result = await updateUserRole(id, parsed.data);
 
   if (result.error) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
+    return NextResponse.json({ error: result.error }, { status: result.error.status });
   }
 
-  void logAuditEvent({
-    actor_id: auth.user.id,
-    action: "user.role_changed",
-    resource: "profiles",
-    resource_id: id,
-    metadata: { new_role: result.data.role },
-  });
+  after(
+    logAuditEvent({
+      actor_id: auth.user.id,
+      action: "user.role_changed",
+      resource: "profiles",
+      resource_id: id,
+      metadata: { new_role: result.data.role },
+    }).catch(() => {})
+  );
 
   return NextResponse.json({ data: result.data });
 }

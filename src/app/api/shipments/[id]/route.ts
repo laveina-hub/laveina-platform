@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { isValidTransition } from "@/constants/status-transitions";
 import { createQrSignedUrl } from "@/lib/qr/generator";
+import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
 import { getShipmentById, updateShipmentStatus } from "@/services/shipment.service";
 import { ShipmentStatus } from "@/types/enums";
@@ -63,11 +64,14 @@ const shipmentStatusValues = Object.values(ShipmentStatus) as [string, ...string
 
 const patchBodySchema = z.object({
   status: z.enum(shipmentStatusValues, {
-    errorMap: () => ({ message: "Invalid shipment status" }),
+    errorMap: () => ({ message: "validation.invalidShipmentStatus" }),
   }),
 });
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  const rl = adminLimiter.check(getClientIp(request));
+  if (!rl.success) return rateLimitResponse(rl.resetMs);
+
   const patchAuth = await verifyAuth();
   if (patchAuth.error) return patchAuth.error;
 

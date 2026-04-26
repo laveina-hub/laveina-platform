@@ -21,7 +21,8 @@ export default async function CustomerPaymentsPage({ params }: Props) {
     redirect(`/${locale}/auth/login`);
   }
 
-  const payments = await listCustomerPayments(user.id);
+  const result = await listCustomerPayments(user.id);
+  const payments = result.error ? [] : result.data;
 
   return <CustomerPaymentsSection payments={payments} />;
 }

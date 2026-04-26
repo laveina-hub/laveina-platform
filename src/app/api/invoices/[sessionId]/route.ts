@@ -41,17 +41,17 @@ export async function GET(
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
 
-  const invoice = await getInvoiceBySession(user.id, sessionId);
-  if (!invoice) {
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  const result = await getInvoiceBySession(user.id, sessionId);
+  if (result.error) {
+    return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
 
-  const pdfBuffer = Buffer.from(renderInvoicePdf(invoice));
+  const pdfBuffer = Buffer.from(renderInvoicePdf(result.data));
 
   return new NextResponse(pdfBuffer, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="laveina-${invoice.invoice_number}.pdf"`,
+      "Content-Disposition": `attachment; filename="laveina-${result.data.invoice_number}.pdf"`,
       "Cache-Control": "no-store",
     },
   });

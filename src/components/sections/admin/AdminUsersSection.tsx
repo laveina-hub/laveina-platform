@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Input } from "@/components/atoms";
 import { SearchIcon } from "@/components/icons";
 import { DataTable } from "@/components/molecules/DataTable";
+import { useScrollToTop } from "@/hooks/use-scroll-to-top";
 import { useUsers, type UserFilters } from "@/hooks/use-users";
 import { useRouter } from "@/i18n/navigation";
 import { formatDateMedium, type Locale } from "@/lib/format";
@@ -54,6 +55,10 @@ export function AdminUsersSection() {
   const [searchInput, setSearchInput] = useState("");
 
   const { data, isLoading } = useUsers(filters);
+
+  // Pagination is in-place state, not a route change, so reset window scroll
+  // when the page index changes.
+  useScrollToTop(filters.page);
 
   const handleSearch = () => {
     setFilters((prev) => ({ ...prev, search: searchInput || undefined, page: 1 }));

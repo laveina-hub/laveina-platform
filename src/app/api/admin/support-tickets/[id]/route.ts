@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 
 import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -54,13 +54,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const adminResponseSet =
     typeof (body as { admin_response?: unknown } | null)?.admin_response === "string";
 
-  void logAuditEvent({
-    actor_id: auth.user.id,
-    action: "support_ticket.update",
-    resource: "support_ticket",
-    resource_id: id,
-    metadata: { status: ticket.status, admin_response_updated: adminResponseSet },
-  }).catch(() => {});
+  after(
+    logAuditEvent({
+      actor_id: auth.user.id,
+      action: "support_ticket.update",
+      resource: "support_ticket",
+      resource_id: id,
+      metadata: { status: ticket.status, admin_response_updated: adminResponseSet },
+    }).catch(() => {})
+  );
 
   // Notify the customer whenever the admin writes a response. Fire-and-forget
   // so a provider hiccup doesn't block the admin UI; bypasses the A10 prefs

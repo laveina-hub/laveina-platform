@@ -43,7 +43,10 @@ export function AdminUserDetailSection({ userId }: Props) {
       });
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.error?.message ?? "Failed to update role");
+        const code = err?.error?.code as string | undefined;
+        const message =
+          code === "SELF_ROLE_CHANGE" ? t("cannotChangeOwnRole") : t("roleUpdateFailed");
+        throw new Error(message);
       }
       return response.json();
     },

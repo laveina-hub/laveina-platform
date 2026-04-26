@@ -1,9 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { ApiResponse } from "@/types/api";
 import type { UserRole } from "@/types/enums";
 import { updateUserRoleSchema, userListQuerySchema } from "@/validations/user.schema";
-
-type ApiError = { message: string; code: string };
-type ApiResponse<T> = { data: T; error: null } | { data: null; error: ApiError };
 
 export type UserProfile = {
   id: string;
@@ -32,7 +30,7 @@ export async function listUsers(query: unknown): Promise<ApiResponse<UserListRes
   if (!parsed.success) {
     return {
       data: null,
-      error: { message: parsed.error.issues[0].message, code: "VALIDATION_ERROR" },
+      error: { message: parsed.error.issues[0].message, code: "VALIDATION_ERROR", status: 400 },
     };
   }
 
@@ -72,10 +70,16 @@ export async function listUsers(query: unknown): Promise<ApiResponse<UserListRes
   ]);
 
   if (countResult.error) {
-    return { data: null, error: { message: countResult.error.message, code: "DB_ERROR" } };
+    return {
+      data: null,
+      error: { message: countResult.error.message, code: "DB_ERROR", status: 500 },
+    };
   }
   if (dataResult.error) {
-    return { data: null, error: { message: dataResult.error.message, code: "DB_ERROR" } };
+    return {
+      data: null,
+      error: { message: dataResult.error.message, code: "DB_ERROR", status: 500 },
+    };
   }
 
   const total = countResult.count ?? 0;
@@ -134,7 +138,7 @@ export async function getUserById(id: string): Promise<ApiResponse<UserProfile>>
     .single();
 
   if (error || !profile) {
-    return { data: null, error: { message: "User not found", code: "NOT_FOUND" } };
+    return { data: null, error: { message: "User not found", code: "NOT_FOUND", status: 404 } };
   }
 
   const { count } = await supabase
@@ -161,7 +165,7 @@ export async function updateUserRole(
   if (!parsed.success) {
     return {
       data: null,
-      error: { message: parsed.error.issues[0].message, code: "VALIDATION_ERROR" },
+      error: { message: parsed.error.issues[0].message, code: "VALIDATION_ERROR", status: 400 },
     };
   }
 
@@ -175,7 +179,7 @@ export async function updateUserRole(
     .single();
 
   if (error) {
-    return { data: null, error: { message: error.message, code: "DB_ERROR" } };
+    return { data: null, error: { message: error.message, code: "DB_ERROR", status: 500 } };
   }
 
   return {

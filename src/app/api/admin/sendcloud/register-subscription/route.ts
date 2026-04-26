@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 
 import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
@@ -45,17 +45,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  void logAuditEvent({
-    actor_id: user.id,
-    action: "sendcloud.subscription_registered",
-    resource: "sendcloud_event_subscription",
-    metadata: {
-      webhook_url: result.data.webhookUrl,
-      connection_id: result.data.connectionId,
-      connection_created: result.data.connectionCreated,
-      subscription_created: result.data.subscriptionCreated,
-    },
-  });
+  after(
+    logAuditEvent({
+      actor_id: user.id,
+      action: "sendcloud.subscription_registered",
+      resource: "sendcloud_event_subscription",
+      metadata: {
+        webhook_url: result.data.webhookUrl,
+        connection_id: result.data.connectionId,
+        connection_created: result.data.connectionCreated,
+        subscription_created: result.data.subscriptionCreated,
+      },
+    }).catch(() => {})
+  );
 
   return NextResponse.json({
     data: {

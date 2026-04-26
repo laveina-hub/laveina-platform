@@ -129,7 +129,12 @@ export function Sidebar({ role, userFullName: _userFullName, open, onClose }: Si
 
       <aside
         className={cn(
-          "border-border-default fixed inset-y-0 left-0 z-50 flex w-56 flex-col border-r bg-white transition-transform duration-200 lg:static lg:translate-x-0",
+          "border-border-default fixed inset-y-0 left-0 z-50 flex w-56 flex-col border-r bg-white transition-transform duration-200",
+          // Desktop: sticky to viewport top with its own height so long sidebar
+          // nav scrolls independently while the page scroll stays on window.
+          // `self-start` opts out of the parent flex container's stretch so
+          // sticky has room to operate.
+          "lg:sticky lg:top-0 lg:bottom-auto lg:h-screen lg:translate-x-0 lg:self-start lg:transition-none",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >

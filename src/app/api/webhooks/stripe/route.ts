@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type Stripe from "stripe";
 
@@ -104,13 +104,25 @@ async function handleCheckoutCompleted(
 
   // Atomic claim — only one delivery wins. If already processed, short-circuit
   // success (Stripe may retry on network errors).
-  const { data: claimed } = await supabase
+  // The UNIQUE index on stripe_event_id (migration 00003) can reject this
+  // update with SQLSTATE 23505 if the same event_id was already applied to
+  // a different booking; that's also a duplicate-webhook case, treat as ok.
+  const { data: claimed, error: claimError } = await supabase
     .from("pending_bookings")
     .update({ processed: true, stripe_event_id: eventId })
     .eq("id", pendingBookingId)
     .eq("processed", false)
     .select("id")
     .single();
+
+  if (claimError && claimError.code === "23505") {
+    console.warn(
+      "Stripe webhook: stripe_event_id already recorded against another booking",
+      pendingBookingId,
+      eventId
+    );
+    return true;
+  }
 
   if (!claimed) {
     console.warn(
@@ -225,24 +237,28 @@ async function handleCheckoutCompleted(
     )
   );
 
-  void logAuditEvent({
-    actor_id: customerId,
-    action: "payment.completed",
-    resource: "shipment",
-    resource_id: pendingBookingId,
-    metadata: {
-      stripe_session_id: stripeSessionId,
-      stripe_payment_intent_id: stripePaymentIntentId,
-      parcel_count: createdShipments.length,
-      tracking_ids: createdShipments.map((s) => s.tracking_id),
-      amount_total: session.amount_total,
-      currency: session.currency,
-      actual_speed: bookingData.actual_speed,
-      delivery_mode: bookingData.delivery_mode,
-    },
-  });
+  // after() keeps the function alive until these resolve so notifications
+  // and audit logs aren't lost when Vercel tears down the function.
+  after(
+    logAuditEvent({
+      actor_id: customerId,
+      action: "payment.completed",
+      resource: "shipment",
+      resource_id: pendingBookingId,
+      metadata: {
+        stripe_session_id: stripeSessionId,
+        stripe_payment_intent_id: stripePaymentIntentId,
+        parcel_count: createdShipments.length,
+        tracking_ids: createdShipments.map((s) => s.tracking_id),
+        amount_total: session.amount_total,
+        currency: session.currency,
+        actual_speed: bookingData.actual_speed,
+        delivery_mode: bookingData.delivery_mode,
+      },
+    })
+  );
 
-  void Promise.allSettled(createdShipments.map((s) => notifyNewBookingPaid(s.id, s.tracking_id)));
+  after(Promise.allSettled(createdShipments.map((s) => notifyNewBookingPaid(s.id, s.tracking_id))));
 
   // QR + confirmation notifications run best-effort so a single failure
   // doesn't block the other shipments.
@@ -275,47 +291,49 @@ async function handleCheckoutCompleted(
     `${bookingData.receiver.first_name} ${bookingData.receiver.last_name}`.trim();
   const bookingLocale = bookingData.locale ?? null;
 
-  void Promise.allSettled(
-    createdShipments.flatMap((shipment, i) => {
-      const parcel = bookingData.parcels[i];
-      // `parcel.price_cents` is the full per-parcel total paid (incl. VAT +
-      // insurance) per Q15.2. Matches `shipments.price_cents` stored above.
-      const priceCents = parcel?.price_cents ?? 0;
-      return [
-        sendShipmentConfirmation({
-          shipmentId: shipment.id,
-          senderPhone: bookingData.sender.phone,
-          senderName,
-          trackingId: shipment.tracking_id,
-          originPickupPointName: originPoint?.name ?? "",
-          destinationPickupPointName: destPoint?.name ?? "",
-          priceCents,
-        }),
-        sendShipmentConfirmationEmail({
-          shipmentId: shipment.id,
-          to: bookingData.sender.email,
-          senderName,
-          trackingId: shipment.tracking_id,
-          origin: originPoint?.name ?? "",
-          destination: destPoint?.name ?? "",
-          priceCents,
-          deliverySpeed: bookingData.actual_speed ?? undefined,
-          locale: bookingLocale,
-        }),
-        // Q3.4 — initial notification to the receiver at booking time.
-        sendBookingNotificationToReceiverEmail({
-          shipmentId: shipment.id,
-          to: bookingData.receiver.email,
-          receiverName,
-          senderName,
-          trackingId: shipment.tracking_id,
-          originName: originPoint?.name ?? "",
-          destinationName: destPoint?.name ?? "",
-          destinationAddress: destPoint?.address ?? "",
-          locale: bookingLocale,
-        }),
-      ];
-    })
+  after(
+    Promise.allSettled(
+      createdShipments.flatMap((shipment, i) => {
+        const parcel = bookingData.parcels[i];
+        // `parcel.price_cents` is the full per-parcel total paid (incl. VAT +
+        // insurance) per Q15.2. Matches `shipments.price_cents` stored above.
+        const priceCents = parcel?.price_cents ?? 0;
+        return [
+          sendShipmentConfirmation({
+            shipmentId: shipment.id,
+            senderPhone: bookingData.sender.phone,
+            senderName,
+            trackingId: shipment.tracking_id,
+            originPickupPointName: originPoint?.name ?? "",
+            destinationPickupPointName: destPoint?.name ?? "",
+            priceCents,
+          }),
+          sendShipmentConfirmationEmail({
+            shipmentId: shipment.id,
+            to: bookingData.sender.email,
+            senderName,
+            trackingId: shipment.tracking_id,
+            origin: originPoint?.name ?? "",
+            destination: destPoint?.name ?? "",
+            priceCents,
+            deliverySpeed: bookingData.actual_speed ?? undefined,
+            locale: bookingLocale,
+          }),
+          // Q3.4 — initial notification to the receiver at booking time.
+          sendBookingNotificationToReceiverEmail({
+            shipmentId: shipment.id,
+            to: bookingData.receiver.email,
+            receiverName,
+            senderName,
+            trackingId: shipment.tracking_id,
+            originName: originPoint?.name ?? "",
+            destinationName: destPoint?.name ?? "",
+            destinationAddress: destPoint?.address ?? "",
+            locale: bookingLocale,
+          }),
+        ];
+      })
+    )
   );
 
   return true;

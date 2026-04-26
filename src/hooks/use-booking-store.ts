@@ -89,6 +89,20 @@ export type ParcelQuoteSnapshot = {
   nextDayCents: number | null;
 };
 
+/** Field-keyed recipient errors handed back from a failed Pay attempt. Step 3
+ *  consumes this on mount, applies the messages via `setError` to the matching
+ *  inputs, then clears it. Intentionally NOT persisted (see partialize below)
+ *  so a stale failure can't haunt a fresh tab open. Values are translation
+ *  keys like "validation.nameMin" so the same i18n pipeline used for client
+ *  validation renders the server-derived errors. */
+export type RecipientFieldErrors = Partial<{
+  receiver_first_name: string;
+  receiver_last_name: string;
+  receiver_phone: string;
+  receiver_whatsapp: string;
+  receiver_email: string;
+}>;
+
 type BookingState = {
   currentStep: BookingStep;
 
@@ -106,6 +120,9 @@ type BookingState = {
   /** Latest server-authoritative quote. Invalidated whenever any input that
    *  affects pricing (parcels, origin, destination) changes. */
   quote: QuoteSnapshot | null;
+  /** Server-flagged recipient errors from the last create-checkout attempt.
+   *  Consumed by Step 3 on mount; null when no pending errors. */
+  pendingRecipientErrors: RecipientFieldErrors | null;
 };
 
 type BookingActions = {
@@ -133,6 +150,8 @@ type BookingActions = {
   setQuoteSnapshots: (snapshots: ParcelQuoteSnapshot[] | null) => void;
   setQuote: (quote: QuoteSnapshot | null) => void;
 
+  setPendingRecipientErrors: (errors: RecipientFieldErrors | null) => void;
+
   reset: () => void;
 };
 
@@ -152,6 +171,7 @@ const initialState: BookingState = {
   speedAdjustedReason: null,
   quoteSnapshots: null,
   quote: null,
+  pendingRecipientErrors: null,
 };
 
 export const useBookingStore = create<BookingState & BookingActions>()(
@@ -229,6 +249,8 @@ export const useBookingStore = create<BookingState & BookingActions>()(
       setQuoteSnapshots: (snapshots) => set({ quoteSnapshots: snapshots }),
       setQuote: (quote) => set({ quote }),
 
+      setPendingRecipientErrors: (errors) => set({ pendingRecipientErrors: errors }),
+
       reset: () => set(initialState),
     }),
     {
@@ -239,6 +261,12 @@ export const useBookingStore = create<BookingState & BookingActions>()(
       // Step 4, so we wipe them on upgrade.
       version: 7,
       migrate: () => initialState,
+      // `pendingRecipientErrors` is a transient handoff between Step 4 and
+      // Step 3 — it must not survive a page reload, otherwise a user who
+      // closed the tab after a failed Pay would reopen Step 3 with stale
+      // server errors that may no longer apply. Explicit null write means
+      // rehydration always restores it to null without needing migrations.
+      partialize: (state) => ({ ...state, pendingRecipientErrors: null }),
     }
   )
 );

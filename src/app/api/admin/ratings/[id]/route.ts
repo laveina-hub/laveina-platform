@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 
 import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
@@ -29,13 +29,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
 
-  void logAuditEvent({
-    actor_id: auth.user.id,
-    action: "rating.moderate",
-    resource: "rating",
-    resource_id: id,
-    metadata: { status: result.data.status },
-  }).catch(() => {});
+  after(
+    logAuditEvent({
+      actor_id: auth.user.id,
+      action: "rating.moderate",
+      resource: "rating",
+      resource_id: id,
+      metadata: { status: result.data.status },
+    }).catch(() => {})
+  );
 
   return NextResponse.json({ data: result.data });
 }

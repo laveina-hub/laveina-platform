@@ -1,4 +1,5 @@
 import { env } from "@/env";
+import { runAfterResponse } from "@/lib/after-response";
 import { sendWhatsAppMessage } from "@/lib/gallabox/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NotificationPriority, NotificationType } from "@/types/notification";
@@ -43,9 +44,11 @@ export async function createAdminNotification(params: CreateNotificationParams):
   });
 
   if (params.priority === NotificationPriority.CRITICAL) {
-    void sendCriticalWhatsAppAlert(params).catch((err) => {
-      console.error("Admin WhatsApp alert failed:", err);
-    });
+    runAfterResponse(
+      sendCriticalWhatsAppAlert(params).catch((err) => {
+        console.error("Admin WhatsApp alert failed:", err);
+      })
+    );
   }
 }
 

@@ -8,6 +8,7 @@ import { GoogleMapsWrapper } from "@/components/molecules/GoogleMapsWrapper";
 import { type CutoffConfig } from "@/constants/cutoff-times";
 import { type ParcelPreset, type ParcelPresetSlug } from "@/constants/parcel-sizes";
 import { useBookingStore } from "@/hooks/use-booking-store";
+import { useScrollToTop } from "@/hooks/use-scroll-to-top";
 
 import { BookingLayout } from "./BookingLayout";
 import { PaymentFailedDialog } from "./PaymentFailedDialog";
@@ -47,6 +48,10 @@ export function RequestDeliverySection({ presets, bcnPrices, cutoffConfig, sende
   const setStep = useBookingStore((s) => s.setStep);
   const searchParams = useSearchParams();
   const [paymentFailedOpen, setPaymentFailedOpen] = useState(false);
+
+  // Wizard step is in-place state (no route change), so reset window scroll
+  // when the user moves between steps. Smooth feels right for a guided flow.
+  useScrollToTop(currentStep, { behavior: "smooth" });
 
   // S5.4 PaymentFailedDialog — open once when the Stripe cancel URL lands.
   // Strip the query param so a refresh doesn't re-open the dialog.

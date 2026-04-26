@@ -28,8 +28,8 @@ export default async function InvoicePage({ params }: Props) {
     redirect(`/${locale}/auth/login`);
   }
 
-  const invoice = await getInvoiceBySession(user.id, sessionId);
-  if (!invoice) {
+  const result = await getInvoiceBySession(user.id, sessionId);
+  if (result.error) {
     return (
       <main className="flex min-h-screen items-center justify-center p-10">
         <p className="text-text-muted text-sm">{t("notFound")}</p>
@@ -37,5 +37,5 @@ export default async function InvoicePage({ params }: Props) {
     );
   }
 
-  return <CustomerInvoiceView invoice={invoice} />;
+  return <CustomerInvoiceView invoice={result.data} />;
 }

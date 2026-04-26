@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { getClientIp, publicLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { createSavedAddress, listMySavedAddresses } from "@/services/saved-address.service";
+import { createSavedAddressSchema } from "@/validations/saved-address.schema";
 
 // A5 — saved addresses CRUD (list + create). Per-user ops go through RLS on
 // `saved_addresses`, so every handler verifies auth first and delegates to
@@ -50,7 +51,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const result = await createSavedAddress(body as never);
+  const parsed = createSavedAddressSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid request body", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const result = await createSavedAddress(parsed.data);
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }

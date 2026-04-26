@@ -549,6 +549,15 @@ CREATE INDEX idx_pending_bookings_customer ON public.pending_bookings(customer_i
 CREATE INDEX idx_pending_bookings_cleanup ON public.pending_bookings(processed, created_at)
   WHERE NOT processed;
 
+-- Defense-in-depth: guarantees one Stripe event_id maps to at most one
+-- pending_booking. The webhook handler already prevents same-row double
+-- processing via row-locked UPDATE; this rejects cross-row collisions
+-- (handler catches SQLSTATE 23505 and treats as duplicate-webhook success).
+-- Partial WHERE NOT NULL so legacy/unprocessed rows aren't constrained.
+CREATE UNIQUE INDEX idx_pending_bookings_stripe_event_unique
+  ON public.pending_bookings(stripe_event_id)
+  WHERE stripe_event_id IS NOT NULL;
+
 
 -- ----- AUDIT LOGS -----
 -- Tracks sensitive operations for compliance and debugging.

@@ -315,7 +315,10 @@
       "upTo5000": "Up to €5,000"
     },
     "fromPrice": "From {price}*",
+    "fromPriceTotal": "From {price} total*",
+    "parcelCountTitle": "{count, plural, one {# parcel} other {# parcels}}",
     "fromPriceFootnote": "*Final price depends on destination and delivery speed",
+    "fromPriceFootnoteStep3": "*Final price depends on delivery speed and insurance",
     "upToWeight": "Up to {weight}",
     "weightRange": "{min}-{max} kg",
     "presetTitle": "{name} — {category}",
@@ -400,10 +403,15 @@
     "payButton": "Pay {price}",
     "paymentPending": "Redirecting to secure checkout…",
     "paymentFailed": "We couldn't start the checkout. Please try again.",
+    "recipientReviewRequired": "Please review the recipient details — some fields need attention.",
+    "senderReviewRequired": "Please review your sender details — some fields need attention.",
     "paymentCancelled": "Payment cancelled — your draft is still here when you're ready.",
     "quoteUnavailableTitle": "We couldn't calculate a price",
     "quoteUnavailableBody": "Our carrier service is having trouble. Please try again in a few seconds.",
     "quoteRetry": "Retry",
+    "calculatingDelivery": "Calculating delivery price…",
+    "checkingCarrierRates": "Checking carrier rates for your route…",
+    "calculatingPrice": "Calculating price…",
     "stepContact": "Contact",
     "stepOrigin": "Origin",
     "stepDestination": "Destination",
@@ -980,11 +988,24 @@
     "supportLine": "Questions? Reply to this email or write to info@laveina.co.",
     "shipmentConfirmation": {
       "subject": "Shipment Confirmed — {trackingId}",
-      "body": "Your shipment has been successfully created with Laveina.<br><br><strong>Tracking ID:</strong> {trackingId}<br><strong>Pickup Point:</strong> {origin}<br><strong>Destination:</strong> {destination}<br><strong>Delivery Type:</strong> {deliveryType}<br><strong>Amount Paid:</strong> €{price}<br><br>We will notify you when your parcel is in transit, arrives at destination, and is ready for pickup.<br><br><a href=\"{trackingUrl}\">Track your shipment</a>"
+      "intro": "Your shipment has been successfully created with Laveina.",
+      "trackingIdLabel": "Tracking ID",
+      "pickupPointLabel": "Pickup Point",
+      "destinationLabel": "Destination",
+      "deliveryTypeLabel": "Delivery Type",
+      "amountPaidLabel": "Amount Paid",
+      "outro": "We will notify you when your parcel is in transit, arrives at destination, and is ready for pickup.",
+      "trackingCta": "Track your shipment"
     },
     "receiverBookingNotification": {
       "subject": "You have a parcel on the way! — {trackingId}",
-      "body": "{senderName} has sent you a parcel via Laveina.<br><br><strong>Tracking ID:</strong> {trackingId}<br><strong>From:</strong> {originName}<br><strong>To:</strong> {destinationName}, {destinationAddress}<br><br>We will notify you when your parcel is in transit, arrives at destination, and is ready for pickup.<br><br>When it arrives at {destinationName}, we'll send you a one-time pickup code.<br><br><a href=\"{trackingUrl}\">Track your parcel</a>"
+      "intro": "{senderName} has sent you a parcel via Laveina.",
+      "trackingIdLabel": "Tracking ID",
+      "originLabel": "From",
+      "destinationLabel": "To",
+      "outro": "We will notify you when your parcel is in transit, arrives at destination, and is ready for pickup.",
+      "pickupCodeNote": "When it arrives at {destinationName}, we'll send you a one-time pickup code.",
+      "trackingCta": "Track your parcel"
     },
     "deliverySpeedLabel": {
       "standard": "Standard 48-72h",
@@ -1010,7 +1031,8 @@
     "deliveryToReceiver": {
       "subject": "Parcel {trackingId} delivered — thanks",
       "body": "We've delivered your parcel. Thanks for using Laveina.",
-      "bodyWithRate": "We've delivered your parcel. Thanks for using Laveina.<br><br><a href=\"{confirmationUrl}\">Rate your experience</a> — takes less than 30 seconds and helps us improve."
+      "rateCta": "Rate your experience",
+      "rateNote": "Takes less than 30 seconds and helps us improve."
     },
     "statusUpdate": {
       "subject": "Update on shipment {trackingId}",
@@ -1477,7 +1499,9 @@
     "confirmRoleChangeTitle": "Change User Role",
     "confirmRoleChangeDesc": "Are you sure you want to change {name}'s role to {role}? This will immediately change their access permissions.",
     "userNotFound": "User not found",
-    "backToUsers": "Back to Users"
+    "backToUsers": "Back to Users",
+    "cannotChangeOwnRole": "You can't change your own role.",
+    "roleUpdateFailed": "Failed to update role"
   },
   "pickupPointDashboard": {
     "title": "Dashboard",
