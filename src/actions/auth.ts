@@ -8,6 +8,7 @@ import { env } from "@/env";
 import { routing } from "@/i18n/routing";
 import { authLimiter } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
+import { isUserRole, type UserRole } from "@/types/enums";
 
 const RECOVERY_EMAIL_COOKIE = "recovery_email";
 const RECOVERY_EMAIL_MAX_AGE = 600; // 10 minutes
@@ -100,7 +101,7 @@ export async function verifyPasswordResetOtp(token: string): Promise<ActionResul
 export async function updatePasswordAction(
   password: string,
   mode: "reset" | "set"
-): Promise<ActionResult & { role?: string }> {
+): Promise<ActionResult & { role?: UserRole }> {
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });
 
@@ -115,8 +116,7 @@ export async function updatePasswordAction(
 
   // For "set" mode (invited users), return the role so the client can redirect
   const { data: role } = await supabase.rpc("get_user_role");
-  // SAFETY: RPC returns text from DB enum
-  return { success: true, role: (role as string) ?? "pickup_point" };
+  return { success: true, role: isUserRole(role) ? role : "pickup_point" };
 }
 
 /**
@@ -176,8 +176,7 @@ export async function loginAction(
   }
 
   const { data: role } = await supabase.rpc("get_user_role");
-  // SAFETY: RPC returns text from DB enum
-  const userRole = (role as string) ?? "customer";
+  const userRole: UserRole = isUserRole(role) ? role : "customer";
 
   const hasValidRedirect = redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//");
   let dashboardPath = hasValidRedirect ? redirectTo : (ROLE_DASHBOARD[userRole] ?? "/customer");

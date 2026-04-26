@@ -214,23 +214,3 @@ export async function verifyOtp(
 
   return { data: { verified: true }, error: null };
 }
-
-/**
- * Fetches the plaintext 6-digit code for the currently active OTP of a
- * shipment. Returns null when no active OTP has a `display_code` stored
- * (old code pre-migration, or already consumed). Server-side only — uses
- * the RLS-aware server client from the caller's session.
- */
-export async function getActiveOtpDisplayCode(shipmentId: string): Promise<string | null> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("otp_verifications")
-    .select("display_code")
-    .eq("shipment_id", shipmentId)
-    .eq("verified", false)
-    .gte("expires_at", new Date().toISOString())
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return data?.display_code ?? null;
-}

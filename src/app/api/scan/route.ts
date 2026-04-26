@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -47,11 +47,15 @@ export async function POST(request: NextRequest) {
     // Notify admin on key status transitions
     const newStatus = result.data.scanLog?.new_status;
     const shipment = result.data.shipment;
+    // Use after() so the runtime keeps the function alive until these
+    // notifications resolve; otherwise Vercel can tear down the function
+    // between the response and the awaited HTTP call, silently dropping
+    // the notification.
     if (newStatus === "received_at_origin" && shipment) {
-      void notifyParcelReceivedAtOrigin(shipment.id, shipment.tracking_id).catch(() => {});
+      after(notifyParcelReceivedAtOrigin(shipment.id, shipment.tracking_id).catch(() => {}));
     }
     if (newStatus === "delivered" && shipment) {
-      void notifyParcelDelivered(shipment.id, shipment.tracking_id).catch(() => {});
+      after(notifyParcelDelivered(shipment.id, shipment.tracking_id).catch(() => {}));
     }
 
     return NextResponse.json({ data: result.data });

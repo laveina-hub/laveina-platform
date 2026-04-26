@@ -9,6 +9,7 @@ import { useState } from "react";
 import { DeliveryModeBadge, DeliverySpeedBadge, Input, StatusBadge } from "@/components/atoms";
 import { BoxIcon, SearchIcon } from "@/components/icons";
 import { DataTable } from "@/components/molecules/DataTable";
+import { useScrollToTop } from "@/hooks/use-scroll-to-top";
 import { useShipments, type ShipmentFilters } from "@/hooks/use-shipments";
 import { useRouter } from "@/i18n/navigation";
 import { formatCents, formatDateMedium, type Locale } from "@/lib/format";
@@ -36,6 +37,10 @@ export function AdminShipmentsSection() {
   const [searchInput, setSearchInput] = useState("");
 
   const { data, isLoading, isError } = useShipments(filters);
+
+  // Pagination is in-place state, not a route change, so reset window scroll
+  // when the page index changes.
+  useScrollToTop(filters.page);
 
   // Count siblings per Stripe checkout session so the list can surface a
   // "×N" badge for multi-parcel bookings. Scoped to the current page — two

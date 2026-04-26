@@ -18,6 +18,10 @@ export const UserRole = {
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
+export function isUserRole(value: unknown): value is UserRole {
+  return value === "admin" || value === "pickup_point" || value === "customer";
+}
+
 export const DeliveryMode = {
   INTERNAL: "internal",
   SENDCLOUD: "sendcloud",

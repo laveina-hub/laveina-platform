@@ -14,6 +14,7 @@ import {
   FootprintsIcon,
   InfoIcon,
   MapPinIcon,
+  PackageIcon,
   WeightIcon,
 } from "@/components/icons";
 import { type ParcelPreset, type ParcelPresetSlug } from "@/constants/parcel-sizes";
@@ -59,6 +60,8 @@ export function Step3Recipient({ presets, bcnPrices, senderProfile }: Props) {
     hydrateSenderFromProfile,
     updateSender,
     setStep,
+    pendingRecipientErrors,
+    setPendingRecipientErrors,
   } = useBookingStore();
 
   const activePreset = useMemo(
@@ -66,16 +69,20 @@ export function Step3Recipient({ presets, bcnPrices, senderProfile }: Props) {
     [presets, parcels]
   );
   const PresetIcon = activePreset ? ICON_BY_SLUG[activePreset.slug] : null;
+  const isMultiParcel = parcels.length > 1;
 
-  // Step 3 shows a "From €X" preview using the Standard price from the quote
-  // snapshot. Speed is picked on Step 4, so Standard is the cheapest guaranteed
-  // option here. Falls back to bcnPrices when the quote hasn't landed yet
-  // (e.g. during a back-navigation re-render) so the preview isn't blank.
-  const standardPriceFromQuote = quote?.parcels[0]?.totalCents.standard ?? null;
-  const standardPriceFallback = activePreset
+  // Header price (Standard speed, the cheapest guaranteed option since speed
+  // is picked on Step 4). For single-parcel: that one parcel's total. For
+  // multi-parcel: the SHIPMENT total — showing the first parcel's price as
+  // the headline misrepresents what the user is about to pay.
+  // Falls back to bcnPrices for single-parcel BCN quotes that haven't landed
+  // yet (e.g. back-navigation re-render); fallback for multi-parcel is the
+  // sum across all parcels at standard speed (computed below as totalCents).
+  const standardPriceFallbackPrimary = activePreset
     ? (bcnPrices[activePreset.slug]?.standard ?? null)
     : null;
-  const primaryPriceCents: number | null = standardPriceFromQuote ?? standardPriceFallback;
+  const standardPricePrimary: number | null =
+    quote?.parcels[0]?.totalCents.standard ?? standardPriceFallbackPrimary;
 
   // Multi-parcel breakdown: prefer the quote snapshot so SendCloud routes show
   // carrier-priced lines. Falls back to bcnPrices for BCN if the quote hasn't
@@ -103,6 +110,16 @@ export function Step3Recipient({ presets, bcnPrices, senderProfile }: Props) {
 
   const totalCents =
     quote?.totals.standard ?? lineItems.reduce((sum, item) => sum + item.priceCents, 0);
+
+  // Multi-parcel: headline = total. Single: headline = the parcel's price.
+  // Showing the first parcel's price when there are 5 misrepresents the
+  // shipment cost (Mini at €5 reads as the whole order, not 1/5 of it).
+  const headerPriceCents: number | null = isMultiParcel
+    ? totalCents > 0
+      ? totalCents
+      : null
+    : standardPricePrimary;
+
   const [summaryExpanded, setSummaryExpanded] = useState(false);
 
   const originPointsQuery = usePickupPoints(origin?.postcode);
@@ -128,10 +145,15 @@ export function Step3Recipient({ presets, bcnPrices, senderProfile }: Props) {
     register,
     handleSubmit,
     watch,
+    setError,
     formState: { errors },
   } = useForm<BookingStepRecipientUiInput>({
     resolver: zodResolver(bookingStepRecipientUiSchema),
-    mode: "onBlur",
+    // `onTouched` validates a field after its first blur and then live on
+    // every keystroke — lenient on initial entry, immediate feedback once the
+    // user has corrected a mistake (and matches the same UX as receiving a
+    // server-flagged error from a failed Pay attempt below).
+    mode: "onTouched",
     defaultValues: {
       receiver_first_name: recipient?.firstName ?? "",
       receiver_last_name: recipient?.lastName ?? "",
@@ -144,6 +166,36 @@ export function Step3Recipient({ presets, bcnPrices, senderProfile }: Props) {
   });
 
   const whatsappSameAsPhone = watch("receiver_whatsapp_same_as_phone");
+
+  // Apply server-flagged recipient errors handed off from a failed Pay click
+  // on Step 4. We `setError` per field so the same inline error UI used for
+  // client validation renders the messages, then scroll + focus the first
+  // offending input and clear the pending state so a re-render won't re-apply
+  // stale errors after the user starts typing.
+  useEffect(() => {
+    if (!pendingRecipientErrors) return;
+    const fieldEntries = Object.entries(pendingRecipientErrors) as Array<
+      [keyof BookingStepRecipientUiInput, string]
+    >;
+    if (fieldEntries.length === 0) {
+      setPendingRecipientErrors(null);
+      return;
+    }
+    fieldEntries.forEach(([field, message]) => {
+      setError(field, { type: "server", message });
+    });
+
+    const [firstField] = fieldEntries[0];
+    requestAnimationFrame(() => {
+      const el = document.getElementById(firstField);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (el instanceof HTMLInputElement) el.focus({ preventScroll: true });
+      }
+    });
+
+    setPendingRecipientErrors(null);
+  }, [pendingRecipientErrors, setError, setPendingRecipientErrors]);
 
   function onSubmit(data: BookingStepRecipientUiInput) {
     setRecipient({
@@ -166,60 +218,74 @@ export function Step3Recipient({ presets, bcnPrices, senderProfile }: Props) {
         aria-label={t("summaryParcelLabel")}
         className="bg-bg-muted border-border-muted flex flex-col gap-3 rounded-lg border px-5 py-3"
       >
-        {activePreset && PresetIcon && (
+        {/* Header: content-aware so the headline reflects what the user is
+            actually buying. Single parcel → that parcel's icon, name, and
+            price. Multi-parcel → generic shipment icon, "N parcels" count,
+            and the SHIPMENT total (showing the first parcel's price as the
+            headline misrepresents the cart by ~5×). */}
+        {activePreset && (PresetIcon || isMultiParcel) && (
           <div className="flex items-center gap-3">
             <div className="bg-primary-50 text-primary-600 flex items-center justify-center rounded-lg p-2">
-              <PresetIcon className="h-6 w-6" aria-hidden />
+              {isMultiParcel ? (
+                <PackageIcon className="h-6 w-6" aria-hidden />
+              ) : (
+                PresetIcon && <PresetIcon className="h-6 w-6" aria-hidden />
+              )}
             </div>
             <div className="flex min-w-0 flex-1 flex-col">
               <p className="text-text-muted text-base leading-6 font-medium">
-                {tPresets(`${activePreset.slug}.name`)}
+                {isMultiParcel
+                  ? t("parcelCountTitle", { count: multiParcelCount })
+                  : tPresets(`${activePreset.slug}.name`)}
               </p>
-              {primaryPriceCents !== null && (
-                <p className="text-text-primary text-xl leading-7 font-semibold">
-                  {t("fromPrice", { price: formatCents(primaryPriceCents) })}
-                </p>
+              {headerPriceCents !== null && (
+                <>
+                  <p className="text-text-primary text-xl leading-7 font-semibold">
+                    {isMultiParcel
+                      ? t("fromPriceTotal", { price: formatCents(headerPriceCents) })
+                      : t("fromPrice", { price: formatCents(headerPriceCents) })}
+                  </p>
+                  <p className="text-text-muted mt-0.5 text-xs italic">
+                    {t("fromPriceFootnoteStep3")}
+                  </p>
+                </>
               )}
             </div>
           </div>
         )}
 
-        {/* Q8.1 — multi-parcel summary: header with count + total, expandable
-            per-parcel breakdown. Route is rendered once below since all parcels
-            share the same origin/destination in this booking model. */}
+        {/* Q8.1 — multi-parcel summary: route hint + expandable per-parcel
+            breakdown. Count + total live in the header above, so this block
+            no longer duplicates them — it just contextualizes the shipment
+            ("shipping N together to X") and surfaces the breakdown on demand.
+            flex-col stack so the info line and the toggle each get their own
+            row even on narrow widths. */}
         {multiParcelCount > 1 && (
-          <div className="bg-primary-50/70 mb-3 rounded-xl p-3">
+          <div className="bg-primary-50/70 mb-3 flex flex-col gap-2 rounded-xl p-3">
             {destinationPoint && (
-              <p className="text-primary-900 mb-2 inline-flex items-center gap-2 text-xs font-medium">
-                <InfoIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                {t("multiparcelShippingTogether", {
-                  count: multiParcelCount,
-                  destination: destinationPoint.name,
-                })}
+              <p className="text-primary-900 flex items-start gap-2 text-xs font-medium">
+                <InfoIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span>
+                  {t("multiparcelShippingTogether", {
+                    count: multiParcelCount,
+                    destination: destinationPoint.name,
+                  })}
+                </span>
               </p>
             )}
-
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-text-primary text-sm font-medium">
-                {t("summaryParcelsLabel", { count: multiParcelCount })}
-              </p>
-              <p className="text-text-primary text-sm font-bold tabular-nums">
-                {t("summaryTotalLabel", { price: formatCents(totalCents) })}
-              </p>
-            </div>
 
             <button
               type="button"
               onClick={() => setSummaryExpanded((v) => !v)}
               aria-expanded={summaryExpanded}
-              className="text-primary-700 hover:text-primary-800 mt-1 inline-flex items-center gap-1 text-xs font-semibold underline-offset-2 hover:underline"
+              className="text-primary-700 hover:text-primary-800 inline-flex w-fit items-center gap-1 text-xs font-semibold underline-offset-2 hover:underline"
             >
               {summaryExpanded ? t("summaryCollapse") : t("summaryViewDetails")}
               <ChevronIcon direction={summaryExpanded ? "up" : "down"} className="h-3 w-3" />
             </button>
 
             {summaryExpanded && (
-              <ul className="border-primary-200 divide-primary-200 mt-3 flex flex-col divide-y border-t text-sm">
+              <ul className="border-primary-200 divide-primary-200 flex flex-col divide-y border-t pt-1 text-sm">
                 {lineItems.map((item, index) => (
                   <li
                     key={`${item.preset.slug}-${index}`}

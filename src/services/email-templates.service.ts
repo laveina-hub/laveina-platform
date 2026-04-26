@@ -1,7 +1,14 @@
 import { getTranslations } from "next-intl/server";
 
 import { env } from "@/env";
-import { escapeHtml, normalizeLocale, wrapHtml } from "@/lib/email/rendering";
+import {
+  escapeHtml,
+  joinParagraphs,
+  normalizeLocale,
+  renderDetails,
+  renderLink,
+  wrapHtml,
+} from "@/lib/email/rendering";
 import { sendTemplatedEmail, type EmailResult } from "@/services/email.service";
 import type { DeliverySpeed, ShipmentStatus } from "@/types/enums";
 
@@ -41,16 +48,24 @@ export async function sendShipmentConfirmationEmail(params: {
   const subject = t("shipmentConfirmation.subject", { trackingId: params.trackingId });
   const deliveryLabel = t(`deliverySpeedLabel.${params.deliverySpeed ?? "standard"}`);
   const trackingUrl = buildTrackingUrl(params.trackingId);
+  const body = joinParagraphs(
+    t("shipmentConfirmation.intro"),
+    renderDetails([
+      { label: t("shipmentConfirmation.trackingIdLabel"), value: params.trackingId },
+      { label: t("shipmentConfirmation.pickupPointLabel"), value: params.origin },
+      { label: t("shipmentConfirmation.destinationLabel"), value: params.destination },
+      { label: t("shipmentConfirmation.deliveryTypeLabel"), value: deliveryLabel },
+      {
+        label: t("shipmentConfirmation.amountPaidLabel"),
+        value: `€${(params.priceCents / 100).toFixed(2)}`,
+      },
+    ]),
+    t("shipmentConfirmation.outro"),
+    renderLink(trackingUrl, t("shipmentConfirmation.trackingCta"))
+  );
   const html = wrapHtml({
     greeting: t("greeting", { name: escapeHtml(params.senderName) }),
-    body: t("shipmentConfirmation.body", {
-      origin: escapeHtml(params.origin),
-      destination: escapeHtml(params.destination),
-      deliveryType: escapeHtml(deliveryLabel),
-      trackingId: escapeHtml(params.trackingId),
-      trackingUrl: escapeHtml(trackingUrl),
-      price: (params.priceCents / 100).toFixed(2),
-    }),
+    body,
     signoff: t("signoff"),
     support: t("supportLine"),
   });
@@ -85,16 +100,25 @@ export async function sendBookingNotificationToReceiverEmail(params: {
   const t = await getTranslations({ locale: M2_RECEIVER_LOCALE, namespace: "emails" });
   const subject = t("receiverBookingNotification.subject", { trackingId: params.trackingId });
   const trackingUrl = buildTrackingUrl(params.trackingId);
+  const body = joinParagraphs(
+    t("receiverBookingNotification.intro", { senderName: escapeHtml(params.senderName) }),
+    renderDetails([
+      { label: t("receiverBookingNotification.trackingIdLabel"), value: params.trackingId },
+      { label: t("receiverBookingNotification.originLabel"), value: params.originName },
+      {
+        label: t("receiverBookingNotification.destinationLabel"),
+        value: `${params.destinationName}, ${params.destinationAddress}`,
+      },
+    ]),
+    t("receiverBookingNotification.outro"),
+    t("receiverBookingNotification.pickupCodeNote", {
+      destinationName: escapeHtml(params.destinationName),
+    }),
+    renderLink(trackingUrl, t("receiverBookingNotification.trackingCta"))
+  );
   const html = wrapHtml({
     greeting: t("greeting", { name: escapeHtml(params.receiverName) }),
-    body: t("receiverBookingNotification.body", {
-      senderName: escapeHtml(params.senderName),
-      trackingId: escapeHtml(params.trackingId),
-      originName: escapeHtml(params.originName),
-      destinationName: escapeHtml(params.destinationName),
-      destinationAddress: escapeHtml(params.destinationAddress),
-      trackingUrl: escapeHtml(trackingUrl),
-    }),
+    body,
     signoff: t("signoff"),
     support: t("supportLine"),
   });
@@ -236,9 +260,10 @@ export async function sendDeliveryToReceiverEmail(params: {
   const t = await getTranslations({ locale: M2_RECEIVER_LOCALE, namespace: "emails" });
   const subject = t("deliveryToReceiver.subject", { trackingId: params.trackingId });
   const body = params.confirmationUrl
-    ? t("deliveryToReceiver.bodyWithRate", {
-        confirmationUrl: escapeHtml(params.confirmationUrl),
-      })
+    ? joinParagraphs(
+        t("deliveryToReceiver.body"),
+        `${renderLink(params.confirmationUrl, t("deliveryToReceiver.rateCta"))} — ${escapeHtml(t("deliveryToReceiver.rateNote"))}`
+      )
     : t("deliveryToReceiver.body");
   const html = wrapHtml({
     greeting: t("greeting", { name: escapeHtml(params.receiverName) }),

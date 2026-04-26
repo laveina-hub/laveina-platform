@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 
 import { isValidTransition } from "@/constants/status-transitions";
 import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
@@ -114,19 +114,23 @@ export async function POST(request: NextRequest) {
 
       const dispatchSenderName =
         `${shipment.sender_first_name ?? ""} ${shipment.sender_last_name ?? ""}`.trim();
-      void sendInTransit({
-        shipmentId: shipment.id,
-        senderPhone: shipment.sender_phone,
-        senderName: dispatchSenderName,
-        trackingId: shipment.tracking_id,
-      }).catch(() => {});
-      void sendInTransitEmail({
-        shipmentId: shipment.id,
-        to: shipment.sender_email,
-        senderName: dispatchSenderName,
-        trackingId: shipment.tracking_id,
-        locale: shipment.preferred_locale,
-      }).catch(() => {});
+      after(
+        sendInTransit({
+          shipmentId: shipment.id,
+          senderPhone: shipment.sender_phone,
+          senderName: dispatchSenderName,
+          trackingId: shipment.tracking_id,
+        }).catch(() => {})
+      );
+      after(
+        sendInTransitEmail({
+          shipmentId: shipment.id,
+          to: shipment.sender_email,
+          senderName: dispatchSenderName,
+          trackingId: shipment.tracking_id,
+          locale: shipment.preferred_locale,
+        }).catch(() => {})
+      );
     }
 
     // --- SendCloud bundles (one /shipments call per booking) ---
@@ -191,7 +195,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (bundle.error || !bundle.data) {
-        const message = bundle.error?.message ?? "SendCloud dispatch failed";
+        const message = bundle.error?.message ?? "sendcloud.dispatchFailed";
         for (const s of siblings) {
           results.push({
             id: s.id,
@@ -295,20 +299,22 @@ export async function POST(request: NextRequest) {
 
     // Notify admin of failed dispatches
     for (const r of results.filter((r) => !r.success)) {
-      void notifyDispatchFailed(r.id, r.trackingId, r.error ?? "Unknown error").catch(() => {});
+      after(notifyDispatchFailed(r.id, r.trackingId, r.error ?? "Unknown error").catch(() => {}));
     }
 
     if (succeeded > 0) {
-      void logAuditEvent({
-        actor_id: user.id,
-        action: "shipments.dispatched",
-        resource: "shipment",
-        metadata: {
-          succeeded,
-          failed,
-          tracking_ids: results.filter((r) => r.success).map((r) => r.trackingId),
-        },
-      });
+      after(
+        logAuditEvent({
+          actor_id: user.id,
+          action: "shipments.dispatched",
+          resource: "shipment",
+          metadata: {
+            succeeded,
+            failed,
+            tracking_ids: results.filter((r) => r.success).map((r) => r.trackingId),
+          },
+        })
+      );
     }
 
     return NextResponse.json({

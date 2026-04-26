@@ -137,7 +137,7 @@ export function getBarcelonaPrice(
   return option;
 }
 
-export interface SendcloudBundleParcelInput {
+export interface SendcloudParcelInput {
   weightKg: number;
   /** Dimensions forwarded to SendCloud so each carrier applies its own
    *  volumetric rule internally. */
@@ -148,81 +148,40 @@ export interface SendcloudBundleParcelInput {
   insuranceSurchargeCents?: number;
 }
 
-export interface SendcloudBundlePriceInput {
-  parcels: SendcloudBundleParcelInput[];
+export interface SendcloudPriceInput {
+  parcels: SendcloudParcelInput[];
   speed: M2DeliverySpeed;
   originPostcode: string;
   destinationPostcode: string;
 }
 
 /**
- * Split an ex-VAT bundle shipping total proportionally across N parcels by
- * billable weight. Uses floor-then-reconcile so the per-parcel sum equals the
- * bundle total exactly (no rounding drift).
- *
- * If total weight is zero (shouldn't happen — validated upstream), splits
- * evenly.
- */
-function splitShippingByWeight(bundleShippingCents: number, parcels: SendcloudBundleParcelInput[]) {
-  const totalWeight = parcels.reduce((sum, p) => sum + Math.max(p.weightKg, 0), 0);
-  if (parcels.length === 0) return [] as number[];
-
-  if (totalWeight <= 0) {
-    const evenShare = Math.floor(bundleShippingCents / parcels.length);
-    const shares = parcels.map(() => evenShare);
-    shares[shares.length - 1] += bundleShippingCents - evenShare * parcels.length;
-    return shares;
-  }
-
-  const shares = parcels.map((p) => Math.floor((bundleShippingCents * p.weightKg) / totalWeight));
-  const allocated = shares.reduce((s, v) => s + v, 0);
-  const remainder = bundleShippingCents - allocated;
-  // Put rounding remainder on the heaviest parcel (largest share).
-  if (remainder > 0) {
-    let heaviestIdx = 0;
-    for (let i = 1; i < parcels.length; i++) {
-      if (parcels[i].weightKg > parcels[heaviestIdx].weightKg) heaviestIdx = i;
-    }
-    shares[heaviestIdx] += remainder;
-  }
-  return shares;
-}
-
-/**
- * SendCloud bundled quote for standard/express. `next_day` is Barcelona-only
+ * SendCloud per-parcel quote for standard/express. `next_day` is Barcelona-only
  * per A2 and always returns null here.
  *
- * Flow (best practice — one carrier, one pickup, one waybill):
- *   1. One `/shipping-options` call with all parcels → bundle carrier rate.
- *   2. Apply margin + floor on the bundle total (ex-VAT) once.
- *   3. Split resulting `shippingCents` across parcels proportionally by weight.
- *   4. Each parcel's `buildPriceOption` adds its own insurance + VAT.
+ * Why per-parcel and not bundled: SendCloud's `/shipping-options` endpoint
+ * accepts a parcels array but the returned `quotes.price.total` is *not* a
+ * reliable multi-parcel bundle total — most Spanish carriers (Correos, SEUR,
+ * MRW, GLS, InPost) price and dispatch one label per parcel. Sending all
+ * parcels in one call returned single-parcel-equivalent rates that, when
+ * split, undercharged customers by 5-10×. We now ask SendCloud once per
+ * parcel so each gets its own real, weight/dim-aware rate.
  *
- * Returns one `PriceOption` per input parcel, in the same order. The `carrierRateCents`,
- * `marginPercent`, `shippingOptionCode`, and `estimatedDays` are shared across
- * siblings — they're bundle-level properties, not per-parcel.
+ * Flow per parcel:
+ *   1. One `/shipping-options` call → carrier rate for that parcel.
+ *   2. Apply margin → apply floor (€4 default) — both per parcel.
+ *   3. `buildPriceOption` adds insurance + VAT.
+ *
+ * Returns one `PriceOption` per input parcel, in the same order. Returns null
+ * if any parcel's rate fetch fails — fail-closed so the wizard blocks rather
+ * than partially quoting.
  */
-export async function getSendcloudBundlePrices(
-  input: SendcloudBundlePriceInput,
+export async function getSendcloudParcelPrices(
+  input: SendcloudPriceInput,
   settings: AdminSettings
 ): Promise<PriceOption[] | null> {
   if (input.speed === "next_day") return null;
   if (input.parcels.length === 0) return null;
-
-  const ratesResult = await getAvailableRates({
-    parcels: input.parcels.map((p) => ({
-      weightKg: p.weightKg,
-      lengthCm: p.lengthCm,
-      widthCm: p.widthCm,
-      heightCm: p.heightCm,
-    })),
-    fromPostalCode: input.originPostcode,
-    toPostalCode: input.destinationPostcode,
-  });
-  if (ratesResult.error) return null;
-
-  const rate = input.speed === "standard" ? ratesResult.data.standard : ratesResult.data.express;
-  if (!rate) return null;
 
   const marginPercent = getSettingNumber(
     settings,
@@ -235,47 +194,58 @@ export async function getSendcloudBundlePrices(
     DEFAULT_MIN_SHIPPING_CENTS
   );
 
-  // Margin + floor applied ONCE on the bundle total — not per parcel. This
-  // prevents a 3-parcel bundle from being forced to 3× floor when the bundle
-  // itself already clears the floor.
-  const withMargin = Math.round(rate.rateCents * (1 + marginPercent / 100));
-  const floorHit = minShippingCents > withMargin;
-  const bundleShippingCents = Math.max(minShippingCents, withMargin);
+  const options: PriceOption[] = [];
+  for (let i = 0; i < input.parcels.length; i++) {
+    const parcel = input.parcels[i];
 
-  const perParcelShipping = splitShippingByWeight(bundleShippingCents, input.parcels);
+    const ratesResult = await getAvailableRates({
+      parcels: [
+        {
+          weightKg: parcel.weightKg,
+          lengthCm: parcel.lengthCm,
+          widthCm: parcel.widthCm,
+          heightCm: parcel.heightCm,
+        },
+      ],
+      fromPostalCode: input.originPostcode,
+      toPostalCode: input.destinationPostcode,
+    });
+    if (ratesResult.error) return null;
 
-  const options = input.parcels.map((p, idx) =>
-    buildPriceOption({
-      shippingCents: perParcelShipping[idx],
+    const rate = input.speed === "standard" ? ratesResult.data.standard : ratesResult.data.express;
+    if (!rate) return null;
+
+    const withMargin = Math.round(rate.rateCents * (1 + marginPercent / 100));
+    const floorHit = minShippingCents > withMargin;
+    const shippingCents = Math.max(minShippingCents, withMargin);
+
+    const opt = buildPriceOption({
+      shippingCents,
       carrierRateCents: rate.rateCents,
       marginPercent,
-      insuranceSurchargeCents: p.insuranceSurchargeCents ?? 0,
+      insuranceSurchargeCents: parcel.insuranceSurchargeCents ?? 0,
       shippingMethodId: rate.shippingMethodId,
       shippingOptionCode: rate.shippingOptionCode,
       estimatedDays: rate.estimatedDays,
-    })
-  );
+    });
+    options.push(opt);
 
-  // Dev-facing pricing trail. Filter by `[pricing] sendcloud`.
-  const totalWeight = input.parcels.reduce((s, p) => s + p.weightKg, 0);
-  console.info(
-    `[pricing] sendcloud ${input.speed} ${input.originPostcode}→${input.destinationPostcode} ${input.parcels.length} parcel(s) ${totalWeight.toFixed(3)}kg:`
-  );
-  console.info(
-    `[pricing]   1. bundle carrier rate:  ${rate.rateCents}c (${fmt(rate.rateCents)})  carrier=${rate.carrier} code=${rate.shippingOptionCode}`
-  );
-  console.info(
-    `[pricing]   2. + margin ${marginPercent}%:           ${withMargin}c (${fmt(withMargin)})`
-  );
-  console.info(
-    `[pricing]   3. floor (min ${minShippingCents}c):      ${bundleShippingCents}c (${fmt(bundleShippingCents)})${floorHit ? "  [FLOOR APPLIED]" : ""}`
-  );
-  options.forEach((opt, i) => {
-    const p = input.parcels[i];
     console.info(
-      `[pricing]   4.${i + 1} parcel #${i + 1} (${p.weightKg}kg): shipping ${opt.shippingCents}c (${fmt(opt.shippingCents)}) + insurance ${opt.insuranceSurchargeCents}c → subtotal ${opt.subtotalCents}c → VAT ${opt.ivaCents}c → TOTAL ${opt.totalCents}c (${fmt(opt.totalCents)})`
+      `[pricing] sendcloud ${input.speed} ${input.originPostcode}→${input.destinationPostcode} parcel #${i + 1} (${parcel.weightKg}kg):`
     );
-  });
+    console.info(
+      `[pricing]   1. carrier rate:        ${rate.rateCents}c (${fmt(rate.rateCents)})  carrier=${rate.carrier} code=${rate.shippingOptionCode}`
+    );
+    console.info(
+      `[pricing]   2. + margin ${marginPercent}%:         ${withMargin}c (${fmt(withMargin)})`
+    );
+    console.info(
+      `[pricing]   3. floor (min ${minShippingCents}c):    ${shippingCents}c (${fmt(shippingCents)})${floorHit ? "  [FLOOR APPLIED]" : ""}`
+    );
+    console.info(
+      `[pricing]   4. + insurance ${opt.insuranceSurchargeCents}c → subtotal ${opt.subtotalCents}c → VAT ${opt.ivaCents}c → TOTAL ${opt.totalCents}c (${fmt(opt.totalCents)})`
+    );
+  }
 
   return options;
 }
@@ -373,11 +343,10 @@ export interface M2PriceBreakdown {
  *
  * - Barcelona internal: each parcel quoted independently via the admin-editable
  *   matrix (no bundling benefit — there's no carrier involved).
- * - SendCloud: **all parcels sent to SendCloud in a single `/shipping-options`
- *   call per speed**, carrier rate applied to the bundle, then split back to
- *   per-parcel `shippingCents` by weight. Margin + floor land on the bundle
- *   total, not per-parcel. Matches real-world carrier operations (one pickup,
- *   one waybill, N parcels).
+ * - SendCloud: each parcel quoted independently via its own `/shipping-options`
+ *   call per speed. Margin + floor apply per parcel. SendCloud's bundle quote
+ *   doesn't reliably scale across parcels for Spanish carriers (they price and
+ *   dispatch one label per parcel), so we ask once per parcel and sum.
  */
 export async function quoteShipmentPrices(
   input: M2QuoteInput
@@ -433,8 +402,9 @@ export async function quoteShipmentPrices(
     };
   }
 
-  // SendCloud bundled flow: one quote call per speed covers all parcels.
-  const bundleInput = {
+  // SendCloud per-parcel flow: each parcel gets its own /shipping-options
+  // call per speed (see getSendcloudParcelPrices for the rationale).
+  const sendcloudInput = {
     parcels: input.parcels.map((p) => ({
       weightKg: p.weightKg,
       lengthCm: p.lengthCm,
@@ -445,14 +415,14 @@ export async function quoteShipmentPrices(
     originPostcode: input.originPostcode,
     destinationPostcode: input.destinationPostcode,
   };
-  const [standardBundle, expressBundle] = await Promise.all([
-    getSendcloudBundlePrices({ ...bundleInput, speed: "standard" }, settings),
-    getSendcloudBundlePrices({ ...bundleInput, speed: "express" }, settings),
+  const [standardPrices, expressPrices] = await Promise.all([
+    getSendcloudParcelPrices({ ...sendcloudInput, speed: "standard" }, settings),
+    getSendcloudParcelPrices({ ...sendcloudInput, speed: "express" }, settings),
   ]);
 
   // SendCloud returned no eligible rates (carrier outage, unserviceable route,
   // or manifest exceeds supported weight/dims). Fail closed so the wizard blocks.
-  if (standardBundle === null && expressBundle === null) {
+  if (standardPrices === null && expressPrices === null) {
     return {
       data: null,
       error: { message: "pricing.sendcloudUnavailable", status: 503 },
@@ -463,8 +433,8 @@ export async function quoteShipmentPrices(
     presetSlug: parcel.presetSlug,
     actualWeightKg: parcel.weightKg,
     options: {
-      standard: standardBundle?.[idx] ?? null,
-      express: expressBundle?.[idx] ?? null,
+      standard: standardPrices?.[idx] ?? null,
+      express: expressPrices?.[idx] ?? null,
       next_day: null,
     },
   }));

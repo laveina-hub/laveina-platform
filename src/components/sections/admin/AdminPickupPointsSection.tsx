@@ -12,6 +12,7 @@ import { MapPinIcon, PlusIcon, SearchIcon } from "@/components/icons";
 import { DataTable } from "@/components/molecules/DataTable";
 import { CsvImportDialog } from "@/components/sections/admin/CsvImportDialog";
 import { useAdminPickupPoints, type PickupPointFilters } from "@/hooks/use-pickup-points";
+import { useScrollToTop } from "@/hooks/use-scroll-to-top";
 import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import type { PickupPoint } from "@/types/pickup-point";
@@ -29,6 +30,10 @@ export function AdminPickupPointsSection() {
   const [importOpen, setImportOpen] = useState(false);
 
   const { data, isLoading } = useAdminPickupPoints(filters);
+
+  // Pagination is in-place state, not a route change, so reset window scroll
+  // when the page index changes.
+  useScrollToTop(filters.page);
 
   const pickupPoints = data?.data ?? [];
 

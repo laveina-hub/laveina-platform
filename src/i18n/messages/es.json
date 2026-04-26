@@ -315,7 +315,10 @@
       "upTo5000": "Hasta 5.000 €"
     },
     "fromPrice": "Desde {price}*",
+    "fromPriceTotal": "Desde {price} en total*",
+    "parcelCountTitle": "{count, plural, one {# paquete} other {# paquetes}}",
     "fromPriceFootnote": "*El precio final depende del destino y la velocidad de entrega",
+    "fromPriceFootnoteStep3": "*El precio final depende de la velocidad de entrega y el seguro",
     "upToWeight": "Hasta {weight}",
     "weightRange": "{min}-{max} kg",
     "presetTitle": "{name} — {category}",
@@ -400,10 +403,15 @@
     "payButton": "Pagar {price}",
     "paymentPending": "Redirigiendo al pago seguro…",
     "paymentFailed": "No pudimos iniciar el pago. Inténtalo de nuevo.",
+    "recipientReviewRequired": "Revisa los datos del destinatario — algunos campos necesitan atención.",
+    "senderReviewRequired": "Revisa tus datos de remitente — algunos campos necesitan atención.",
     "paymentCancelled": "Pago cancelado — tu borrador sigue aquí cuando quieras retomarlo.",
     "quoteUnavailableTitle": "No hemos podido calcular el precio",
     "quoteUnavailableBody": "Estamos teniendo problemas con el servicio de transporte. Inténtalo de nuevo en unos segundos.",
     "quoteRetry": "Reintentar",
+    "calculatingDelivery": "Calculando el precio del envío…",
+    "checkingCarrierRates": "Consultando tarifas de transporte para tu ruta…",
+    "calculatingPrice": "Calculando precio…",
     "stepContact": "Contacto",
     "stepOrigin": "Origen",
     "stepDestination": "Destino",
@@ -980,11 +988,24 @@
     "supportLine": "¿Tienes alguna pregunta? Responde a este correo o escríbenos a info@laveina.co.",
     "shipmentConfirmation": {
       "subject": "Envío Confirmado — {trackingId}",
-      "body": "Tu envío se ha creado correctamente con Laveina.<br><br><strong>ID de seguimiento:</strong> {trackingId}<br><strong>Punto de recogida:</strong> {origin}<br><strong>Destino:</strong> {destination}<br><strong>Tipo de entrega:</strong> {deliveryType}<br><strong>Importe pagado:</strong> €{price}<br><br>Te avisaremos cuando tu paquete esté en tránsito, llegue al destino y esté listo para recoger.<br><br><a href=\"{trackingUrl}\">Rastrear tu envío</a>"
+      "intro": "Tu envío se ha creado correctamente con Laveina.",
+      "trackingIdLabel": "ID de seguimiento",
+      "pickupPointLabel": "Punto de recogida",
+      "destinationLabel": "Destino",
+      "deliveryTypeLabel": "Tipo de entrega",
+      "amountPaidLabel": "Importe pagado",
+      "outro": "Te avisaremos cuando tu paquete esté en tránsito, llegue al destino y esté listo para recoger.",
+      "trackingCta": "Rastrear tu envío"
     },
     "receiverBookingNotification": {
       "subject": "¡Tienes un paquete en camino! — {trackingId}",
-      "body": "{senderName} te ha enviado un paquete con Laveina.<br><br><strong>ID de seguimiento:</strong> {trackingId}<br><strong>Origen:</strong> {originName}<br><strong>Destino:</strong> {destinationName}, {destinationAddress}<br><br>Te avisaremos cuando tu paquete esté en tránsito, llegue al destino y esté listo para recoger.<br><br>Cuando llegue a {destinationName}, te enviaremos un código de recogida único.<br><br><a href=\"{trackingUrl}\">Rastrear tu paquete</a>"
+      "intro": "{senderName} te ha enviado un paquete con Laveina.",
+      "trackingIdLabel": "ID de seguimiento",
+      "originLabel": "Origen",
+      "destinationLabel": "Destino",
+      "outro": "Te avisaremos cuando tu paquete esté en tránsito, llegue al destino y esté listo para recoger.",
+      "pickupCodeNote": "Cuando llegue a {destinationName}, te enviaremos un código de recogida único.",
+      "trackingCta": "Rastrear tu paquete"
     },
     "deliverySpeedLabel": {
       "standard": "Estándar 48-72h",
@@ -1010,7 +1031,8 @@
     "deliveryToReceiver": {
       "subject": "Paquete {trackingId} entregado — gracias",
       "body": "Hemos entregado tu paquete. Gracias por usar Laveina.",
-      "bodyWithRate": "Hemos entregado tu paquete. Gracias por usar Laveina.<br><br><a href=\"{confirmationUrl}\">Valora tu experiencia</a> — te llevará menos de 30 segundos y nos ayudas a mejorar."
+      "rateCta": "Valora tu experiencia",
+      "rateNote": "Te llevará menos de 30 segundos y nos ayudas a mejorar."
     },
     "statusUpdate": {
       "subject": "Actualización del envío {trackingId}",
@@ -1477,7 +1499,9 @@
     "confirmRoleChangeTitle": "Cambiar Rol de Usuario",
     "confirmRoleChangeDesc": "¿Estás seguro de cambiar el rol de {name} a {role}? Esto cambiará inmediatamente sus permisos de acceso.",
     "userNotFound": "Usuario no encontrado",
-    "backToUsers": "Volver a Usuarios"
+    "backToUsers": "Volver a Usuarios",
+    "cannotChangeOwnRole": "No puedes cambiar tu propio rol.",
+    "roleUpdateFailed": "No se pudo actualizar el rol"
   },
   "pickupPointDashboard": {
     "title": "Panel de Control",
@@ -1996,9 +2020,9 @@
     },
     "preset": {
       "mini": "Mini (hasta 2 kg)",
-      "small": "Small (hasta 5 kg)",
-      "medium": "Medium (hasta 10 kg)",
-      "large": "Large (hasta 20 kg)"
+      "small": "Pequeño (hasta 5 kg)",
+      "medium": "Mediano (hasta 10 kg)",
+      "large": "Grande (hasta 20 kg)"
     },
     "insuranceLine": "Incluye seguro {cost} · valor declarado {declared}",
     "delivery": "Envío",

@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/atoms";
-import { ChevronIcon } from "@/components/icons";
+import { ChevronIcon, SpinnerIcon } from "@/components/icons";
 import {
   ConfirmDialog,
   PickupPointPickerSheet,
@@ -211,6 +211,12 @@ export function Step2Route({ cutoffConfig }: Step2RouteProps) {
   // The `useQuote` hook is disabled until inputs are valid, so isError only
   // fires once we actually tried to quote.
   const quoteErrored = quoteQuery.isError && quoteQuery.isFetched;
+
+  // Visible loading state for the Next button + inline status. We're "quoting"
+  // when the request is in flight AND we don't yet have a standard rate to
+  // show. Refetches behind a still-valid cached rate stay invisible — no UI
+  // jitter when TanStack Query revalidates in the background.
+  const isQuoting = quoteQuery.isFetching && !quoteHasStandardRate;
 
   const canContinue =
     !!origin?.pickupPointId &&
@@ -472,6 +478,23 @@ export function Step2Route({ cutoffConfig }: Step2RouteProps) {
         </div>
       )}
 
+      {/* Inline pricing-status hint. Carrier-aware copy turns a 1-3s SendCloud
+          wait from "the page is slow" into "we're checking real shipping
+          rates." aria-live polite so screen readers announce it without
+          interrupting current focus. */}
+      {isQuoting && !quoteErrored && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="text-text-muted flex items-center gap-2 text-sm"
+        >
+          <SpinnerIcon className="text-primary-500 h-4 w-4 animate-spin" aria-hidden />
+          <span>
+            {routingMode === "sendcloud" ? t("checkingCarrierRates") : t("calculatingDelivery")}
+          </span>
+        </div>
+      )}
+
       {/* Q7.3 — shared mobile picker with FROM/TO tabs. Single instance so
           switching tabs preserves the sheet + transient state. */}
       <PickupPointPickerSheet
@@ -511,9 +534,19 @@ export function Step2Route({ cutoffConfig }: Step2RouteProps) {
           size="md"
           onClick={() => setStep(3)}
           disabled={!canContinue}
+          aria-busy={isQuoting}
         >
-          {t("next")}
-          <ChevronIcon direction="right" className="ml-1 h-4 w-4" />
+          {isQuoting ? (
+            <>
+              <SpinnerIcon className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+              {t("calculatingPrice")}
+            </>
+          ) : (
+            <>
+              {t("next")}
+              <ChevronIcon direction="right" className="ml-1 h-4 w-4" />
+            </>
+          )}
         </Button>
       </div>
     </div>

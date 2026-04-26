@@ -27,6 +27,30 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+export type DetailRow = { label: string; value: string };
+
+// HTML composition helpers. Translation messages stay plain text (no inline
+// `<br>`, `<strong>`, or `<a>` — next-intl's ICU parser rejects them as
+// rich-text tags); HTML structure is assembled here from clean translated
+// fragments. Inputs are escaped on the way in so callers don't have to.
+
+/** Render a "Label: value" detail list joined by line breaks. */
+export function renderDetails(rows: DetailRow[]): string {
+  return rows
+    .map((r) => `<strong>${escapeHtml(r.label)}:</strong> ${escapeHtml(r.value)}`)
+    .join("<br/>");
+}
+
+/** Render a single anchor tag with escaped href and label. */
+export function renderLink(url: string, label: string): string {
+  return `<a href="${escapeHtml(url)}">${escapeHtml(label)}</a>`;
+}
+
+/** Join already-rendered HTML fragments with paragraph breaks (`<br/><br/>`). */
+export function joinParagraphs(...parts: Array<string | null | undefined>): string {
+  return parts.filter((p): p is string => Boolean(p && p.length > 0)).join("<br/><br/>");
+}
+
 type WrapHtmlParts = {
   greeting: string;
   body: string;

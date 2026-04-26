@@ -315,7 +315,10 @@
       "upTo5000": "Fins a 5.000 €"
     },
     "fromPrice": "Des de {price}*",
+    "fromPriceTotal": "Des de {price} en total*",
+    "parcelCountTitle": "{count, plural, one {# paquet} other {# paquets}}",
     "fromPriceFootnote": "*El preu final depèn del destí i la velocitat de lliurament",
+    "fromPriceFootnoteStep3": "*El preu final depèn de la velocitat de lliurament i de l'assegurança",
     "upToWeight": "Fins a {weight}",
     "weightRange": "{min}-{max} kg",
     "presetTitle": "{name} — {category}",
@@ -400,10 +403,15 @@
     "payButton": "Pagar {price}",
     "paymentPending": "Redirigint al pagament segur…",
     "paymentFailed": "No hem pogut iniciar el pagament. Torna-ho a provar.",
+    "recipientReviewRequired": "Revisa les dades del destinatari — alguns camps necessiten atenció.",
+    "senderReviewRequired": "Revisa les teves dades de remitent — alguns camps necessiten atenció.",
     "paymentCancelled": "Pagament cancel·lat — el teu esborrany segueix aquí quan vulguis reprendre'l.",
     "quoteUnavailableTitle": "No hem pogut calcular el preu",
     "quoteUnavailableBody": "Estem tenint problemes amb el servei de transport. Torna-ho a provar en uns segons.",
     "quoteRetry": "Reintentar",
+    "calculatingDelivery": "Calculant el preu de l'enviament…",
+    "checkingCarrierRates": "Consultant tarifes de transport per a la teva ruta…",
+    "calculatingPrice": "Calculant preu…",
     "stepContact": "Contacte",
     "stepOrigin": "Origen",
     "stepDestination": "Destinació",
@@ -980,11 +988,24 @@
     "supportLine": "Tens alguna pregunta? Respon aquest correu o escriu-nos a info@laveina.co.",
     "shipmentConfirmation": {
       "subject": "Enviament Confirmat — {trackingId}",
-      "body": "El teu enviament s'ha creat correctament amb Laveina.<br><br><strong>ID de seguiment:</strong> {trackingId}<br><strong>Punt de recollida:</strong> {origin}<br><strong>Destí:</strong> {destination}<br><strong>Tipus de lliurament:</strong> {deliveryType}<br><strong>Import pagat:</strong> €{price}<br><br>T'avisarem quan el teu paquet estigui en trànsit, arribi al destí i estigui llest per recollir.<br><br><a href=\"{trackingUrl}\">Rastrejar el teu enviament</a>"
+      "intro": "El teu enviament s'ha creat correctament amb Laveina.",
+      "trackingIdLabel": "ID de seguiment",
+      "pickupPointLabel": "Punt de recollida",
+      "destinationLabel": "Destí",
+      "deliveryTypeLabel": "Tipus de lliurament",
+      "amountPaidLabel": "Import pagat",
+      "outro": "T'avisarem quan el teu paquet estigui en trànsit, arribi al destí i estigui llest per recollir.",
+      "trackingCta": "Rastrejar el teu enviament"
     },
     "receiverBookingNotification": {
       "subject": "Tens un paquet de camí! — {trackingId}",
-      "body": "{senderName} t'ha enviat un paquet amb Laveina.<br><br><strong>ID de seguiment:</strong> {trackingId}<br><strong>Origen:</strong> {originName}<br><strong>Destí:</strong> {destinationName}, {destinationAddress}<br><br>T'avisarem quan el teu paquet estigui en trànsit, arribi al destí i estigui llest per recollir.<br><br>Quan arribi a {destinationName}, t'enviarem un codi de recollida únic.<br><br><a href=\"{trackingUrl}\">Rastrejar el teu paquet</a>"
+      "intro": "{senderName} t'ha enviat un paquet amb Laveina.",
+      "trackingIdLabel": "ID de seguiment",
+      "originLabel": "Origen",
+      "destinationLabel": "Destí",
+      "outro": "T'avisarem quan el teu paquet estigui en trànsit, arribi al destí i estigui llest per recollir.",
+      "pickupCodeNote": "Quan arribi a {destinationName}, t'enviarem un codi de recollida únic.",
+      "trackingCta": "Rastrejar el teu paquet"
     },
     "deliverySpeedLabel": {
       "standard": "Estàndard 48-72h",
@@ -1010,7 +1031,8 @@
     "deliveryToReceiver": {
       "subject": "Paquet {trackingId} lliurat — gràcies",
       "body": "Hem lliurat el teu paquet. Gràcies per utilitzar Laveina.",
-      "bodyWithRate": "Hem lliurat el teu paquet. Gràcies per utilitzar Laveina.<br><br><a href=\"{confirmationUrl}\">Valora la teva experiència</a> — triga menys de 30 segons i ens ajudes a millorar."
+      "rateCta": "Valora la teva experiència",
+      "rateNote": "Triga menys de 30 segons i ens ajudes a millorar."
     },
     "statusUpdate": {
       "subject": "Actualització de l'enviament {trackingId}",
@@ -1477,7 +1499,9 @@
     "confirmRoleChangeTitle": "Canviar Rol d'Usuari",
     "confirmRoleChangeDesc": "Estàs segur de canviar el rol de {name} a {role}? Això canviarà immediatament els seus permisos d'accés.",
     "userNotFound": "Usuari no trobat",
-    "backToUsers": "Tornar a Usuaris"
+    "backToUsers": "Tornar a Usuaris",
+    "cannotChangeOwnRole": "No pots canviar el teu propi rol.",
+    "roleUpdateFailed": "No s'ha pogut actualitzar el rol"
   },
   "pickupPointDashboard": {
     "title": "Tauler de Control",
@@ -1996,9 +2020,9 @@
     },
     "preset": {
       "mini": "Mini (fins a 2 kg)",
-      "small": "Small (fins a 5 kg)",
-      "medium": "Medium (fins a 10 kg)",
-      "large": "Large (fins a 20 kg)"
+      "small": "Petit (fins a 5 kg)",
+      "medium": "Mitjà (fins a 10 kg)",
+      "large": "Gran (fins a 20 kg)"
     },
     "insuranceLine": "Inclou assegurança {cost} · valor declarat {declared}",
     "delivery": "Enviament",

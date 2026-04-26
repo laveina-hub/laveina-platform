@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { isSendcloudV3ProblemStatus, mapSendcloudStatusV3 } from "@/constants/sendcloud-status-map";
@@ -98,17 +98,19 @@ export async function POST(request: NextRequest) {
       `SendCloud webhook: problem status ${statusCode} ("${statusMessage}") for ${shipment.tracking_id}`
     );
     if (statusCode === "REFUSED_BY_RECIPIENT" || statusCode === "RETURNED_TO_SENDER") {
-      void notifyParcelReturned(shipment.id, shipment.tracking_id).catch(() => {});
+      after(notifyParcelReturned(shipment.id, shipment.tracking_id).catch(() => {}));
     } else {
-      void notifyDeliveryProblem(
-        shipment.id,
-        shipment.tracking_id,
-        // Legacy signature takes a number; we pass a stable hash so audit
-        // logs group by code without schema churn. statusMessage carries the
-        // human-readable text.
-        statusCodeToId(statusCode),
-        statusMessage
-      ).catch(() => {});
+      after(
+        notifyDeliveryProblem(
+          shipment.id,
+          shipment.tracking_id,
+          // Legacy signature takes a number; we pass a stable hash so audit
+          // logs group by code without schema churn. statusMessage carries the
+          // human-readable text.
+          statusCodeToId(statusCode),
+          statusMessage
+        ).catch(() => {})
+      );
     }
   }
 
@@ -154,31 +156,35 @@ export async function POST(request: NextRequest) {
   const statusSenderName =
     `${shipment.sender_first_name ?? ""} ${shipment.sender_last_name ?? ""}`.trim();
 
-  void sendStatusUpdate({
-    shipmentId: shipment.id,
-    phone: shipment.sender_phone,
-    recipientName: statusSenderName,
-    trackingId: shipment.tracking_id,
-    oldStatus,
-    newStatus,
-    locale: shipment.preferred_locale,
-  }).catch((err) => {
-    console.error("SendCloud webhook: notification failed", err);
-  });
+  after(
+    sendStatusUpdate({
+      shipmentId: shipment.id,
+      phone: shipment.sender_phone,
+      recipientName: statusSenderName,
+      trackingId: shipment.tracking_id,
+      oldStatus,
+      newStatus,
+      locale: shipment.preferred_locale,
+    }).catch((err) => {
+      console.error("SendCloud webhook: notification failed", err);
+    })
+  );
 
-  void sendStatusUpdateEmail({
-    shipmentId: shipment.id,
-    to: shipment.sender_email,
-    recipientName: statusSenderName,
-    trackingId: shipment.tracking_id,
-    newStatus,
-    locale: shipment.preferred_locale,
-  }).catch((err) => {
-    console.error("SendCloud webhook: email notification failed", err);
-  });
+  after(
+    sendStatusUpdateEmail({
+      shipmentId: shipment.id,
+      to: shipment.sender_email,
+      recipientName: statusSenderName,
+      trackingId: shipment.tracking_id,
+      newStatus,
+      locale: shipment.preferred_locale,
+    }).catch((err) => {
+      console.error("SendCloud webhook: email notification failed", err);
+    })
+  );
 
   if (newStatus === ShipmentStatus.DELIVERED) {
-    void notifyParcelDelivered(shipment.id, shipment.tracking_id).catch(() => {});
+    after(notifyParcelDelivered(shipment.id, shipment.tracking_id).catch(() => {}));
   }
 
   return NextResponse.json({ received: true });

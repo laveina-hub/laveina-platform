@@ -1,4 +1,5 @@
 import { env } from "@/env";
+import { runAfterResponse } from "@/lib/after-response";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -221,21 +222,25 @@ export async function processQrScan(
       .single();
 
     const senderName = `${shipment.sender_first_name} ${shipment.sender_last_name}`.trim();
-    void sendReceivedAtOrigin({
-      shipmentId: shipment.id,
-      senderPhone: shipment.sender_phone,
-      senderName,
-      trackingId: shipment.tracking_id,
-      shopName: originShop?.name ?? "",
-    }).catch(() => {});
-    void sendReceivedAtOriginEmail({
-      shipmentId: shipment.id,
-      to: shipment.sender_email,
-      senderName,
-      trackingId: shipment.tracking_id,
-      shopName: originShop?.name ?? "",
-      locale: shipment.preferred_locale,
-    }).catch(() => {});
+    runAfterResponse(
+      sendReceivedAtOrigin({
+        shipmentId: shipment.id,
+        senderPhone: shipment.sender_phone,
+        senderName,
+        trackingId: shipment.tracking_id,
+        shopName: originShop?.name ?? "",
+      })
+    );
+    runAfterResponse(
+      sendReceivedAtOriginEmail({
+        shipmentId: shipment.id,
+        to: shipment.sender_email,
+        senderName,
+        trackingId: shipment.tracking_id,
+        shopName: originShop?.name ?? "",
+        locale: shipment.preferred_locale,
+      })
+    );
   }
 
   if (
@@ -253,23 +258,27 @@ export async function processQrScan(
       : "";
 
     const receiverName = `${shipment.receiver_first_name} ${shipment.receiver_last_name}`.trim();
-    void sendReadyForPickup({
-      shipmentId: shipment.id,
-      receiverPhone: shipment.receiver_phone,
-      receiverName,
-      trackingId: shipment.tracking_id,
-      shopName: destShop?.name ?? "",
-      shopAddress,
-    }).catch(() => {});
-    void sendReadyForPickupEmail({
-      shipmentId: shipment.id,
-      to: shipment.receiver_email,
-      receiverName,
-      trackingId: shipment.tracking_id,
-      shopName: destShop?.name ?? "",
-      shopAddress,
-      locale: shipment.preferred_locale,
-    }).catch(() => {});
+    runAfterResponse(
+      sendReadyForPickup({
+        shipmentId: shipment.id,
+        receiverPhone: shipment.receiver_phone,
+        receiverName,
+        trackingId: shipment.tracking_id,
+        shopName: destShop?.name ?? "",
+        shopAddress,
+      })
+    );
+    runAfterResponse(
+      sendReadyForPickupEmail({
+        shipmentId: shipment.id,
+        to: shipment.receiver_email,
+        receiverName,
+        trackingId: shipment.tracking_id,
+        shopName: destShop?.name ?? "",
+        shopAddress,
+        locale: shipment.preferred_locale,
+      })
+    );
   }
 
   return { data: { shipment: updatedShipment, scanLog, otpSent }, error: null };
@@ -355,20 +364,24 @@ export async function confirmDelivery(
   const deliveryReceiverName =
     `${shipment.receiver_first_name} ${shipment.receiver_last_name}`.trim();
 
-  void sendDeliveryToSender({
-    shipmentId: shipment.id,
-    senderPhone: shipment.sender_phone,
-    senderName: deliverySenderName,
-    trackingId: shipment.tracking_id,
-  }).catch(() => {});
+  runAfterResponse(
+    sendDeliveryToSender({
+      shipmentId: shipment.id,
+      senderPhone: shipment.sender_phone,
+      senderName: deliverySenderName,
+      trackingId: shipment.tracking_id,
+    })
+  );
 
-  void sendDeliveryToSenderEmail({
-    shipmentId: shipment.id,
-    to: shipment.sender_email,
-    senderName: deliverySenderName,
-    trackingId: shipment.tracking_id,
-    locale: shipment.preferred_locale,
-  }).catch(() => {});
+  runAfterResponse(
+    sendDeliveryToSenderEmail({
+      shipmentId: shipment.id,
+      to: shipment.sender_email,
+      senderName: deliverySenderName,
+      trackingId: shipment.tracking_id,
+      locale: shipment.preferred_locale,
+    })
+  );
 
   // Q13.2 — issue a 7-day tokenized link so the receiver can rate the delivery
   // without a login. Token creation is best-effort: if it fails we still fire
@@ -383,21 +396,25 @@ export async function confirmDelivery(
       )
     : undefined;
 
-  void sendDeliveryToReceiver({
-    shipmentId: shipment.id,
-    receiverPhone: shipment.receiver_phone,
-    receiverName: deliveryReceiverName,
-    trackingId: shipment.tracking_id,
-  }).catch(() => {});
+  runAfterResponse(
+    sendDeliveryToReceiver({
+      shipmentId: shipment.id,
+      receiverPhone: shipment.receiver_phone,
+      receiverName: deliveryReceiverName,
+      trackingId: shipment.tracking_id,
+    })
+  );
 
-  void sendDeliveryToReceiverEmail({
-    shipmentId: shipment.id,
-    to: shipment.receiver_email,
-    receiverName: deliveryReceiverName,
-    trackingId: shipment.tracking_id,
-    confirmationUrl,
-    locale: shipment.preferred_locale,
-  }).catch(() => {});
+  runAfterResponse(
+    sendDeliveryToReceiverEmail({
+      shipmentId: shipment.id,
+      to: shipment.receiver_email,
+      receiverName: deliveryReceiverName,
+      trackingId: shipment.tracking_id,
+      confirmationUrl,
+      locale: shipment.preferred_locale,
+    })
+  );
 
   return { data: { shipment: updated, scanLog }, error: null };
 }

@@ -9,6 +9,7 @@ import { Button, Input, StatusBadge } from "@/components/atoms";
 import { ChevronIcon, PackageIcon, PlusIcon, SearchIcon } from "@/components/icons";
 import { DataTable } from "@/components/molecules/DataTable";
 import { useAuth } from "@/hooks/use-auth";
+import { useScrollToTop } from "@/hooks/use-scroll-to-top";
 import { useShipments } from "@/hooks/use-shipments";
 import { Link, useRouter } from "@/i18n/navigation";
 import { formatCents, formatDateMedium, type Locale } from "@/lib/format";
@@ -55,10 +56,16 @@ export function CustomerShipmentsSection() {
     return () => window.clearTimeout(id);
   }, [searchInput]);
 
-  // Reset pagination when the user switches tabs.
-  useEffect(() => {
+  // Tab/pagination changes don't change the URL, so Next.js's auto scroll-
+  // to-top doesn't fire. Reset window scroll on either change. The page reset
+  // for tab switches is now batched into the click handler so a single render
+  // produces a single scroll.
+  useScrollToTop(`${tab}-${page}`);
+
+  const handleTabChange = (key: TabKey) => {
+    setTab(key);
     setPage(1);
-  }, [tab]);
+  };
 
   const queryFilters = useMemo(
     () => ({
@@ -139,7 +146,7 @@ export function CustomerShipmentsSection() {
               <button
                 key={tabDef.key}
                 type="button"
-                onClick={() => setTab(tabDef.key)}
+                onClick={() => handleTabChange(tabDef.key)}
                 aria-pressed={isActive}
                 className={cn(
                   "focus-visible:outline-primary-500 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2",

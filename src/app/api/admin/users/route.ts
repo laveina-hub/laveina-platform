@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   const result = await listUsers(query);
 
   if (result.error) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
+    return NextResponse.json({ error: result.error }, { status: result.error.status });
   }
 
   return NextResponse.json({ data: result.data });

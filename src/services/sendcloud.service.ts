@@ -120,14 +120,14 @@ function toV3Parcel(spec: SendcloudParcelSpec) {
  * Fetches Standard (cheapest non-express) and Express (≤24h) rates for a
  * Spain→Spain shipment using the v3 /shipping-options endpoint.
  *
- * Accepts **all parcels of the order in one call** — SendCloud v3 returns a
- * single bundle rate (`quotes.price.total`) per shipping-option, and the
- * carrier applies its own volumetric rule per parcel internally. This matches
- * real-world dispatch where one driver picks up N boxes for one order.
+ * Callers should pass **one parcel at a time** for pricing — SendCloud's v3
+ * `quotes.price.total` is *not* a reliable multi-parcel bundle total for
+ * Spanish carriers (Correos, SEUR, MRW, GLS, InPost), which price and
+ * dispatch one label per parcel. Multi-parcel calls return effectively
+ * single-parcel rates that, when split, undercharge by 5-10×.
  *
- * The returned `rateCents` is the bundled total (ex-VAT). Callers split it
- * across parcels proportionally (usually by billable weight) for display and
- * persistence.
+ * The returned `rateCents` is the carrier rate (ex-VAT) for the parcel(s)
+ * you submitted. The pricing service applies margin + floor on top.
  */
 export async function getAvailableRates(params: {
   parcels: SendcloudParcelSpec[];

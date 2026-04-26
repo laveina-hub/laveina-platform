@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { ApiResponse } from "@/types/api";
 
 // One Stripe Checkout session = one payment = one invoice. Multi-parcel
 // bookings land as N shipments sharing a `stripe_checkout_session_id`; the
@@ -47,15 +48,19 @@ export type InvoiceData = {
 };
 
 /** List the current customer's payments, grouped by Stripe session id. */
-export async function listCustomerPayments(customerId: string): Promise<PaymentRow[]> {
+export async function listCustomerPayments(customerId: string): Promise<ApiResponse<PaymentRow[]>> {
   const supabase = createAdminClient();
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("shipments")
     .select("stripe_checkout_session_id, created_at, price_cents, tracking_id")
     .eq("customer_id", customerId)
     .not("stripe_checkout_session_id", "is", null)
     .order("created_at", { ascending: false });
+
+  if (error) {
+    return { data: null, error: { message: error.message, code: "DB_ERROR", status: 500 } };
+  }
 
   const bySession = new Map<string, PaymentRow>();
   for (const row of data ?? []) {
@@ -82,9 +87,10 @@ export async function listCustomerPayments(customerId: string): Promise<PaymentR
     }
   }
 
-  return Array.from(bySession.values()).sort((a, b) =>
+  const sorted = Array.from(bySession.values()).sort((a, b) =>
     b.payment_date.localeCompare(a.payment_date)
   );
+  return { data: sorted, error: null };
 }
 
 type RawShipmentRow = {
@@ -108,15 +114,16 @@ function unwrapFkRow<T>(relation: T | T[] | null): T | null {
   return Array.isArray(relation) ? (relation[0] ?? null) : relation;
 }
 
-/** Returns the full invoice for a Stripe session, or null when the customer
- *  has no shipments for that session (= ownership mismatch or bogus id). */
+/** Returns the full invoice for a Stripe session, or a NOT_FOUND error when
+ *  the customer has no shipments for that session (ownership mismatch or
+ *  bogus id). */
 export async function getInvoiceBySession(
   customerId: string,
   sessionId: string
-): Promise<InvoiceData | null> {
+): Promise<ApiResponse<InvoiceData>> {
   const supabase = createAdminClient();
 
-  const { data: shipments } = await supabase
+  const { data: shipments, error } = await supabase
     .from("shipments")
     .select(
       "id, tracking_id, parcel_preset_slug, parcel_size, delivery_mode, delivery_speed, price_cents, insurance_amount_cents, insurance_surcharge_cents, stripe_payment_intent_id, created_at, origin_pickup_point:pickup_points!shipments_origin_pickup_point_id_fkey(name), destination_pickup_point:pickup_points!shipments_destination_pickup_point_id_fkey(name)"
@@ -125,8 +132,15 @@ export async function getInvoiceBySession(
     .eq("customer_id", customerId)
     .order("created_at", { ascending: true });
 
+  if (error) {
+    return { data: null, error: { message: error.message, code: "DB_ERROR", status: 500 } };
+  }
+
+  // SAFETY: explicit .select() column list matches RawShipmentRow shape
   const rows = (shipments ?? []) as unknown as RawShipmentRow[];
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return { data: null, error: { message: "Invoice not found", code: "NOT_FOUND", status: 404 } };
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -158,16 +172,19 @@ export async function getInvoiceBySession(
   const totalCents = invoiceShipments.reduce((sum, s) => sum + s.price_cents, 0);
 
   return {
-    invoice_number: invoiceNumber,
-    payment_date: paymentDate,
-    session_id: sessionId,
-    payment_intent_id: rows[0].stripe_payment_intent_id,
-    customer: {
-      full_name: profile?.full_name ?? "",
-      email: profile?.email ?? "",
+    data: {
+      invoice_number: invoiceNumber,
+      payment_date: paymentDate,
+      session_id: sessionId,
+      payment_intent_id: rows[0].stripe_payment_intent_id,
+      customer: {
+        full_name: profile?.full_name ?? "",
+        email: profile?.email ?? "",
+      },
+      shipments: invoiceShipments,
+      total_cents: totalCents,
     },
-    shipments: invoiceShipments,
-    total_cents: totalCents,
+    error: null,
   };
 }
 

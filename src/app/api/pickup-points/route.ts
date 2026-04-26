@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { getClientIp, publicLimiter, rateLimitResponse } from "@/lib/rate-limit";
+import { adminLimiter, getClientIp, publicLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
 import {
   createPickupPoint,
@@ -59,6 +59,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rl = adminLimiter.check(getClientIp(request));
+  if (!rl.success) return rateLimitResponse(rl.resetMs);
+
   const auth = await verifyAuth();
   if (auth.error) return auth.error;
 

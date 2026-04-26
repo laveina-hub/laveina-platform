@@ -1,7 +1,8 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 
 import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
+import { invalidateSettingsCache } from "@/services/admin-settings.service";
 import { logAuditEvent } from "@/services/audit.service";
 import { adminSettingsUpdateSchema } from "@/validations/admin.schema";
 
@@ -105,15 +106,21 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  void logAuditEvent({
-    actor_id: auth.user.id,
-    action: "settings.updated",
-    resource: "admin_settings",
-    metadata: {
-      settings_keys: settings ? Object.keys(settings) : [],
-      insurance_options_count: insuranceOptions?.length ?? 0,
-    },
-  });
+  // Invalidate process-level cache so admin writes propagate within the
+  // current function instance instead of waiting up to 60s for TTL expiry.
+  invalidateSettingsCache();
+
+  after(
+    logAuditEvent({
+      actor_id: auth.user.id,
+      action: "settings.updated",
+      resource: "admin_settings",
+      metadata: {
+        settings_keys: settings ? Object.keys(settings) : [],
+        insurance_options_count: insuranceOptions?.length ?? 0,
+      },
+    }).catch(() => {})
+  );
 
   return NextResponse.json({ data: { success: true } });
 }

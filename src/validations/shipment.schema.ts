@@ -105,25 +105,40 @@ export const parcelItemSchema = z
     { message: "validation.totalDimensionsExceeded", path: ["length_cm"] }
   );
 
+// Single source of truth for sender / receiver contact fields. Both the Step 3
+// UI form and the server-side `createCheckoutSchema` spread these definitions
+// so renaming a field, tightening a validator, or adding a new contact field
+// updates client and server in one place — no schema drift, no "the UI passed
+// but the server rejected" gap on Pay click.
+const senderContactFields = {
+  sender_first_name: personNameField,
+  sender_last_name: personNameField,
+  sender_phone: phoneField,
+  sender_whatsapp: internationalPhoneField,
+  sender_email: emailField,
+} as const;
+
+const receiverContactFields = {
+  receiver_first_name: personNameField,
+  receiver_last_name: personNameField,
+  receiver_phone: phoneField,
+  receiver_whatsapp: internationalPhoneField,
+  receiver_email: emailField,
+} as const;
+
 // M2 contact step — split names, Spanish phone, required WhatsApp + email.
 // `sender_whatsapp_same_as_phone` drives the "also my WhatsApp" checkbox.
 // When true, the service copies `*_phone` into `*_whatsapp`; otherwise the
 // separate field is validated on its own.
 export const bookingStepContactSchema = z
   .object({
-    sender_first_name: personNameField,
-    sender_last_name: personNameField,
-    sender_phone: phoneField,
+    ...senderContactFields,
+    sender_whatsapp: senderContactFields.sender_whatsapp.optional(),
     sender_whatsapp_same_as_phone: z.boolean().default(true),
-    sender_whatsapp: internationalPhoneField.optional(),
-    sender_email: emailField,
 
-    receiver_first_name: personNameField,
-    receiver_last_name: personNameField,
-    receiver_phone: phoneField,
+    ...receiverContactFields,
+    receiver_whatsapp: receiverContactFields.receiver_whatsapp.optional(),
     receiver_whatsapp_same_as_phone: z.boolean().default(true),
-    receiver_whatsapp: internationalPhoneField.optional(),
-    receiver_email: emailField,
   })
   .refine((data) => data.sender_whatsapp_same_as_phone || !!data.sender_whatsapp, {
     message: "validation.whatsappRequired",
@@ -141,10 +156,10 @@ export const bookingStepContactSchema = z
 // explicitly override. Keep the full `bookingStepContactSchema` for server-side
 // validation of the full submission.
 export const bookingStepRecipientSchema = z.object({
-  receiver_first_name: personNameField,
-  receiver_last_name: personNameField,
-  receiver_phone: phoneField,
-  receiver_email: emailField,
+  receiver_first_name: receiverContactFields.receiver_first_name,
+  receiver_last_name: receiverContactFields.receiver_last_name,
+  receiver_phone: receiverContactFields.receiver_phone,
+  receiver_email: receiverContactFields.receiver_email,
 });
 
 // UI schema for the Step 3 recipient form (Q3.2 / Q3.3 / Q3.4).
@@ -155,12 +170,9 @@ export const bookingStepRecipientSchema = z.object({
 // - Q3.4: email required.
 export const bookingStepRecipientUiSchema = z
   .object({
-    receiver_first_name: personNameField,
-    receiver_last_name: personNameField,
-    receiver_phone: phoneField,
+    ...receiverContactFields,
+    receiver_whatsapp: receiverContactFields.receiver_whatsapp.optional().or(z.literal("")),
     receiver_whatsapp_same_as_phone: z.boolean().default(true),
-    receiver_whatsapp: internationalPhoneField.optional().or(z.literal("")),
-    receiver_email: emailField,
   })
   .refine((data) => data.receiver_whatsapp_same_as_phone || !!data.receiver_whatsapp, {
     message: "validation.whatsappRequired",
@@ -202,18 +214,12 @@ export type QuoteRequestInput = z.infer<typeof quoteRequestSchema>;
 
 // Server-side validation for checkout — merged step 1–4 payload. Prices are
 // always recalculated; this schema only guards shape + business rules.
+// Receiver / sender field shapes come from the shared `*ContactFields`
+// definitions above, so the Step 3 UI form and this server schema can never
+// disagree on validators (length, regex, required).
 export const createCheckoutSchema = z.object({
-  sender_first_name: personNameField,
-  sender_last_name: personNameField,
-  sender_phone: phoneField,
-  sender_whatsapp: internationalPhoneField,
-  sender_email: emailField,
-
-  receiver_first_name: personNameField,
-  receiver_last_name: personNameField,
-  receiver_phone: phoneField,
-  receiver_whatsapp: internationalPhoneField,
-  receiver_email: emailField,
+  ...senderContactFields,
+  ...receiverContactFields,
 
   origin_postcode: z.string().regex(/^[0-9]{5}$/),
   origin_pickup_point_id: z.string().uuid(),

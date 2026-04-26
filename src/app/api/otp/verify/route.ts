@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -80,14 +80,16 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      void logAuditEvent({
-        actor_id: user.id,
-        action: "delivery.confirmed",
-        resource: "shipment",
-        resource_id: parsed.data.shipmentId,
-        metadata: { pickup_point_id: parsed.data.pickupPointId },
-        ip_address: ip,
-      });
+      after(
+        logAuditEvent({
+          actor_id: user.id,
+          action: "delivery.confirmed",
+          resource: "shipment",
+          resource_id: parsed.data.shipmentId,
+          metadata: { pickup_point_id: parsed.data.pickupPointId },
+          ip_address: ip,
+        }).catch(() => {})
+      );
 
       return NextResponse.json({
         data: { verified: true, delivered: true },
