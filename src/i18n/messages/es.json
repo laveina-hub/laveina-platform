@@ -405,6 +405,8 @@
     "paymentFailed": "No pudimos iniciar el pago. Inténtalo de nuevo.",
     "recipientReviewRequired": "Revisa los datos del destinatario — algunos campos necesitan atención.",
     "senderReviewRequired": "Revisa tus datos de remitente — algunos campos necesitan atención.",
+    "contactReviewRequired": "Revisa tus datos de contacto — algunos campos necesitan atención.",
+    "senderSaveBeforeContinue": "Guarda tus datos de remitente antes de continuar.",
     "paymentCancelled": "Pago cancelado — tu borrador sigue aquí cuando quieras retomarlo.",
     "quoteUnavailableTitle": "No hemos podido calcular el precio",
     "quoteUnavailableBody": "Estamos teniendo problemas con el servicio de transporte. Inténtalo de nuevo en unos segundos.",

@@ -405,6 +405,8 @@
     "paymentFailed": "We couldn't start the checkout. Please try again.",
     "recipientReviewRequired": "Please review the recipient details — some fields need attention.",
     "senderReviewRequired": "Please review your sender details — some fields need attention.",
+    "contactReviewRequired": "Please review your contact details — some fields need attention.",
+    "senderSaveBeforeContinue": "Save your sender details before continuing.",
     "paymentCancelled": "Payment cancelled — your draft is still here when you're ready.",
     "quoteUnavailableTitle": "We couldn't calculate a price",
     "quoteUnavailableBody": "Our carrier service is having trouble. Please try again in a few seconds.",

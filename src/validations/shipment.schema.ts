@@ -179,6 +179,22 @@ export const bookingStepRecipientUiSchema = z
     path: ["receiver_whatsapp"],
   });
 
+// UI schema for the Step 3 sender section. Mirrors the recipient form: the
+// `same_as_phone` checkbox makes `sender_whatsapp` optional unless the user
+// explicitly opts out. Used both inline (validate-on-save inside
+// `SenderSection`) and at the Step 3 → Step 4 boundary so we never advance
+// with sender data that the server's `createCheckoutSchema` would reject.
+export const bookingSenderUiSchema = z
+  .object({
+    ...senderContactFields,
+    sender_whatsapp: senderContactFields.sender_whatsapp.optional().or(z.literal("")),
+    sender_whatsapp_same_as_phone: z.boolean().default(true),
+  })
+  .refine((data) => data.sender_whatsapp_same_as_phone || !!data.sender_whatsapp, {
+    message: "validation.whatsappRequired",
+    path: ["sender_whatsapp"],
+  });
+
 export const bookingStepOriginSchema = z.object({
   origin_postcode: z.string().regex(/^[0-9]{5}$/, "validation.postcodeInvalid"),
   origin_pickup_point_id: z.string().uuid("validation.pickupPointRequired"),
@@ -253,6 +269,7 @@ export type ParcelItemInput = z.infer<typeof parcelItemSchema>;
 export type BookingStepContactInput = z.infer<typeof bookingStepContactSchema>;
 export type BookingStepRecipientInput = z.infer<typeof bookingStepRecipientSchema>;
 export type BookingStepRecipientUiInput = z.infer<typeof bookingStepRecipientUiSchema>;
+export type BookingSenderUiInput = z.infer<typeof bookingSenderUiSchema>;
 export type BookingStepOriginInput = z.infer<typeof bookingStepOriginSchema>;
 export type BookingStepDestinationInput = z.infer<typeof bookingStepDestinationSchema>;
 export type BookingStepParcelInput = z.infer<typeof bookingStepParcelSchema>;

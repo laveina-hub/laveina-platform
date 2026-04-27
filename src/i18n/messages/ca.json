@@ -405,6 +405,8 @@
     "paymentFailed": "No hem pogut iniciar el pagament. Torna-ho a provar.",
     "recipientReviewRequired": "Revisa les dades del destinatari — alguns camps necessiten atenció.",
     "senderReviewRequired": "Revisa les teves dades de remitent — alguns camps necessiten atenció.",
+    "contactReviewRequired": "Revisa les teves dades de contacte — alguns camps necessiten atenció.",
+    "senderSaveBeforeContinue": "Desa les teves dades de remitent abans de continuar.",
     "paymentCancelled": "Pagament cancel·lat — el teu esborrany segueix aquí quan vulguis reprendre'l.",
     "quoteUnavailableTitle": "No hem pogut calcular el preu",
     "quoteUnavailableBody": "Estem tenint problemes amb el servei de transport. Torna-ho a provar en uns segons.",

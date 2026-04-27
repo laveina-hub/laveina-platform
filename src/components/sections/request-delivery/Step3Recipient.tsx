@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import type { SenderProfileSeed } from "@/app/[locale]/(public)/book/page";
 import { Button, Checkbox, Input, Label } from "@/components/atoms";
@@ -18,13 +19,34 @@ import {
   WeightIcon,
 } from "@/components/icons";
 import { type ParcelPreset, type ParcelPresetSlug } from "@/constants/parcel-sizes";
-import { useBookingStore } from "@/hooks/use-booking-store";
+import { useBookingStore, type SenderFieldErrors } from "@/hooks/use-booking-store";
 import { usePickupPoints } from "@/hooks/use-pickup-points";
 import { formatCents } from "@/lib/format";
 import {
+  bookingSenderUiSchema,
   bookingStepRecipientUiSchema,
   type BookingStepRecipientUiInput,
 } from "@/validations/shipment.schema";
+
+const SENDER_FIELD_KEYS = [
+  "sender_first_name",
+  "sender_last_name",
+  "sender_phone",
+  "sender_whatsapp",
+  "sender_email",
+] as const satisfies ReadonlyArray<keyof SenderFieldErrors>;
+
+// Translates a Zod `flatten()` shape into the `SenderFieldErrors` map the
+// booking store / SenderSection consume. Used both client-side (Step 3 advance
+// guard) and to apply server-flagged errors handed off from `use-step4-checkout`.
+function flattenSenderErrors(fieldErrors: Record<string, string[] | undefined>): SenderFieldErrors {
+  const out: SenderFieldErrors = {};
+  for (const key of SENDER_FIELD_KEYS) {
+    const message = fieldErrors[key]?.[0];
+    if (message) out[key] = message;
+  }
+  return out;
+}
 
 type BcnPricesCents = Record<
   ParcelPresetSlug,
@@ -62,6 +84,8 @@ export function Step3Recipient({ presets, bcnPrices, senderProfile }: Props) {
     setStep,
     pendingRecipientErrors,
     setPendingRecipientErrors,
+    pendingSenderErrors,
+    setPendingSenderErrors,
   } = useBookingStore();
 
   const activePreset = useMemo(
@@ -198,6 +222,41 @@ export function Step3Recipient({ presets, bcnPrices, senderProfile }: Props) {
   }, [pendingRecipientErrors, setError, setPendingRecipientErrors]);
 
   function onSubmit(data: BookingStepRecipientUiInput) {
+    // The recipient form's zodResolver has already validated this payload.
+    // Before advancing we still have to gate on sender state, otherwise a
+    // user with a stale profile or a half-edited sender section reaches the
+    // server validator on Pay click and gets a generic toast instead of an
+    // inline correction here.
+    if (senderProfile) {
+      // 1. Don't drop a half-edited draft on the floor by silently advancing.
+      if (senderEditing) {
+        toast.error(t("senderSaveBeforeContinue"));
+        document
+          .getElementById("sender_first_name")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+
+      // 2. Validate the persisted sender against the same shape the server
+      //    uses on `/api/shipments/create-checkout`. Catches incomplete
+      //    profiles (e.g. missing phone) before they get to Stripe.
+      const senderResult = bookingSenderUiSchema.safeParse({
+        sender_first_name: sender?.firstName ?? "",
+        sender_last_name: sender?.lastName ?? "",
+        sender_phone: sender?.phone ?? "",
+        sender_whatsapp_same_as_phone: !sender?.whatsapp || sender.whatsapp === sender.phone,
+        sender_whatsapp:
+          sender?.whatsapp && sender.whatsapp !== sender.phone ? sender.whatsapp : "",
+        sender_email: sender?.email ?? "",
+      });
+      if (!senderResult.success) {
+        const fieldErrors = flattenSenderErrors(senderResult.error.flatten().fieldErrors);
+        setPendingSenderErrors(fieldErrors);
+        toast.error(t("senderReviewRequired"));
+        return;
+      }
+    }
+
     setRecipient({
       firstName: data.receiver_first_name,
       lastName: data.receiver_last_name,
@@ -341,12 +400,15 @@ export function Step3Recipient({ presets, bcnPrices, senderProfile }: Props) {
         <SenderSection
           sender={sender}
           editing={senderEditing}
-          onEditToggle={() => setSenderEditing(true)}
+          setEditing={setSenderEditing}
           onSave={(patch) => {
             updateSender(patch);
             setSenderEditing(false);
+            setPendingSenderErrors(null);
           }}
           onCancel={() => setSenderEditing(false)}
+          pendingErrors={pendingSenderErrors}
+          clearPendingErrors={() => setPendingSenderErrors(null)}
         />
       )}
 
@@ -497,13 +559,27 @@ type SenderValue = {
 type SenderSectionProps = {
   sender: ReturnType<typeof useBookingStore.getState>["sender"];
   editing: boolean;
-  onEditToggle: () => void;
+  setEditing: (next: boolean) => void;
   onSave: (patch: SenderValue) => void;
   onCancel: () => void;
+  /** Server-flagged or guard-flagged sender errors. When set, the section
+   *  auto-opens in edit mode, populates inline errors, and scrolls + focuses
+   *  the first offending input. */
+  pendingErrors: SenderFieldErrors | null;
+  clearPendingErrors: () => void;
 };
 
-function SenderSection({ sender, editing, onEditToggle, onSave, onCancel }: SenderSectionProps) {
+function SenderSection({
+  sender,
+  editing,
+  setEditing,
+  onSave,
+  onCancel,
+  pendingErrors,
+  clearPendingErrors,
+}: SenderSectionProps) {
   const t = useTranslations("booking");
+  const tv = useTranslations("validation");
 
   const initial: SenderValue = sender
     ? {
@@ -517,6 +593,7 @@ function SenderSection({ sender, editing, onEditToggle, onSave, onCancel }: Send
     : { firstName: "", lastName: "", phone: "", whatsapp: "", email: "", city: null };
 
   const [draft, setDraft] = useState<SenderValue>(initial);
+  const [errors, setErrors] = useState<SenderFieldErrors>({});
 
   // Q3.3 — mirrors the receiver form: default-on when phone and whatsapp match
   // (or whatsapp is empty). Toggling it off reveals a separate input; on save
@@ -531,6 +608,7 @@ function SenderSection({ sender, editing, onEditToggle, onSave, onCancel }: Send
     if (!editing) {
       setDraft(initial);
       setWhatsappSameAsPhone(seedWhatsappMatches);
+      setErrors({});
     }
     // intentionally shallow — initial is rebuilt from sender each render
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -544,7 +622,74 @@ function SenderSection({ sender, editing, onEditToggle, onSave, onCancel }: Send
     editing,
   ]);
 
+  // Apply pending sender errors handed off from the Step 3 advance guard or
+  // from a server validation failure on Pay click. Force edit mode open,
+  // populate inline messages, scroll + focus the first offending field, then
+  // clear so a re-render doesn't keep re-applying stale messages once the
+  // user starts typing.
+  useEffect(() => {
+    if (!pendingErrors) return;
+    const entries = Object.entries(pendingErrors) as Array<[keyof SenderFieldErrors, string]>;
+    if (entries.length === 0) {
+      clearPendingErrors();
+      return;
+    }
+    setEditing(true);
+    setErrors(pendingErrors);
+    const [firstField] = entries[0];
+    requestAnimationFrame(() => {
+      const el = document.getElementById(firstField);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (el instanceof HTMLInputElement) el.focus({ preventScroll: true });
+      }
+    });
+    clearPendingErrors();
+  }, [pendingErrors, setEditing, clearPendingErrors]);
+
   const overridden = sender?.overriddenLocally === true;
+
+  function attemptSave() {
+    // Validate the draft against the same shape the server's create-checkout
+    // route uses, so anything we save into the booking store is already safe
+    // to forward to Stripe. If it fails, surface the field errors inline and
+    // keep the section open so the user can fix them.
+    const result = bookingSenderUiSchema.safeParse({
+      sender_first_name: draft.firstName,
+      sender_last_name: draft.lastName,
+      sender_phone: draft.phone,
+      sender_whatsapp_same_as_phone: whatsappSameAsPhone,
+      sender_whatsapp: whatsappSameAsPhone ? "" : draft.whatsapp,
+      sender_email: draft.email,
+    });
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors;
+      const next: SenderFieldErrors = {};
+      for (const key of SENDER_FIELD_KEYS) {
+        const message = fieldErrors[key]?.[0];
+        if (message) next[key] = message;
+      }
+      setErrors(next);
+      const firstKey = SENDER_FIELD_KEYS.find((k) => next[k]);
+      if (firstKey) {
+        const el = document.getElementById(firstKey);
+        if (el instanceof HTMLInputElement) el.focus({ preventScroll: false });
+      }
+      return;
+    }
+    setErrors({});
+    onSave({
+      ...draft,
+      whatsapp: whatsappSameAsPhone ? draft.phone : draft.whatsapp,
+    });
+  }
+
+  const renderError = (key: keyof SenderFieldErrors) =>
+    errors[key] ? (
+      <p role="alert" className="text-error mt-1 text-xs">
+        {tv(errors[key]!.replace("validation.", ""))}
+      </p>
+    ) : null;
 
   return (
     <section className="border-border-muted rounded-2xl border bg-white p-5 sm:p-6">
@@ -554,7 +699,7 @@ function SenderSection({ sender, editing, onEditToggle, onSave, onCancel }: Send
           {overridden && <p className="text-text-muted mt-0.5 text-xs">{t("senderEditHelper")}</p>}
         </div>
         {!editing && (
-          <Button type="button" variant="outline" size="sm" onClick={onEditToggle}>
+          <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>
             {t("senderEdit")}
           </Button>
         )}
@@ -595,7 +740,9 @@ function SenderSection({ sender, editing, onEditToggle, onSave, onCancel }: Send
               onChange={(e) => setDraft({ ...draft, firstName: e.target.value })}
               className="mt-1.5"
               autoComplete="given-name"
+              hasError={!!errors.sender_first_name}
             />
+            {renderError("sender_first_name")}
           </div>
 
           <div>
@@ -608,7 +755,9 @@ function SenderSection({ sender, editing, onEditToggle, onSave, onCancel }: Send
               onChange={(e) => setDraft({ ...draft, lastName: e.target.value })}
               className="mt-1.5"
               autoComplete="family-name"
+              hasError={!!errors.sender_last_name}
             />
+            {renderError("sender_last_name")}
           </div>
 
           <div className="sm:col-span-2">
@@ -622,7 +771,9 @@ function SenderSection({ sender, editing, onEditToggle, onSave, onCancel }: Send
               onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
               className="mt-1.5"
               autoComplete="tel"
+              hasError={!!errors.sender_phone}
             />
+            {renderError("sender_phone")}
           </div>
 
           <div className="sm:col-span-2">
@@ -646,7 +797,9 @@ function SenderSection({ sender, editing, onEditToggle, onSave, onCancel }: Send
                 onChange={(e) => setDraft({ ...draft, whatsapp: e.target.value })}
                 className="mt-1.5"
                 autoComplete="tel"
+                hasError={!!errors.sender_whatsapp}
               />
+              {renderError("sender_whatsapp")}
             </div>
           )}
 
@@ -661,7 +814,9 @@ function SenderSection({ sender, editing, onEditToggle, onSave, onCancel }: Send
               onChange={(e) => setDraft({ ...draft, email: e.target.value })}
               className="mt-1.5"
               autoComplete="email"
+              hasError={!!errors.sender_email}
             />
+            {renderError("sender_email")}
           </div>
 
           <div className="sm:col-span-2">
@@ -683,17 +838,7 @@ function SenderSection({ sender, editing, onEditToggle, onSave, onCancel }: Send
             <Button type="button" variant="outline" size="sm" onClick={onCancel}>
               {t("senderCancel")}
             </Button>
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={() =>
-                onSave({
-                  ...draft,
-                  whatsapp: whatsappSameAsPhone ? draft.phone : draft.whatsapp,
-                })
-              }
-            >
+            <Button type="button" variant="primary" size="sm" onClick={attemptSave}>
               {t("senderSave")}
             </Button>
           </div>

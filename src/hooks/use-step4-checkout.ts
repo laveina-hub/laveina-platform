@@ -9,6 +9,7 @@ import {
   useBookingStore,
   type DeliverySpeed,
   type RecipientFieldErrors,
+  type SenderFieldErrors,
 } from "@/hooks/use-booking-store";
 
 // Encapsulates the Stripe Checkout submission for Step 4: builds the
@@ -24,6 +25,14 @@ const RECIPIENT_FIELD_KEYS = [
   "receiver_whatsapp",
   "receiver_email",
 ] as const satisfies ReadonlyArray<keyof RecipientFieldErrors>;
+
+const SENDER_FIELD_KEYS = [
+  "sender_first_name",
+  "sender_last_name",
+  "sender_phone",
+  "sender_whatsapp",
+  "sender_email",
+] as const satisfies ReadonlyArray<keyof SenderFieldErrors>;
 
 // Zod's `.flatten()` shape for the body validator at the create-checkout
 // route. `fieldErrors[key]` is an array of error message strings (translation
@@ -43,8 +52,13 @@ function extractRecipientErrors(details: ValidationDetails): RecipientFieldError
   return out;
 }
 
-function hasSenderErrors(details: ValidationDetails): boolean {
-  return Object.keys(details.fieldErrors ?? {}).some((k) => k.startsWith("sender_"));
+function extractSenderErrors(details: ValidationDetails): SenderFieldErrors {
+  const out: SenderFieldErrors = {};
+  for (const key of SENDER_FIELD_KEYS) {
+    const message = details.fieldErrors?.[key]?.[0];
+    if (message) out[key] = message;
+  }
+  return out;
 }
 
 type UseStep4CheckoutArgs = {
@@ -55,8 +69,16 @@ type UseStep4CheckoutArgs = {
 export function useStep4Checkout({ presets, speed }: UseStep4CheckoutArgs) {
   const t = useTranslations("booking");
   const locale = useLocale();
-  const { parcels, origin, destination, sender, recipient, setStep, setPendingRecipientErrors } =
-    useBookingStore();
+  const {
+    parcels,
+    origin,
+    destination,
+    sender,
+    recipient,
+    setStep,
+    setPendingRecipientErrors,
+    setPendingSenderErrors,
+  } = useBookingStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function submit(): Promise<void> {
@@ -109,25 +131,34 @@ export function useStep4Checkout({ presets, speed }: UseStep4CheckoutArgs) {
         console.error("create-checkout failed:", body);
 
         // Server's Zod body validator failed. Extract field-level errors,
-        // route the user back to Step 3 with the offending recipient inputs
-        // marked, and surface a targeted toast instead of the generic
+        // route the user back to Step 3 with the offending sender / recipient
+        // inputs marked, and surface a targeted toast instead of the generic
         // "payment failed" — which would force them to hunt for the bad
         // field with no signal.
         if (res.status === 400 && body?.error === "invalid_body" && body?.details) {
           const details = body.details as ValidationDetails;
           const recipientErrors = extractRecipientErrors(details);
-          const senderHasErrors = hasSenderErrors(details);
+          const senderErrors = extractSenderErrors(details);
+          const recipientHasErrors = Object.keys(recipientErrors).length > 0;
+          const senderHasErrors = Object.keys(senderErrors).length > 0;
 
-          if (Object.keys(recipientErrors).length > 0 || senderHasErrors) {
-            if (Object.keys(recipientErrors).length > 0) {
-              setPendingRecipientErrors(recipientErrors);
-            }
+          if (recipientHasErrors || senderHasErrors) {
+            if (recipientHasErrors) setPendingRecipientErrors(recipientErrors);
+            if (senderHasErrors) setPendingSenderErrors(senderErrors);
             setStep(3);
-            toast.error(
-              senderHasErrors && Object.keys(recipientErrors).length === 0
-                ? t("senderReviewRequired")
-                : t("recipientReviewRequired")
-            );
+            // Toast wording matches what's actually wrong:
+            //   - sender only       → "review your sender details"
+            //   - recipient only    → "review the recipient details"
+            //   - both              → "review your contact details"
+            // The combined case avoids saying "review the recipient" when
+            // the user can also see a sender error highlighted on the page.
+            const toastKey =
+              senderHasErrors && recipientHasErrors
+                ? "contactReviewRequired"
+                : senderHasErrors
+                  ? "senderReviewRequired"
+                  : "recipientReviewRequired";
+            toast.error(t(toastKey));
             setIsSubmitting(false);
             return;
           }
