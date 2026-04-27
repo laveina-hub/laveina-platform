@@ -204,11 +204,24 @@ export const bookingStepSpeedSchema = z.object({
 // public (no auth) because quotes are consumed by the booking wizard before
 // the user reaches checkout. `declared_value_cents` is optional so the UI can
 // fetch a shipping-only quote before the user opens the insurance section.
-export const quoteRequestSchema = z.object({
-  origin_postcode: z.string().regex(/^[0-9]{5}$/, "validation.postcodeInvalid"),
-  destination_postcode: z.string().regex(/^[0-9]{5}$/, "validation.postcodeInvalid"),
-  parcels: z.array(parcelItemSchema).min(1).max(5),
-});
+export const quoteRequestSchema = z
+  .object({
+    origin_postcode: z.string().regex(/^[0-9]{5}$/, "validation.postcodeInvalid"),
+    destination_postcode: z.string().regex(/^[0-9]{5}$/, "validation.postcodeInvalid"),
+    origin_pickup_point_id: z.string().uuid().optional(),
+    destination_pickup_point_id: z.string().uuid().optional(),
+    parcels: z.array(parcelItemSchema).min(1).max(5),
+  })
+  .refine(
+    (data) =>
+      !data.origin_pickup_point_id ||
+      !data.destination_pickup_point_id ||
+      data.origin_pickup_point_id !== data.destination_pickup_point_id,
+    {
+      message: "validation.samePickupPoint",
+      path: ["destination_pickup_point_id"],
+    }
+  );
 
 export type QuoteRequestInput = z.infer<typeof quoteRequestSchema>;
 
@@ -217,18 +230,23 @@ export type QuoteRequestInput = z.infer<typeof quoteRequestSchema>;
 // Receiver / sender field shapes come from the shared `*ContactFields`
 // definitions above, so the Step 3 UI form and this server schema can never
 // disagree on validators (length, regex, required).
-export const createCheckoutSchema = z.object({
-  ...senderContactFields,
-  ...receiverContactFields,
+export const createCheckoutSchema = z
+  .object({
+    ...senderContactFields,
+    ...receiverContactFields,
 
-  origin_postcode: z.string().regex(/^[0-9]{5}$/),
-  origin_pickup_point_id: z.string().uuid(),
-  destination_postcode: z.string().regex(/^[0-9]{5}$/),
-  destination_pickup_point_id: z.string().uuid(),
+    origin_postcode: z.string().regex(/^[0-9]{5}$/),
+    origin_pickup_point_id: z.string().uuid(),
+    destination_postcode: z.string().regex(/^[0-9]{5}$/),
+    destination_pickup_point_id: z.string().uuid(),
 
-  parcels: z.array(parcelItemSchema).min(1),
-  delivery_speed: deliverySpeedSchema,
-});
+    parcels: z.array(parcelItemSchema).min(1),
+    delivery_speed: deliverySpeedSchema,
+  })
+  .refine((data) => data.origin_pickup_point_id !== data.destination_pickup_point_id, {
+    message: "validation.samePickupPoint",
+    path: ["destination_pickup_point_id"],
+  });
 
 export type ParcelPresetSlugInput = z.infer<typeof parcelPresetSlugSchema>;
 export type ParcelItemInput = z.infer<typeof parcelItemSchema>;

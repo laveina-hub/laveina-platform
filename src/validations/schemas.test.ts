@@ -436,6 +436,20 @@ describe("createCheckoutSchema", () => {
     const { sender_email: _omit, ...incomplete } = validCheckout;
     expect(createCheckoutSchema.safeParse(incomplete).success).toBe(false);
   });
+
+  it("rejects identical origin and destination pickup point ids", () => {
+    const sameId = "550e8400-e29b-41d4-a716-446655440000";
+    const result = createCheckoutSchema.safeParse({
+      ...validCheckout,
+      origin_pickup_point_id: sameId,
+      destination_pickup_point_id: sameId,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe("validation.samePickupPoint");
+      expect(result.error.issues[0]?.path).toEqual(["destination_pickup_point_id"]);
+    }
+  });
 });
 
 describe("adminSupportTicketUpdateSchema", () => {

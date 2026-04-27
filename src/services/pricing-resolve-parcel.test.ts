@@ -51,6 +51,65 @@ describe("resolveParcelForPricing — preset parcels", () => {
     const resolved = resolveParcelForPricing({ presetSlug: "medium", weightKg: 6 }, [], "internal");
     expect(resolved).toBeNull();
   });
+
+  it("BCN: upgrades the band when actual weight exceeds the picked preset's cap", () => {
+    // User picks Mini (cap 2 kg) but types 18 kg. Without the upgrade the
+    // matrix would charge Mini's flat rate for a Large-tier parcel.
+    const resolved = resolveParcelForPricing(
+      { presetSlug: "mini", weightKg: 18 },
+      DEFAULT_PARCEL_PRESETS,
+      "internal"
+    );
+    expect(resolved).toEqual({ presetSlug: "large", billableWeightKg: 18 });
+  });
+
+  it("BCN: keeps the picked band when the actual weight fits within it", () => {
+    const resolved = resolveParcelForPricing(
+      { presetSlug: "small", weightKg: 5 },
+      DEFAULT_PARCEL_PRESETS,
+      "internal"
+    );
+    expect(resolved).toEqual({ presetSlug: "small", billableWeightKg: 5 });
+  });
+
+  it("BCN: returns null when the upgraded band would exceed the M2 cap", () => {
+    const resolved = resolveParcelForPricing(
+      { presetSlug: "mini", weightKg: 25 },
+      DEFAULT_PARCEL_PRESETS,
+      "internal"
+    );
+    expect(resolved).toBeNull();
+  });
+
+  it("SendCloud: never upgrades the band — carrier rate already scales with weight", () => {
+    // Same overload as above on a SendCloud route. The slug stays "mini"
+    // (the user's pick), and the actual weight is what flows to SendCloud.
+    const resolved = resolveParcelForPricing(
+      { presetSlug: "mini", weightKg: 18 },
+      DEFAULT_PARCEL_PRESETS,
+      "sendcloud"
+    );
+    expect(resolved).toEqual({ presetSlug: "mini", billableWeightKg: 18 });
+  });
+
+  it("BCN: upgrades the band when user-supplied dims push volumetric weight over the cap", () => {
+    // Mini's nominal vol is 2 kg. If the user picks Mini but supplies dims
+    // for a 40×40×37 box (vol 9.87 kg) at 3 kg actual, billable = 9.87 →
+    // medium band.
+    const resolved = resolveParcelForPricing(
+      {
+        presetSlug: "mini",
+        weightKg: 3,
+        lengthCm: 40,
+        widthCm: 40,
+        heightCm: 37,
+      },
+      DEFAULT_PARCEL_PRESETS,
+      "internal"
+    );
+    expect(resolved?.presetSlug).toBe("medium");
+    expect(resolved?.billableWeightKg).toBeCloseTo(9.867, 2);
+  });
 });
 
 describe("resolveParcelForPricing — custom dims on BCN (uses volumetric)", () => {

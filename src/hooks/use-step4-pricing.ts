@@ -5,7 +5,7 @@ import { useMemo, type ComponentType } from "react";
 import { BoxIcon, BriefcaseIcon, FootprintsIcon, WeightIcon } from "@/components/icons";
 import { getInsuranceCostCents } from "@/constants/insurance-tiers";
 import { type ParcelPreset, type ParcelPresetSlug } from "@/constants/parcel-sizes";
-import { useBookingStore, type DeliverySpeed } from "@/hooks/use-booking-store";
+import { useBookingStore, type DeliverySpeed, type QuoteSnapshot } from "@/hooks/use-booking-store";
 import { isBarcelonaRoute } from "@/services/routing.service";
 
 // Pricing computation for the Step 4 review screen. Pulled out of
@@ -17,6 +17,15 @@ import { isBarcelonaRoute } from "@/services/routing.service";
 //   Subtotal = Delivery + Insurance    (both ex-VAT)
 //   VAT      = 21% × Subtotal          (insurance sits inside the VAT base)
 //   Total    = Subtotal + VAT
+//
+// Pricing source: ALWAYS the server-issued `quote` snapshot in the booking
+// store. We do NOT fall back to local BCN matrix defaults when the quote is
+// null — falling back leaks BCN prices into SendCloud routes when the quote
+// is invalidated mid-edit (e.g. user changes a parcel on Step 4), which the
+// customer would then mis-see as a "fixed" price unrelated to their route.
+// When `quote` is null the hook returns empty line items / null prices, the
+// payment summary renders em-dashes, and Pay is disabled until a fresh quote
+// lands.
 
 export const STEP4_IVA_RATE = 0.21;
 
@@ -38,12 +47,28 @@ const PRESET_ICON_BY_SLUG: Record<ParcelPresetSlug, ComponentType<{ className?: 
   large: BriefcaseIcon,
 };
 
+/**
+ * Sum a single speed's ex-VAT shipping across every parcel in the bundle.
+ * Returns null if the quote is missing OR if any parcel lacks that speed
+ * (e.g. Next Day on SendCloud) — that way the speed selector hides a price
+ * that we can't reliably bill the whole order at.
+ */
+function bundleSpeedTotal(quote: QuoteSnapshot | null, speed: DeliverySpeed): number | null {
+  if (!quote || quote.parcels.length === 0) return null;
+  let total = 0;
+  for (const parcel of quote.parcels) {
+    const cents = parcel.shippingCents[speed];
+    if (cents === null) return null;
+    total += cents;
+  }
+  return total;
+}
+
 type UseStep4PricingArgs = {
   presets: ParcelPreset[];
-  bcnPrices: BcnPricesCents;
 };
 
-export function useStep4Pricing({ presets, bcnPrices }: UseStep4PricingArgs) {
+export function useStep4Pricing({ presets }: UseStep4PricingArgs) {
   const { parcels, origin, destination, requestedSpeed, actualSpeed, quote } = useBookingStore();
 
   // actualSpeed wins when the route forced an auto-switch on Step 2 (Next Day
@@ -56,35 +81,30 @@ export function useStep4Pricing({ presets, bcnPrices }: UseStep4PricingArgs) {
   );
   const PrimaryIcon = primaryPreset ? PRESET_ICON_BY_SLUG[primaryPreset.slug] : BoxIcon;
 
-  // Route-aware line items (ex-VAT per parcel):
-  //   - BCN route → read directly from the ex-VAT matrix.
-  //   - SendCloud route → read `shippingCents` from the quote snapshot
-  //     (ex-VAT carrier rate × margin × floor).
-  // Custom-dimension parcels resolve via the quote snapshot's billable-weight
-  // mapping; falling back to preset_slug keeps BCN working when the quote
-  // hasn't landed yet (e.g. back-navigation re-render).
+  // Route-aware line items (ex-VAT per parcel) read straight from the
+  // server-issued quote snapshot. BCN matrix and SendCloud carrier rates both
+  // flow through `quote.parcels[i].shippingCents[speed]` — the quote endpoint
+  // owns the route → price decision so the UI stays carrier-agnostic. If the
+  // quote is missing, we deliberately produce no line items so Step 4 can't
+  // display stale or default-matrix prices that don't match what the server
+  // will actually charge.
   const lineItems: Step4LineItem[] = useMemo(() => {
+    if (!quote) return [];
     return parcels
       .map((parcel, index) => {
-        const quoteParcel = quote?.parcels[index];
-        const slug = quoteParcel?.presetSlug ?? parcel.preset_slug;
-        if (!slug) return null;
-        const preset = presets.find((p) => p.slug === slug);
+        const quoteParcel = quote.parcels[index];
+        if (!quoteParcel) return null;
+        const preset = presets.find((p) => p.slug === quoteParcel.presetSlug);
         if (!preset) return null;
 
-        let shippingExVatCents: number | null = null;
-        if (quoteParcel) {
-          shippingExVatCents = quoteParcel.shippingCents[speed];
-        } else {
-          shippingExVatCents = bcnPrices[preset.slug]?.[speed] ?? null;
-        }
+        const shippingExVatCents = quoteParcel.shippingCents[speed];
         if (shippingExVatCents === null) return null;
 
         const insuranceCents = getInsuranceCostCents(parcel.declared_value_cents ?? 0);
         return { preset, shippingExVatCents, insuranceCents };
       })
       .filter((item): item is Step4LineItem => item !== null);
-  }, [parcels, presets, bcnPrices, speed, quote]);
+  }, [parcels, presets, speed, quote]);
 
   const deliveryCents = lineItems.reduce((sum, item) => sum + item.shippingExVatCents, 0);
   const insuranceTotalCents = lineItems.reduce((sum, item) => sum + item.insuranceCents, 0);
@@ -103,20 +123,19 @@ export function useStep4Pricing({ presets, bcnPrices }: UseStep4PricingArgs) {
     ? (["standard", "express", "next_day"] as const)
     : (["standard", "express"] as const);
 
-  // Speed selector tiles show the primary parcel's ex-VAT delivery per speed
-  // so the user sees the tier delta without the VAT layer folded in. Per
-  // Q15.2: "Prices shown: Excluding VAT".
-  const quotedPrimary = quote?.parcels[0];
-  const primaryPresetSlug = parcels[0]?.preset_slug ?? quotedPrimary?.presetSlug ?? null;
-  const priceBySpeed: Record<DeliverySpeed, number | null> = quotedPrimary
-    ? quotedPrimary.shippingCents
-    : primaryPresetSlug
-      ? {
-          standard: bcnPrices[primaryPresetSlug]?.standard ?? null,
-          express: bcnPrices[primaryPresetSlug]?.express ?? null,
-          next_day: bcnPrices[primaryPresetSlug]?.next_day ?? null,
-        }
-      : { standard: null, express: null, next_day: null };
+  // Speed selector tiles show the bundle's ex-VAT delivery per speed (sum of
+  // every parcel's `shippingCents[speed]`) so multi-parcel orders see the
+  // real per-speed total instead of just parcel #1's slice. Per Q15.2:
+  // "Prices shown: Excluding VAT". A speed is treated as unavailable for
+  // the bundle if any single parcel is missing that speed (e.g. Next Day on
+  // SendCloud) — the tile then renders without a price label. When the
+  // quote itself is missing all three speeds are null so no hardcoded
+  // matrix can leak through.
+  const priceBySpeed: Record<DeliverySpeed, number | null> = {
+    standard: bundleSpeedTotal(quote, "standard"),
+    express: bundleSpeedTotal(quote, "express"),
+    next_day: bundleSpeedTotal(quote, "next_day"),
+  };
 
   return {
     speed,

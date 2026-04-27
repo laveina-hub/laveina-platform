@@ -137,6 +137,13 @@ type BookingActions = {
   setParcels: (parcels: ParcelItemInput[]) => void;
   addParcel: (parcel: ParcelItemInput) => void;
   updateParcel: (index: number, parcel: ParcelItemInput) => void;
+  /**
+   * Insurance-only parcel update. Declared value / wants_insurance don't
+   * affect the carrier rate, so this path leaves the cached `quote` intact.
+   * Step 4 calls this from the InsuranceSection so editing insurance there
+   * does not invalidate the SendCloud rate the user is reviewing.
+   */
+  setParcelInsurance: (index: number, declaredValueCents: number, wantsInsurance: boolean) => void;
   removeParcel: (index: number) => void;
 
   setOrigin: (origin: BookingLocation | null) => void;
@@ -210,6 +217,18 @@ export const useBookingStore = create<BookingState & BookingActions>()(
           parcels: s.parcels.map((p, i) => (i === index ? parcel : p)),
           quoteSnapshots: null,
           quote: null,
+        })),
+      setParcelInsurance: (index, declaredValueCents, wantsInsurance) =>
+        set((s) => ({
+          parcels: s.parcels.map((p, i) =>
+            i === index
+              ? {
+                  ...p,
+                  declared_value_cents: declaredValueCents,
+                  wants_insurance: wantsInsurance,
+                }
+              : p
+          ),
         })),
       removeParcel: (index) =>
         set((s) => ({
