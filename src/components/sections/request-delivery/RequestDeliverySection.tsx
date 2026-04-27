@@ -84,9 +84,7 @@ export function RequestDeliverySection({ presets, bcnPrices, cutoffConfig, sende
         {currentStep === 3 && (
           <Step3Recipient presets={presets} bcnPrices={bcnPrices} senderProfile={senderProfile} />
         )}
-        {currentStep === 4 && (
-          <Step4Confirm presets={presets} bcnPrices={bcnPrices} cutoffConfig={cutoffConfig} />
-        )}
+        {currentStep === 4 && <Step4Confirm presets={presets} cutoffConfig={cutoffConfig} />}
       </BookingLayout>
     </GoogleMapsWrapper>
   );

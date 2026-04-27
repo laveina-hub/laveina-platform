@@ -288,6 +288,27 @@ export function resolveParcelForPricing(
   if (parcel.presetSlug !== null) {
     const preset = presets.find((p) => p.slug === parcel.presetSlug);
     if (!preset) return null;
+
+    // BCN band-upgrade safety net: pricing on internal routes is keyed by
+    // (presetSlug, speed), so a user who picks "Mini" but edits the parcel
+    // weight to 18 kg would otherwise pay Mini's flat rate for a Large-tier
+    // parcel. Promote to the smallest band that fits the billable weight
+    // (max of actual vs. volumetric) so the matrix charges the right cell.
+    // SendCloud is rate-based — the carrier price scales with weight + dims
+    // already — so the upgrade is a no-op there and we keep the user's
+    // chosen slug for display.
+    if (deliveryMode === "internal") {
+      const lengthCm = parcel.lengthCm ?? preset.lengthCm;
+      const widthCm = parcel.widthCm ?? preset.widthCm;
+      const heightCm = parcel.heightCm ?? preset.heightCm;
+      const billableWeightKg = calcBillableWeightKg(parcel.weightKg, lengthCm, widthCm, heightCm);
+      if (billableWeightKg > preset.maxWeightKg) {
+        const upgraded = findPresetForWeight(billableWeightKg, presets);
+        if (!upgraded) return null;
+        return { presetSlug: upgraded.slug, billableWeightKg };
+      }
+    }
+
     return { presetSlug: preset.slug, billableWeightKg: parcel.weightKg };
   }
 

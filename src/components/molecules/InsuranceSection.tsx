@@ -22,7 +22,13 @@ import type { ParcelItemInput } from "@/validations/shipment.schema";
 
 export type InsuranceSectionProps = {
   parcels: ParcelItemInput[];
-  onChangeParcel: (index: number, next: ParcelItemInput) => void;
+  /**
+   * Insurance-only patch: declared value + wants_insurance for a single
+   * parcel. Step 4 routes this through `setParcelInsurance`, which keeps
+   * the cached carrier quote valid (insurance does not affect the carrier
+   * rate). Other callers can implement it as a generic per-parcel update.
+   */
+  onChangeInsurance: (index: number, declaredValueCents: number, wantsInsurance: boolean) => void;
   className?: string;
 };
 
@@ -31,7 +37,7 @@ function parcelRowLabel(index: number): string {
   return `${index + 1}`;
 }
 
-export function InsuranceSection({ parcels, onChangeParcel, className }: InsuranceSectionProps) {
+export function InsuranceSection({ parcels, onChangeInsurance, className }: InsuranceSectionProps) {
   const t = useTranslations("booking");
 
   const anyInsured = parcels.some(
@@ -55,11 +61,7 @@ export function InsuranceSection({ parcels, onChangeParcel, className }: Insuran
     if (!next) {
       parcels.forEach((parcel, i) => {
         if (parcel.wants_insurance || (parcel.declared_value_cents ?? 0) > 0) {
-          onChangeParcel(i, {
-            ...parcel,
-            wants_insurance: false,
-            declared_value_cents: 0,
-          });
+          onChangeInsurance(i, 0, false);
         }
       });
     }
@@ -71,11 +73,7 @@ export function InsuranceSection({ parcels, onChangeParcel, className }: Insuran
     const cents = Math.min(Math.round(clampedEuros * 100), MAX_INSURED_VALUE_CENTS);
     const parcel = parcels[index];
     if (!parcel) return;
-    onChangeParcel(index, {
-      ...parcel,
-      declared_value_cents: cents,
-      wants_insurance: cents > 0,
-    });
+    onChangeInsurance(index, cents, cents > 0);
   }
 
   return (

@@ -218,9 +218,19 @@ export function Step2Route({ cutoffConfig }: Step2RouteProps) {
   // jitter when TanStack Query revalidates in the background.
   const isQuoting = quoteQuery.isFetching && !quoteHasStandardRate;
 
+  // A delivery from a pickup point to itself is nonsensical: BCN routes would
+  // silently accept it and create a self-shipment, SendCloud routes would fail
+  // at carrier dispatch. Block at the UI so the user sees the reason inline
+  // instead of hitting a generic error on Pay. Server-side schemas mirror this.
+  const samePickupPoint =
+    !!origin?.pickupPointId &&
+    !!destination?.pickupPointId &&
+    origin.pickupPointId === destination.pickupPointId;
+
   const canContinue =
     !!origin?.pickupPointId &&
     !!destination?.pickupPointId &&
+    !samePickupPoint &&
     !quoteErrored &&
     quoteHasStandardRate;
 
@@ -456,6 +466,13 @@ export function Step2Route({ cutoffConfig }: Step2RouteProps) {
           onSavedAddressSelect={handleSavedAddressDestination}
         />
       </div>
+
+      {samePickupPoint && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm">
+          <p className="font-semibold text-red-900">{t("samePickupPointTitle")}</p>
+          <p className="mt-0.5 text-red-800">{t("samePickupPointBody")}</p>
+        </div>
+      )}
 
       {quoteErrored && (
         <div
