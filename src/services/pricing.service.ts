@@ -1,3 +1,4 @@
+import { getInsuranceCostCents } from "@/constants/insurance-tiers";
 import {
   calcBillableWeightKg,
   findPresetForWeight,
@@ -150,37 +151,53 @@ export interface SendcloudParcelInput {
 
 export interface SendcloudPriceInput {
   parcels: SendcloudParcelInput[];
-  speed: M2DeliverySpeed;
   originPostcode: string;
   destinationPostcode: string;
 }
 
+export interface SendcloudParcelPrices {
+  /** One PriceOption per input parcel, same order. Standard is the baseline
+   *  option — always populated when this function returns a non-null result. */
+  standard: PriceOption[];
+  /** One slot per input parcel; null when the carrier returned no eligible
+   *  express (≤24h) option for that parcel/route. Express is optional. */
+  express: (PriceOption | null)[];
+}
+
 /**
- * SendCloud per-parcel quote for standard/express. `next_day` is Barcelona-only
- * per A2 and always returns null here.
+ * SendCloud per-parcel quote for standard + express in one pass. `next_day`
+ * is Barcelona-only per A2 and never set here.
  *
  * Why per-parcel and not bundled: SendCloud's `/shipping-options` endpoint
  * accepts a parcels array but the returned `quotes.price.total` is *not* a
  * reliable multi-parcel bundle total — most Spanish carriers (Correos, SEUR,
  * MRW, GLS, InPost) price and dispatch one label per parcel. Sending all
  * parcels in one call returned single-parcel-equivalent rates that, when
- * split, undercharged customers by 5-10×. We now ask SendCloud once per
- * parcel so each gets its own real, weight/dim-aware rate.
+ * split, undercharged customers by 5-10×. We ask SendCloud once per parcel
+ * so each gets its own real, weight/dim-aware rate.
+ *
+ * Why both speeds in one call (not one per speed): the `/shipping-options`
+ * response carries every eligible carrier option in a single payload —
+ * `getAvailableRates` already picks the cheapest non-express as Standard and
+ * the cheapest ≤24h as Express. Calling twice (once per speed) doubled the
+ * SendCloud quota cost and opened a partial-failure window: if one call hit
+ * a transient error or timeout while the other succeeded, the route returned
+ * 200 with `standard: null, express: filled` (or vice versa). The wizard
+ * then disabled "Next" silently because `quoteHasStandardRate` was false but
+ * no error alert ever rendered. Atomic per-parcel resolves both issues.
  *
  * Flow per parcel:
- *   1. One `/shipping-options` call → carrier rate for that parcel.
- *   2. Apply margin → apply floor (€4 default) — both per parcel.
- *   3. `buildPriceOption` adds insurance + VAT.
+ *   1. One `/shipping-options` call → standard + (optional) express rates.
+ *   2. Apply margin → apply floor (€4 default) — independently per speed.
+ *   3. `buildPriceOption` adds insurance + VAT for each speed.
  *
- * Returns one `PriceOption` per input parcel, in the same order. Returns null
- * if any parcel's rate fetch fails — fail-closed so the wizard blocks rather
- * than partially quoting.
+ * Returns null if any parcel's rate fetch fails — fail-closed so the wizard
+ * blocks rather than partially quoting.
  */
 export async function getSendcloudParcelPrices(
   input: SendcloudPriceInput,
   settings: AdminSettings
-): Promise<PriceOption[] | null> {
-  if (input.speed === "next_day") return null;
+): Promise<SendcloudParcelPrices | null> {
   if (input.parcels.length === 0) return null;
 
   const marginPercent = getSettingNumber(
@@ -194,7 +211,9 @@ export async function getSendcloudParcelPrices(
     DEFAULT_MIN_SHIPPING_CENTS
   );
 
-  const options: PriceOption[] = [];
+  const standardOptions: PriceOption[] = [];
+  const expressOptions: (PriceOption | null)[] = [];
+
   for (let i = 0; i < input.parcels.length; i++) {
     const parcel = input.parcels[i];
 
@@ -212,42 +231,80 @@ export async function getSendcloudParcelPrices(
     });
     if (ratesResult.error) return null;
 
-    const rate = input.speed === "standard" ? ratesResult.data.standard : ratesResult.data.express;
-    if (!rate) return null;
-
-    const withMargin = Math.round(rate.rateCents * (1 + marginPercent / 100));
-    const floorHit = minShippingCents > withMargin;
-    const shippingCents = Math.max(minShippingCents, withMargin);
-
-    const opt = buildPriceOption({
-      shippingCents,
-      carrierRateCents: rate.rateCents,
+    // Standard — `getAvailableRates` always returns one (cheapest of all
+    // priced options if no non-express exists).
+    const stdRate = ratesResult.data.standard;
+    const stdMargin = Math.round(stdRate.rateCents * (1 + marginPercent / 100));
+    const stdFloorHit = minShippingCents > stdMargin;
+    const stdShipping = Math.max(minShippingCents, stdMargin);
+    const stdOpt = buildPriceOption({
+      shippingCents: stdShipping,
+      carrierRateCents: stdRate.rateCents,
       marginPercent,
       insuranceSurchargeCents: parcel.insuranceSurchargeCents ?? 0,
-      shippingMethodId: rate.shippingMethodId,
-      shippingOptionCode: rate.shippingOptionCode,
-      estimatedDays: rate.estimatedDays,
+      shippingMethodId: stdRate.shippingMethodId,
+      shippingOptionCode: stdRate.shippingOptionCode,
+      estimatedDays: stdRate.estimatedDays,
     });
-    options.push(opt);
+    standardOptions.push(stdOpt);
 
     console.info(
-      `[pricing] sendcloud ${input.speed} ${input.originPostcode}→${input.destinationPostcode} parcel #${i + 1} (${parcel.weightKg}kg):`
+      `[pricing] sendcloud standard ${input.originPostcode}→${input.destinationPostcode} parcel #${i + 1} (${parcel.weightKg}kg):`
     );
     console.info(
-      `[pricing]   1. carrier rate:        ${rate.rateCents}c (${fmt(rate.rateCents)})  carrier=${rate.carrier} code=${rate.shippingOptionCode}`
+      `[pricing]   1. carrier rate:        ${stdRate.rateCents}c (${fmt(stdRate.rateCents)})  carrier=${stdRate.carrier} code=${stdRate.shippingOptionCode}`
     );
     console.info(
-      `[pricing]   2. + margin ${marginPercent}%:         ${withMargin}c (${fmt(withMargin)})`
+      `[pricing]   2. + margin ${marginPercent}%:         ${stdMargin}c (${fmt(stdMargin)})`
     );
     console.info(
-      `[pricing]   3. floor (min ${minShippingCents}c):    ${shippingCents}c (${fmt(shippingCents)})${floorHit ? "  [FLOOR APPLIED]" : ""}`
+      `[pricing]   3. floor (min ${minShippingCents}c):    ${stdShipping}c (${fmt(stdShipping)})${stdFloorHit ? "  [FLOOR APPLIED]" : ""}`
     );
     console.info(
-      `[pricing]   4. + insurance ${opt.insuranceSurchargeCents}c → subtotal ${opt.subtotalCents}c → VAT ${opt.ivaCents}c → TOTAL ${opt.totalCents}c (${fmt(opt.totalCents)})`
+      `[pricing]   4. + insurance ${stdOpt.insuranceSurchargeCents}c → subtotal ${stdOpt.subtotalCents}c → VAT ${stdOpt.ivaCents}c → TOTAL ${stdOpt.totalCents}c (${fmt(stdOpt.totalCents)})`
     );
+
+    // Express — may be null when no carrier offers ≤24h for the route.
+    const expRate = ratesResult.data.express;
+    if (expRate) {
+      const expMargin = Math.round(expRate.rateCents * (1 + marginPercent / 100));
+      const expFloorHit = minShippingCents > expMargin;
+      const expShipping = Math.max(minShippingCents, expMargin);
+      const expOpt = buildPriceOption({
+        shippingCents: expShipping,
+        carrierRateCents: expRate.rateCents,
+        marginPercent,
+        insuranceSurchargeCents: parcel.insuranceSurchargeCents ?? 0,
+        shippingMethodId: expRate.shippingMethodId,
+        shippingOptionCode: expRate.shippingOptionCode,
+        estimatedDays: expRate.estimatedDays,
+      });
+      expressOptions.push(expOpt);
+
+      console.info(
+        `[pricing] sendcloud express ${input.originPostcode}→${input.destinationPostcode} parcel #${i + 1} (${parcel.weightKg}kg):`
+      );
+      console.info(
+        `[pricing]   1. carrier rate:        ${expRate.rateCents}c (${fmt(expRate.rateCents)})  carrier=${expRate.carrier} code=${expRate.shippingOptionCode}`
+      );
+      console.info(
+        `[pricing]   2. + margin ${marginPercent}%:         ${expMargin}c (${fmt(expMargin)})`
+      );
+      console.info(
+        `[pricing]   3. floor (min ${minShippingCents}c):    ${expShipping}c (${fmt(expShipping)})${expFloorHit ? "  [FLOOR APPLIED]" : ""}`
+      );
+      console.info(
+        `[pricing]   4. + insurance ${expOpt.insuranceSurchargeCents}c → subtotal ${expOpt.subtotalCents}c → VAT ${expOpt.ivaCents}c → TOTAL ${expOpt.totalCents}c (${fmt(expOpt.totalCents)})`
+      );
+    } else {
+      expressOptions.push(null);
+      console.info(
+        `[pricing] sendcloud express ${input.originPostcode}→${input.destinationPostcode} parcel #${i + 1}: no eligible express option`
+      );
+    }
   }
 
-  return options;
+  return { standard: standardOptions, express: expressOptions };
 }
 
 /**
@@ -323,6 +380,87 @@ export function resolveParcelForPricing(
   const preset = findPresetForWeight(pricingWeightKg, presets);
   if (!preset) return null;
   return { presetSlug: preset.slug, billableWeightKg: pricingWeightKg };
+}
+
+/** Wire shape for an incoming parcel — matches the `parcelItemSchema` payload
+ *  the quote and create-checkout routes both consume. Snake-case keys mirror
+ *  the JSON body so callers can pass `input.parcels` directly. */
+export interface PricingLineInput {
+  preset_slug: ParcelPresetSlug | null;
+  weight_kg: number;
+  length_cm?: number | null;
+  width_cm?: number | null;
+  height_cm?: number | null;
+  declared_value_cents?: number | null;
+}
+
+/** Per-parcel breakdown ready to feed into `quoteShipmentPrices` plus the
+ *  per-parcel side data (insurance cost, original index) that downstream
+ *  routes need to assemble their response. */
+export interface PricingLine {
+  index: number;
+  presetSlug: ParcelPresetSlug;
+  billableWeightKg: number;
+  /** Effective dimensions: caller-supplied L/W/H if present, else preset row. */
+  lengthCm: number | undefined;
+  widthCm: number | undefined;
+  heightCm: number | undefined;
+  insuranceCostCents: number;
+}
+
+export type ResolveLinesResult =
+  | { ok: true; lines: PricingLine[] }
+  | { ok: false; parcelIndex: number };
+
+/**
+ * Resolves a wire-shape `parcels[]` array into the pricing-line shape used by
+ * `quoteShipmentPrices`. Identical work was previously duplicated in the
+ * quote and create-checkout routes; consolidating here keeps both paths on
+ * the same band-upgrade + dimension-fallback + insurance-tier rules.
+ *
+ * Returns `{ ok: false, parcelIndex }` for the first parcel that can't be
+ * mapped to a preset (e.g. custom dims with weight beyond the largest band)
+ * so the caller can surface a 422 keyed to the offending row.
+ */
+export function resolvePricingLines(
+  parcels: readonly PricingLineInput[],
+  presets: readonly ParcelPreset[],
+  deliveryMode: "internal" | "sendcloud"
+): ResolveLinesResult {
+  const lines: PricingLine[] = [];
+  for (let index = 0; index < parcels.length; index++) {
+    const parcel = parcels[index];
+    const resolved = resolveParcelForPricing(
+      {
+        presetSlug: parcel.preset_slug,
+        weightKg: parcel.weight_kg,
+        lengthCm: parcel.length_cm ?? null,
+        widthCm: parcel.width_cm ?? null,
+        heightCm: parcel.height_cm ?? null,
+      },
+      presets,
+      deliveryMode
+    );
+    if (!resolved) return { ok: false, parcelIndex: index };
+
+    const declaredValueCents = parcel.declared_value_cents ?? 0;
+    const insuranceCostCents = getInsuranceCostCents(declaredValueCents);
+
+    // For SendCloud quotes we forward the real parcel dimensions so the
+    // carrier applies its own volumetric rule. Preset parcels use the preset
+    // row's dims; custom parcels use the declared dims.
+    const presetRow = presets.find((p) => p.slug === resolved.presetSlug);
+    lines.push({
+      index,
+      presetSlug: resolved.presetSlug,
+      billableWeightKg: resolved.billableWeightKg,
+      lengthCm: parcel.length_cm ?? presetRow?.lengthCm,
+      widthCm: parcel.width_cm ?? presetRow?.widthCm,
+      heightCm: parcel.height_cm ?? presetRow?.heightCm,
+      insuranceCostCents,
+    });
+  }
+  return { ok: true, lines };
 }
 
 export interface M2QuoteParcelInput {
@@ -423,27 +561,28 @@ export async function quoteShipmentPrices(
     };
   }
 
-  // SendCloud per-parcel flow: each parcel gets its own /shipping-options
-  // call per speed (see getSendcloudParcelPrices for the rationale).
-  const sendcloudInput = {
-    parcels: input.parcels.map((p) => ({
-      weightKg: p.weightKg,
-      lengthCm: p.lengthCm,
-      widthCm: p.widthCm,
-      heightCm: p.heightCm,
-      insuranceSurchargeCents: p.insuranceSurchargeCents,
-    })),
-    originPostcode: input.originPostcode,
-    destinationPostcode: input.destinationPostcode,
-  };
-  const [standardPrices, expressPrices] = await Promise.all([
-    getSendcloudParcelPrices({ ...sendcloudInput, speed: "standard" }, settings),
-    getSendcloudParcelPrices({ ...sendcloudInput, speed: "express" }, settings),
-  ]);
+  // SendCloud per-parcel flow: ONE /shipping-options call per parcel returns
+  // both standard and express in a single payload (see getSendcloudParcelPrices
+  // for the rationale). Atomic per-parcel — partial speed failures aren't
+  // possible because both speeds are derived from the same response.
+  const prices = await getSendcloudParcelPrices(
+    {
+      parcels: input.parcels.map((p) => ({
+        weightKg: p.weightKg,
+        lengthCm: p.lengthCm,
+        widthCm: p.widthCm,
+        heightCm: p.heightCm,
+        insuranceSurchargeCents: p.insuranceSurchargeCents,
+      })),
+      originPostcode: input.originPostcode,
+      destinationPostcode: input.destinationPostcode,
+    },
+    settings
+  );
 
   // SendCloud returned no eligible rates (carrier outage, unserviceable route,
   // or manifest exceeds supported weight/dims). Fail closed so the wizard blocks.
-  if (standardPrices === null && expressPrices === null) {
+  if (prices === null) {
     return {
       data: null,
       error: { message: "pricing.sendcloudUnavailable", status: 503 },
@@ -454,8 +593,8 @@ export async function quoteShipmentPrices(
     presetSlug: parcel.presetSlug,
     actualWeightKg: parcel.weightKg,
     options: {
-      standard: standardPrices?.[idx] ?? null,
-      express: expressPrices?.[idx] ?? null,
+      standard: prices.standard[idx],
+      express: prices.express[idx],
       next_day: null,
     },
   }));

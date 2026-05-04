@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { getInsuranceCostCents } from "@/constants/insurance-tiers";
 import { getClientIp, publicLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { listActivePresets } from "@/services/parcel-preset.service";
-import { quoteShipmentPrices, resolveParcelForPricing } from "@/services/pricing.service";
+import { quoteShipmentPrices, resolvePricingLines } from "@/services/pricing.service";
 import { getDeliveryMode } from "@/services/routing.service";
 import type { PriceOption } from "@/types/shipment";
 import { quoteRequestSchema } from "@/validations/shipment.schema";
@@ -88,55 +87,14 @@ export async function POST(request: NextRequest) {
     // Resolve every parcel to its preset band + billable weight + dimensions
     // before calling the pricing service. Surfaces unresolvable parcels as a
     // 422 before we waste a SendCloud API call.
-    type ResolvedRow = {
-      originalIndex: number;
-      presetSlug: (typeof presets)[number]["slug"];
-      billableWeightKg: number;
-      lengthCm: number | undefined;
-      widthCm: number | undefined;
-      heightCm: number | undefined;
-      insuranceSurchargeCents: number;
-    };
-
-    const resolved: ResolvedRow[] = [];
-    for (let index = 0; index < input.parcels.length; index++) {
-      const parcel = input.parcels[index];
-      const r = resolveParcelForPricing(
-        {
-          presetSlug: parcel.preset_slug,
-          weightKg: parcel.weight_kg,
-          lengthCm: parcel.length_cm ?? null,
-          widthCm: parcel.width_cm ?? null,
-          heightCm: parcel.height_cm ?? null,
-        },
-        presets,
-        routing.mode
+    const resolution = resolvePricingLines(input.parcels, presets, routing.mode);
+    if (!resolution.ok) {
+      return NextResponse.json(
+        { error: "parcel.unresolvable", parcel_index: resolution.parcelIndex },
+        { status: 422 }
       );
-      if (!r) {
-        return NextResponse.json({ error: "parcel.unresolvable" }, { status: 422 });
-      }
-
-      const declaredValueCents = parcel.declared_value_cents ?? 0;
-      const insuranceSurchargeCents = getInsuranceCostCents(declaredValueCents);
-
-      // For SendCloud quotes we forward the real parcel dimensions so the
-      // carrier applies its own volumetric rule. Preset parcels use the
-      // preset row's dims; custom parcels use the declared dims.
-      const presetRow = presets.find((p) => p.slug === r.presetSlug);
-      const lengthCm = parcel.length_cm ?? presetRow?.lengthCm;
-      const widthCm = parcel.width_cm ?? presetRow?.widthCm;
-      const heightCm = parcel.height_cm ?? presetRow?.heightCm;
-
-      resolved.push({
-        originalIndex: index,
-        presetSlug: r.presetSlug,
-        billableWeightKg: r.billableWeightKg,
-        lengthCm,
-        widthCm,
-        heightCm,
-        insuranceSurchargeCents,
-      });
     }
+    const resolved = resolution.lines;
 
     const quote = await quoteShipmentPrices({
       deliveryMode: routing.mode,
@@ -146,7 +104,7 @@ export async function POST(request: NextRequest) {
         lengthCm: r.lengthCm,
         widthCm: r.widthCm,
         heightCm: r.heightCm,
-        insuranceSurchargeCents: r.insuranceSurchargeCents,
+        insuranceSurchargeCents: r.insuranceCostCents,
       })),
       originPostcode: input.origin_postcode,
       destinationPostcode: input.destination_postcode,
@@ -158,10 +116,10 @@ export async function POST(request: NextRequest) {
     }
 
     const perParcel: PerParcelQuote[] = quote.data.parcels.map((p, i) => ({
-      parcel_index: resolved[i].originalIndex,
+      parcel_index: resolved[i].index,
       preset_slug: p.presetSlug,
       billable_weight_kg: p.actualWeightKg,
-      insurance_surcharge_cents: resolved[i].insuranceSurchargeCents,
+      insurance_surcharge_cents: resolved[i].insuranceCostCents,
       options: p.options,
     }));
 

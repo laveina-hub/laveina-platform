@@ -20,6 +20,15 @@ import type {
 
 const SENDCLOUD_API_V3_BASE = "https://panel.sendcloud.sc/api/v3";
 
+// Hard ceiling on a single SendCloud HTTP call. Node's fetch has no built-in
+// timeout, so a stalled connection (rate-limit silently dropped, network
+// blackhole, etc.) would otherwise hang the request forever — and with it the
+// /api/shipments/quote route, leaving the booking wizard stuck on
+// "Checking carrier rates…" with no way to recover. 15s is well above
+// SendCloud's healthy p99 (~3s for /shipping-options) so we don't false-trip
+// during normal slow periods.
+const SENDCLOUD_FETCH_TIMEOUT_MS = 15_000;
+
 function getAuthHeader(): string {
   const pub = env.SENDCLOUD_PUBLIC_KEY;
   const secret = env.SENDCLOUD_SECRET_KEY;
@@ -72,14 +81,35 @@ async function sendcloudFetch<T>(path: string, options: RequestInit = {}): Promi
     body: parsedRequestBody,
   });
 
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: getAuthHeader(),
-      ...options.headers,
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...options,
+      signal: AbortSignal.timeout(SENDCLOUD_FETCH_TIMEOUT_MS),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: getAuthHeader(),
+        ...options.headers,
+      },
+    });
+  } catch (err) {
+    const isTimeout = err instanceof Error && err.name === "TimeoutError";
+    const message = isTimeout
+      ? `SendCloud request timed out after ${SENDCLOUD_FETCH_TIMEOUT_MS}ms (${method} ${path})`
+      : err instanceof Error
+        ? err.message
+        : String(err);
+    console.warn(`[sendcloud] ✕ ${method} ${path}  ${message}`);
+    void appendSendcloudLog({
+      direction: "response",
+      method,
+      path,
+      status: isTimeout ? 504 : 0,
+      ok: false,
+      body: { error: message },
+    });
+    throw new Error(message);
+  }
 
   const rawBody = await res.text().catch(() => "");
 
@@ -173,6 +203,7 @@ export async function cancelShipment(shipmentId: string): Promise<SendcloudV3Can
     `${SENDCLOUD_API_V3_BASE}/shipments/${encodeURIComponent(shipmentId)}/cancel`,
     {
       method: "POST",
+      signal: AbortSignal.timeout(SENDCLOUD_FETCH_TIMEOUT_MS),
       headers: {
         "Content-Type": "application/json",
         Authorization: getAuthHeader(),

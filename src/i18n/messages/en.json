@@ -411,6 +411,9 @@
     "quoteUnavailableTitle": "We couldn't calculate a price",
     "quoteUnavailableBody": "Our carrier service is having trouble. Please try again in a few seconds.",
     "quoteRetry": "Retry",
+    "quoteStaleTitle": "Your price may be out of date",
+    "quoteStaleBody": "We last checked rates a while ago. Refresh to make sure your total is current before paying.",
+    "quoteRefresh": "Refresh price",
     "samePickupPointTitle": "Origin and destination must be different",
     "samePickupPointBody": "Pick a different pickup point for the destination so we can route the parcel.",
     "calculatingDelivery": "Calculating delivery price…",
@@ -1045,6 +1048,14 @@
     "supportReply": {
       "subject": "Reply to your ticket — {subject}",
       "body": "We've replied to your support ticket. You can read the full response and continue the conversation from your dashboard."
+    },
+    "duplicateRegistration": {
+      "subject": "Did you try to sign up for Laveina?",
+      "greeting": "Hi,",
+      "body": "Someone — possibly you — just tried to create a Laveina account using this email address, but an account with this email already exists.",
+      "loginCta": "Sign in to your account",
+      "resetCta": "Reset your password",
+      "ignoreNote": "If this wasn't you, you can safely ignore this email — no new account was created and your existing account has not been changed."
     }
   },
   "errors": {
@@ -1147,6 +1158,7 @@
   },
   "validation": {
     "invalidEmail": "Please enter a valid email",
+    "emailAlreadyExists": "An account with this email already exists. Try signing in instead.",
     "passwordMin": "Password must be at least 8 characters",
     "passwordMax": "Password must not exceed 72 characters",
     "passwordLowercase": "Password must contain at least one lowercase letter",

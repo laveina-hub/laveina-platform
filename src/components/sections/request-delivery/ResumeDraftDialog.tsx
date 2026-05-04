@@ -16,9 +16,22 @@ import { useBookingStore } from "@/hooks/use-booking-store";
 //
 // We can't read the persisted state synchronously during SSR, so we defer
 // the "should I show?" check to a useEffect after zustand has hydrated.
+//
+// Drafts older than DRAFT_TTL_MS are silently wiped before the dialog even
+// considers showing — pricing inputs (SendCloud rates, BCN matrix) drift over
+// time and a multi-week-old draft is more likely to confuse than help.
+
+const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function hasMeaningfulDraft(state: ReturnType<typeof useBookingStore.getState>): boolean {
   return state.parcels.length > 0 || state.currentStep > 1;
+}
+
+function isDraftExpired(draftCreatedAt: string | null): boolean {
+  if (!draftCreatedAt) return false;
+  const ts = Date.parse(draftCreatedAt);
+  if (Number.isNaN(ts)) return false;
+  return Date.now() - ts > DRAFT_TTL_MS;
 }
 
 export function ResumeDraftDialog() {
@@ -34,9 +47,16 @@ export function ResumeDraftDialog() {
     // Defer one tick so persist's client-side hydration has landed.
     const id = window.setTimeout(() => {
       const state = useBookingStore.getState();
-      if (hasMeaningfulDraft(state)) {
-        setOpen(true);
+      if (!hasMeaningfulDraft(state)) {
+        setDecided(true);
+        return;
       }
+      if (isDraftExpired(state.draftCreatedAt)) {
+        state.reset();
+        setDecided(true);
+        return;
+      }
+      setOpen(true);
       setDecided(true);
     }, 0);
     return () => window.clearTimeout(id);

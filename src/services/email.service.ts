@@ -5,7 +5,13 @@ import {
   isMandatoryTemplate,
   type NotificationTemplate,
 } from "@/constants/notification-prefs";
-import { escapeHtml, normalizeLocale, wrapHtml } from "@/lib/email/rendering";
+import {
+  escapeHtml,
+  joinParagraphs,
+  normalizeLocale,
+  renderLink,
+  wrapHtml,
+} from "@/lib/email/rendering";
 import { getResendConfig, sendResendEmail } from "@/lib/resend/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ApiResponse } from "@/types/api";
@@ -130,6 +136,55 @@ export async function sendTemplatedEmail(input: EmailInput): Promise<EmailResult
   try {
     const messageId = await dispatchEmail(input);
     return { data: { messageId }, error: null };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to send email";
+    return { data: null, error: { message, status: 500 } };
+  }
+}
+
+/**
+ * Soft-touch notice fired when someone tries to register with an email that
+ * already has an account. The registration form returns the same generic
+ * "check your inbox" success in both branches (anti-enumeration), so this
+ * email is the channel where existing users actually learn what happened —
+ * with a login link and a password-reset link in case they forgot.
+ *
+ * Bypasses the A10 prefs matrix on purpose: this is a security/account
+ * notice, not a marketing or shipment broadcast, so opting out doesn't apply.
+ */
+export async function sendDuplicateRegistrationNotice(params: {
+  to: string;
+  loginUrl: string;
+  resetPasswordUrl: string;
+  locale?: string | null;
+}): Promise<EmailResult> {
+  const t = await getTranslations({ locale: normalizeLocale(params.locale), namespace: "emails" });
+  const subject = t("duplicateRegistration.subject");
+  const html = wrapHtml({
+    greeting: t("duplicateRegistration.greeting"),
+    body: joinParagraphs(
+      t("duplicateRegistration.body"),
+      `${renderLink(params.loginUrl, t("duplicateRegistration.loginCta"))} · ${renderLink(params.resetPasswordUrl, t("duplicateRegistration.resetCta"))}`,
+      t("duplicateRegistration.ignoreNote")
+    ),
+    signoff: t("signoff"),
+    support: t("supportLine"),
+  });
+
+  try {
+    const config = getResendConfig();
+    if (!config) {
+      const id = `stub-email-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      console.info("[email stub — Resend not configured]", {
+        id,
+        to: params.to,
+        template: "duplicate_registration",
+        subject,
+      });
+      return { data: { messageId: id }, error: null };
+    }
+    const { id } = await sendResendEmail({ to: params.to, subject, html });
+    return { data: { messageId: id }, error: null };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to send email";
     return { data: null, error: { message, status: 500 } };
