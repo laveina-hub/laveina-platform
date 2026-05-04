@@ -3,7 +3,6 @@ import type { NextRequest } from "next/server";
 import { getTranslations } from "next-intl/server";
 import type Stripe from "stripe";
 
-import { getInsuranceCostCents } from "@/constants/insurance-tiers";
 import { env } from "@/env";
 import { routing as i18nRouting } from "@/i18n/routing";
 import { getClientIp, paymentLimiter, rateLimitResponse } from "@/lib/rate-limit";
@@ -12,7 +11,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { listActivePresets } from "@/services/parcel-preset.service";
 import { type PendingBookingV2 } from "@/services/pending-booking";
-import { quoteShipmentPrices, resolveParcelForPricing } from "@/services/pricing.service";
+import { quoteShipmentPrices, resolvePricingLines } from "@/services/pricing.service";
 import { getDeliveryMode, isBarcelonaRoute } from "@/services/routing.service";
 import { createCheckoutSchema } from "@/validations/shipment.schema";
 
@@ -123,53 +122,16 @@ export async function POST(request: NextRequest) {
 
     // Resolve every parcel (preset band, billable weight, effective dims,
     // insurance) up front so we can send the whole order to the pricing
-    // service in one bundled call. Matches the /quote endpoint and ensures
-    // both paths charge identical amounts.
-    type ResolvedLine = {
-      index: number;
-      presetSlug: "mini" | "small" | "medium" | "large";
-      billableWeightKg: number;
-      lengthCm: number | undefined;
-      widthCm: number | undefined;
-      heightCm: number | undefined;
-      insuranceCostCents: number;
-    };
-
-    const resolvedLines: ResolvedLine[] = [];
-    for (let i = 0; i < input.parcels.length; i++) {
-      const parcel = input.parcels[i];
-      const resolved = resolveParcelForPricing(
-        {
-          presetSlug: parcel.preset_slug,
-          weightKg: parcel.weight_kg,
-          lengthCm: parcel.length_cm ?? null,
-          widthCm: parcel.width_cm ?? null,
-          heightCm: parcel.height_cm ?? null,
-        },
-        presets,
-        routing.mode
+    // service in one bundled call. Same helper as /quote so both paths
+    // charge identical amounts.
+    const resolution = resolvePricingLines(input.parcels, presets, routing.mode);
+    if (!resolution.ok) {
+      return NextResponse.json(
+        { error: "parcel.unresolvable", parcel_index: resolution.parcelIndex },
+        { status: 422 }
       );
-      if (!resolved) {
-        return NextResponse.json(
-          { error: "parcel.unresolvable", parcel_index: i },
-          { status: 422 }
-        );
-      }
-
-      const declaredValueCents = parcel.declared_value_cents ?? 0;
-      const insuranceCostCents = getInsuranceCostCents(declaredValueCents);
-
-      const presetRow = presets.find((p) => p.slug === resolved.presetSlug);
-      resolvedLines.push({
-        index: i,
-        presetSlug: resolved.presetSlug,
-        billableWeightKg: resolved.billableWeightKg,
-        lengthCm: parcel.length_cm ?? presetRow?.lengthCm,
-        widthCm: parcel.width_cm ?? presetRow?.widthCm,
-        heightCm: parcel.height_cm ?? presetRow?.heightCm,
-        insuranceCostCents,
-      });
     }
+    const resolvedLines = resolution.lines;
 
     // One bundled quote for the whole order. SendCloud path hits
     // `/shipping-options` with all parcels in a single call; BCN path iterates

@@ -23,8 +23,6 @@ import { Step4Confirm } from "./Step4Confirm";
 //   Step 2 Origin & Destination
 //   Step 3 Recipient (+ sender auto-fill + Edit per A4)
 //   Step 4 Review & Payment (speed picked here, route-aware)
-// Step3PickupPoint.tsx still exists but is out of the flow; S2.2.3 will
-// refactor it into a modal sub-view of Step 2.
 //
 // Sprint 5 chunk 2 additions:
 //  - ResumeDraftDialog: offers resume / start-over on return with saved draft
@@ -81,9 +79,7 @@ export function RequestDeliverySection({ presets, bcnPrices, cutoffConfig, sende
       >
         {currentStep === 1 && <Step1Size presets={presets} bcnPrices={bcnPrices} />}
         {currentStep === 2 && <Step2Route cutoffConfig={cutoffConfig} />}
-        {currentStep === 3 && (
-          <Step3Recipient presets={presets} bcnPrices={bcnPrices} senderProfile={senderProfile} />
-        )}
+        {currentStep === 3 && <Step3Recipient presets={presets} senderProfile={senderProfile} />}
         {currentStep === 4 && <Step4Confirm presets={presets} cutoffConfig={cutoffConfig} />}
       </BookingLayout>
     </GoogleMapsWrapper>

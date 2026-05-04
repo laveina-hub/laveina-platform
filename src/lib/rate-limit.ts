@@ -94,6 +94,10 @@ export const otpLimiter = createRateLimiter({ limit: 3, windowMs: 900_000 });
 export const scanLimiter = createRateLimiter({ limit: 10, windowMs: 60_000 });
 export const publicLimiter = createRateLimiter({ limit: 60, windowMs: 60_000 });
 export const authLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
+// Tighter cap on registration: it's the highest-value enumeration target
+// (an attacker probing for valid emails can only do so via signup), and
+// legitimate users register at most a handful of times — never in bursts.
+export const registerLimiter = createRateLimiter({ limit: 3, windowMs: 60_000 });
 // Defense-in-depth cap on admin mutation endpoints — roomy enough for real
 // operator work, tight enough that a leaked session cookie can't flood
 // SendCloud/Stripe/notification queues in a loop.

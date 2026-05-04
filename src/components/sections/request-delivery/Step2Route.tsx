@@ -14,6 +14,7 @@ import {
 import { isSpeedAvailableNow, type CutoffConfig } from "@/constants/cutoff-times";
 import { useBookingStore } from "@/hooks/use-booking-store";
 import { usePickupPoints } from "@/hooks/use-pickup-points";
+import { usePostcodeCenter } from "@/hooks/use-postcode-center";
 import { useQuote } from "@/hooks/use-quote";
 import type { SavedAddress } from "@/hooks/use-saved-addresses";
 import { formatDateMedium, type Locale } from "@/lib/format";
@@ -83,16 +84,11 @@ export function Step2Route({ cutoffConfig }: Step2RouteProps) {
   // the user hasn't typed a postcode yet.
   const [originGeoCenter, setOriginGeoCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [originGeoStatus, setOriginGeoStatus] = useState<"idle" | "loading" | "error">("idle");
-  // Q6.8 — postcode-center coords used as distance reference when the user
-  // hasn't shared GPS. Cached per-column so typing doesn't re-geocode twice.
-  const [originPostcodeCenter, setOriginPostcodeCenter] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
-  const [destinationPostcodeCenter, setDestinationPostcodeCenter] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
+  // Q6.8 — postcode-centre coords used as distance reference when the user
+  // hasn't shared GPS. The hook owns the geocode + state per side so typing
+  // here doesn't re-run the call twice on the same postcode.
+  const originPostcodeCenter = usePostcodeCenter(originPostcode);
+  const destinationPostcodeCenter = usePostcodeCenter(destinationPostcode);
 
   const resolveUserLocation = useCallback(async () => {
     if (!geocodingLib) throw new Error("geocoding_unavailable");
@@ -106,52 +102,6 @@ export function Step2Route({ cutoffConfig }: Step2RouteProps) {
     }
     throw new Error("no_postcode");
   }, [geocodingLib]);
-
-  // Q6.8 — resolve the postcode string to a lat/lng center so the cards can
-  // show "distance from postcode center" whenever GPS isn't shared. Runs once
-  // per valid 5-digit postcode; clears when the user types a shorter string.
-  const geocodePostcode = useCallback(
-    async (postcode: string): Promise<{ lat: number; lng: number } | null> => {
-      if (!geocodingLib || !/^[0-9]{5}$/.test(postcode)) return null;
-      const geocoder = new geocodingLib.Geocoder();
-      const { results } = await geocoder.geocode({
-        address: postcode,
-        componentRestrictions: { country: "ES" },
-      });
-      const first = results[0]?.geometry?.location;
-      if (!first) return null;
-      return { lat: first.lat(), lng: first.lng() };
-    },
-    [geocodingLib]
-  );
-
-  useEffect(() => {
-    if (originPostcode.length !== 5) {
-      setOriginPostcodeCenter(null);
-      return;
-    }
-    let cancelled = false;
-    geocodePostcode(originPostcode).then((center) => {
-      if (!cancelled) setOriginPostcodeCenter(center);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [originPostcode, geocodePostcode]);
-
-  useEffect(() => {
-    if (destinationPostcode.length !== 5) {
-      setDestinationPostcodeCenter(null);
-      return;
-    }
-    let cancelled = false;
-    geocodePostcode(destinationPostcode).then((center) => {
-      if (!cancelled) setDestinationPostcodeCenter(center);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [destinationPostcode, geocodePostcode]);
 
   const originQuery = usePickupPoints(originPostcode.length === 5 ? originPostcode : undefined);
   const destinationQuery = usePickupPoints(

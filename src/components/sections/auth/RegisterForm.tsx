@@ -30,6 +30,7 @@ export function RegisterForm() {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -40,6 +41,12 @@ export function RegisterForm() {
     setSubmitting(true);
     try {
       const result = await registerAction(data.email, data.password, data.full_name, locale);
+
+      if (result.error === "emailAlreadyExists") {
+        setError("email", { type: "server", message: "validation.emailAlreadyExists" });
+        setSubmitting(false);
+        return;
+      }
 
       if (result.error) {
         toast.error(t("genericError"));

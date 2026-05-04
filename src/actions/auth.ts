@@ -6,8 +6,9 @@ import { redirect } from "next/navigation";
 import { getLocalePrefix, ROLE_DASHBOARD } from "@/constants/app";
 import { env } from "@/env";
 import { routing } from "@/i18n/routing";
-import { authLimiter } from "@/lib/rate-limit";
+import { authLimiter, registerLimiter } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
+import { sendDuplicateRegistrationNotice } from "@/services/email.service";
 import { isUserRole, type UserRole } from "@/types/enums";
 
 const RECOVERY_EMAIL_COOKIE = "recovery_email";
@@ -130,14 +131,14 @@ export async function registerAction(
   locale: string
 ): Promise<ActionResult> {
   const ip = await getActionClientIp();
-  const rl = authLimiter.check(ip);
-  if (!rl.success) return { error: "tooManyRequests" };
+  if (!authLimiter.check(ip).success) return { error: "tooManyRequests" };
+  if (!registerLimiter.check(ip).success) return { error: "tooManyRequests" };
 
   const supabase = await createClient();
   const origin = env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const emailRedirectTo = `${origin}/${locale}/auth/callback?next=/auth/account-created`;
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -150,9 +151,21 @@ export async function registerAction(
     return { error: "registrationFailed" };
   }
 
-  // Don't reveal whether the email already exists — always show success.
-  // Supabase returns a user with empty identities if the email is taken,
-  // but we treat it the same as a successful signup to prevent enumeration.
+  // Supabase returns a user with an empty `identities` array when the email
+  // is already taken. Per client spec (2026-05-04), surface this as an inline
+  // error on the form. The duplicate-registration email still fires as
+  // defense-in-depth: it covers the impersonation case where someone other
+  // than the owner is trying to register their email.
+  if (data.user && (data.user.identities?.length ?? 0) === 0) {
+    void sendDuplicateRegistrationNotice({
+      to: email,
+      loginUrl: `${origin}/${locale}/auth/login`,
+      resetPasswordUrl: `${origin}/${locale}/auth/forgot-password`,
+      locale,
+    });
+    return { error: "emailAlreadyExists" };
+  }
+
   return { success: true };
 }
 

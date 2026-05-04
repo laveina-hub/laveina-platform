@@ -411,6 +411,9 @@
     "quoteUnavailableTitle": "No hemos podido calcular el precio",
     "quoteUnavailableBody": "Estamos teniendo problemas con el servicio de transporte. Inténtalo de nuevo en unos segundos.",
     "quoteRetry": "Reintentar",
+    "quoteStaleTitle": "Tu precio puede estar desactualizado",
+    "quoteStaleBody": "Hace un rato que consultamos las tarifas. Actualiza para asegurarte de que el total es correcto antes de pagar.",
+    "quoteRefresh": "Actualizar precio",
     "samePickupPointTitle": "El origen y el destino deben ser diferentes",
     "samePickupPointBody": "Elige un punto de recogida distinto para el destino para que podamos enviar el paquete.",
     "calculatingDelivery": "Calculando el precio del envío…",
@@ -1045,6 +1048,14 @@
     "supportReply": {
       "subject": "Respuesta a tu ticket — {subject}",
       "body": "Hemos respondido a tu ticket de soporte. Puedes leer la respuesta completa y continuar la conversación desde tu panel."
+    },
+    "duplicateRegistration": {
+      "subject": "¿Intentaste registrarte en Laveina?",
+      "greeting": "Hola,",
+      "body": "Alguien — quizá tú — acaba de intentar crear una cuenta en Laveina con este correo, pero ya existe una cuenta asociada a esta dirección.",
+      "loginCta": "Inicia sesión en tu cuenta",
+      "resetCta": "Restablece tu contraseña",
+      "ignoreNote": "Si no fuiste tú, puedes ignorar este correo sin problema — no se ha creado ninguna cuenta nueva y tu cuenta actual no se ha modificado."
     }
   },
   "errors": {
@@ -1147,6 +1158,7 @@
   },
   "validation": {
     "invalidEmail": "Introduce un correo electrónico válido",
+    "emailAlreadyExists": "Ya existe una cuenta con este correo. Prueba a iniciar sesión.",
     "passwordMin": "La contraseña debe tener al menos 8 caracteres",
     "passwordMax": "La contraseña no puede superar los 72 caracteres",
     "passwordLowercase": "La contraseña debe contener al menos una letra minúscula",

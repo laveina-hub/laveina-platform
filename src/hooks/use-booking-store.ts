@@ -120,6 +120,11 @@ type BookingState = {
 
   requestedSpeed: DeliverySpeed | null;
 
+  /** ISO timestamp stamped when the user first commits parcels to the store.
+   *  Drives the ResumeDraftDialog TTL: drafts older than the configured window
+   *  are silently wiped on mount instead of prompting the user to resume. */
+  draftCreatedAt: string | null;
+
   parcels: ParcelItemInput[];
   origin: BookingLocation | null;
   destination: BookingLocation | null;
@@ -186,6 +191,7 @@ const initialState: BookingState = {
   // speed picker. The Step 4 speed panel (moved there per Final A2, 2026-04-23)
   // overwrites this as the user chooses Express / Next Day.
   requestedSpeed: "standard",
+  draftCreatedAt: null,
   parcels: [],
   origin: null,
   destination: null,
@@ -219,17 +225,28 @@ export const useBookingStore = create<BookingState & BookingActions>()(
         set({ actualSpeed: speed, speedAdjustedReason: reason }),
 
       setParcels: (parcels) =>
-        set({
-          // Hard cap enforced at the action boundary so UI + webhook stay aligned.
-          parcels: parcels.slice(0, MAX_PARCELS_PER_BOOKING),
-          quoteSnapshots: null,
-          quote: null,
+        set((s) => {
+          const capped = parcels.slice(0, MAX_PARCELS_PER_BOOKING);
+          return {
+            // Hard cap enforced at the action boundary so UI + webhook stay aligned.
+            parcels: capped,
+            // First commit of any parcel stamps the draft start time for TTL.
+            draftCreatedAt:
+              s.draftCreatedAt ?? (capped.length > 0 ? new Date().toISOString() : null),
+            quoteSnapshots: null,
+            quote: null,
+          };
         }),
       addParcel: (parcel) =>
         set((s) =>
           s.parcels.length >= MAX_PARCELS_PER_BOOKING
             ? s
-            : { parcels: [...s.parcels, parcel], quoteSnapshots: null, quote: null }
+            : {
+                parcels: [...s.parcels, parcel],
+                draftCreatedAt: s.draftCreatedAt ?? new Date().toISOString(),
+                quoteSnapshots: null,
+                quote: null,
+              }
         ),
       updateParcel: (index, parcel) =>
         set((s) => ({
@@ -294,11 +311,14 @@ export const useBookingStore = create<BookingState & BookingActions>()(
     }),
     {
       name: "laveina-booking",
+      // v8: adds `draftCreatedAt` for TTL. Pre-v8 drafts have no timestamp,
+      // so we wipe on upgrade rather than backfilling — these are
+      // pre-payment drafts so the cost of asking the user to re-enter is low.
       // v7: Q15.2 VAT overhaul — quote snapshot now stores ex-VAT delivery
       // (`shippingCents`) per speed instead of VAT-inclusive subtotal. Older
       // drafts cached under v6 store the old semantic and would misprice on
       // Step 4, so we wipe them on upgrade.
-      version: 7,
+      version: 8,
       migrate: () => initialState,
       // `pending*Errors` fields are transient handoffs between Step 4 and
       // Step 3 — they must not survive a page reload, otherwise a user who

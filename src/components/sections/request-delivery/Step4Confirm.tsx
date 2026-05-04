@@ -1,7 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 
+import { Button } from "@/components/atoms";
 import { MapPinIcon, NavigationIcon, SpinnerIcon } from "@/components/icons";
 import { InsuranceSection, SpeedSelector } from "@/components/molecules";
 import { type CutoffConfig } from "@/constants/cutoff-times";
@@ -24,6 +26,12 @@ import { Step4PaymentSummary } from "./Step4Confirm.PaymentSummary";
 // - Speed displayed is `actualSpeed ?? requestedSpeed` so an auto-switched
 //   Next Day → Express shows Express (happens if user goes back to Step 2
 //   and changes destination to a non-BCN postcode).
+
+// Quote staleness: TanStack refetches on mount (60s staleTime), but a user who
+// sits on this screen reading the summary can drift past that window before
+// clicking Pay. Past 10 minutes we surface a refresh prompt and block Pay so
+// the carrier rate and the displayed total don't diverge from reality.
+const QUOTE_STALE_MS = 10 * 60 * 1000;
 
 type Props = {
   presets: ParcelPreset[];
@@ -75,6 +83,20 @@ export function Step4Confirm({ presets, cutoffConfig }: Props) {
   const isQuoting = quoteQuery.isFetching && !quote;
   const quoteFailed = quoteQuery.isError && !quote;
 
+  // Re-evaluate staleness on a slow cadence so the banner appears even if the
+  // user is idle on this screen. 30s tick is fine — the threshold is 10 min.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const quotedAtMs = quote?.quotedAt ? Date.parse(quote.quotedAt) : null;
+  const isQuoteStale =
+    quotedAtMs !== null &&
+    !Number.isNaN(quotedAtMs) &&
+    nowMs - quotedAtMs > QUOTE_STALE_MS &&
+    !quoteQuery.isFetching;
+
   const originPointsQuery = usePickupPoints(origin?.postcode);
   const destinationPointsQuery = usePickupPoints(destination?.postcode);
   const originPoint = originPointsQuery.data?.find((p) => p.id === origin?.pickupPointId);
@@ -93,8 +115,10 @@ export function Step4Confirm({ presets, cutoffConfig }: Props) {
   // Pay must wait on a fresh quote: when the cached quote is missing
   // `lineItems` is empty (no BCN-default fallback), so `hasRequiredData` is
   // already false. Adding `!isQuoting && !quoteFailed` makes the disabled
-  // state explicit while the network call is in flight.
-  const canPay = hasRequiredData && !isSubmitting && !isQuoting && !quoteFailed;
+  // state explicit while the network call is in flight. `!isQuoteStale`
+  // forces a refresh once the cached quote ages past QUOTE_STALE_MS so the
+  // carrier rate at dispatch can't drift away from the price the user sees.
+  const canPay = hasRequiredData && !isSubmitting && !isQuoting && !quoteFailed && !isQuoteStale;
 
   // Custom-size parcels (preset_slug === null) carry user-supplied dims +
   // weight. The server resolves them to a band for pricing, but the card
@@ -205,31 +229,61 @@ export function Step4Confirm({ presets, cutoffConfig }: Props) {
 
       <InsuranceSection parcels={parcels} onChangeInsurance={setParcelInsurance} />
 
-      {(isQuoting || quoteFailed) && (
+      {quoteFailed && (
         <div
-          role={quoteFailed ? "alert" : "status"}
-          aria-live="polite"
-          className={
-            quoteFailed
-              ? "flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm"
-              : "text-text-muted flex items-center gap-2 text-sm"
-          }
+          role="alert"
+          className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3"
         >
-          {quoteFailed ? (
-            <div className="flex-1">
-              <p className="font-semibold text-amber-900">{t("quoteUnavailableTitle")}</p>
-              <p className="mt-0.5 text-amber-800">{t("quoteUnavailableBody")}</p>
-            </div>
-          ) : (
-            <>
-              <SpinnerIcon className="text-primary-500 h-4 w-4 animate-spin" aria-hidden />
-              <span>
-                {isBarcelonaRoute(origin?.postcode ?? "", destination?.postcode ?? "")
-                  ? t("calculatingDelivery")
-                  : t("checkingCarrierRates")}
-              </span>
-            </>
-          )}
+          <div className="flex-1 text-sm">
+            <p className="font-semibold text-amber-900">{t("quoteUnavailableTitle")}</p>
+            <p className="mt-0.5 text-amber-800">{t("quoteUnavailableBody")}</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => quoteQuery.refetch()}
+            disabled={quoteQuery.isFetching}
+          >
+            {t("quoteRetry")}
+          </Button>
+        </div>
+      )}
+
+      {isQuoteStale && !quoteFailed && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3"
+        >
+          <div className="flex-1 text-sm">
+            <p className="font-semibold text-amber-900">{t("quoteStaleTitle")}</p>
+            <p className="mt-0.5 text-amber-800">{t("quoteStaleBody")}</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => quoteQuery.refetch()}
+            disabled={quoteQuery.isFetching}
+          >
+            {t("quoteRefresh")}
+          </Button>
+        </div>
+      )}
+
+      {isQuoting && !quoteFailed && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="text-text-muted flex items-center gap-2 text-sm"
+        >
+          <SpinnerIcon className="text-primary-500 h-4 w-4 animate-spin" aria-hidden />
+          <span>
+            {isBarcelonaRoute(origin?.postcode ?? "", destination?.postcode ?? "")
+              ? t("calculatingDelivery")
+              : t("checkingCarrierRates")}
+          </span>
         </div>
       )}
 

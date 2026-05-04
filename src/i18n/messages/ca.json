@@ -411,6 +411,9 @@
     "quoteUnavailableTitle": "No hem pogut calcular el preu",
     "quoteUnavailableBody": "Estem tenint problemes amb el servei de transport. Torna-ho a provar en uns segons.",
     "quoteRetry": "Reintentar",
+    "quoteStaleTitle": "El teu preu pot estar desactualitzat",
+    "quoteStaleBody": "Fa una estona que vam consultar les tarifes. Actualitza per assegurar que el total és correcte abans de pagar.",
+    "quoteRefresh": "Actualitzar preu",
     "samePickupPointTitle": "L'origen i la destinació han de ser diferents",
     "samePickupPointBody": "Tria un punt de recollida diferent per a la destinació perquè puguem enviar el paquet.",
     "calculatingDelivery": "Calculant el preu de l'enviament…",
@@ -1045,6 +1048,14 @@
     "supportReply": {
       "subject": "Resposta al teu tiquet — {subject}",
       "body": "Hem respost al teu tiquet de suport. Pots llegir la resposta completa i continuar la conversa des del teu tauler."
+    },
+    "duplicateRegistration": {
+      "subject": "Has intentat registrar-te a Laveina?",
+      "greeting": "Hola,",
+      "body": "Algú — potser tu — acaba d'intentar crear un compte a Laveina amb aquest correu, però ja hi ha un compte associat a aquesta adreça.",
+      "loginCta": "Inicia sessió al teu compte",
+      "resetCta": "Restableix la teva contrasenya",
+      "ignoreNote": "Si no has estat tu, pots ignorar aquest correu — no s'ha creat cap compte nou i el teu compte actual no s'ha modificat."
     }
   },
   "errors": {
@@ -1147,6 +1158,7 @@
   },
   "validation": {
     "invalidEmail": "Introdueix un correu electrònic vàlid",
+    "emailAlreadyExists": "Ja existeix un compte amb aquest correu. Prova a iniciar sessió.",
     "passwordMin": "La contrasenya ha de tenir almenys 8 caràcters",
     "passwordMax": "La contrasenya no pot superar els 72 caràcters",
     "passwordLowercase": "La contrasenya ha de contenir almenys una lletra minúscula",
