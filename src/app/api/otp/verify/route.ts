@@ -74,10 +74,22 @@ export async function POST(request: NextRequest) {
       );
 
       if (deliveryResult.error) {
-        // OTP valid but delivery update failed
-        return NextResponse.json({
-          data: { verified: true, delivered: false, deliveryError: deliveryResult.error.message },
-        });
+        // OTP verification succeeded but the delivery confirmation update
+        // failed. Surface this as an error envelope (HTTP 502 — upstream
+        // mutation failed after an OK precondition) instead of stuffing the
+        // failure into a "success" payload, so the client treats it as a
+        // retryable error rather than a happy-path response.
+        return NextResponse.json(
+          {
+            error: {
+              message: deliveryResult.error.message,
+              code: "DELIVERY_UPDATE_FAILED",
+              status: 502,
+            },
+            data: { verified: true, delivered: false },
+          },
+          { status: 502 }
+        );
       }
 
       after(

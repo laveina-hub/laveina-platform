@@ -1089,7 +1089,8 @@
     "in_transit": "En trànsit",
     "arrived_at_destination": "Arribat a la botiga de destí",
     "ready_for_pickup": "Llest per recollir",
-    "delivered": "Lliurat"
+    "delivered": "Lliurat",
+    "cancelled": "Cancel·lat"
   },
   "trackingBucket": {
     "awaiting_dropoff": "Comanda Confirmada",

@@ -1,10 +1,12 @@
 interface VisaIconProps {
   size?: number;
   className?: string;
+  /** Override the default aria-label (the brand name). */
+  ariaLabel?: string;
 }
 
 /** VISA brand badge (dark blue rounded rect with white wordmark) from design asset visa.svg. Brand colors hardcoded. */
-export function VisaIcon({ size = 24, className }: VisaIconProps) {
+export function VisaIcon({ size = 24, className, ariaLabel }: VisaIconProps) {
   const width = size;
   const height = Math.round((size * 13) / 20);
   return (
@@ -15,7 +17,7 @@ export function VisaIcon({ size = 24, className }: VisaIconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="Visa"
+      aria-label={ariaLabel ?? "Visa"}
       role="img"
     >
       <g clipPath="url(#visa-clip)">

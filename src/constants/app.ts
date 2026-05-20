@@ -7,6 +7,8 @@ export const SUPPORTED_LOCALES = ["en", "es", "ca"] as const;
 export const TRACKING_ID_PREFIX = "LAV";
 export const TRACKING_ID_LENGTH = 12;
 
+export const MAX_PARCELS_PER_BOOKING = 5;
+
 export const OTP_LENGTH = 6;
 // M2: expiry extended from 10 min → 24 h per Q12.4. Security trade-off
 // documented in README/M2_EXECUTION_PLAN.md (S3.4).

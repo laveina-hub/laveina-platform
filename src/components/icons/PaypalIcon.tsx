@@ -1,10 +1,12 @@
 interface PaypalIconProps {
   size?: number;
   className?: string;
+  /** Override the default aria-label (the brand name). */
+  ariaLabel?: string;
 }
 
 /** PayPal brand mark (two overlapping P shapes in PayPal blues) from design asset paypal.svg. Brand colors hardcoded. */
-export function PaypalIcon({ size = 24, className }: PaypalIconProps) {
+export function PaypalIcon({ size = 24, className, ariaLabel }: PaypalIconProps) {
   return (
     <svg
       width={size}
@@ -13,7 +15,7 @@ export function PaypalIcon({ size = 24, className }: PaypalIconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="PayPal"
+      aria-label={ariaLabel ?? "PayPal"}
       role="img"
     >
       <g clipPath="url(#paypal-clip)">

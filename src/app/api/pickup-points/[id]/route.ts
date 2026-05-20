@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
+import { logAuditEvent } from "@/services/audit.service";
 import { getPickupPointById, updatePickupPoint } from "@/services/pickup-point.service";
 import { updatePickupPointSchema } from "@/validations/pickup-point.schema";
 
@@ -19,6 +21,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const rl = adminLimiter.check(getClientIp(request));
+  if (!rl.success) return rateLimitResponse(rl.resetMs);
+
   const auth = await verifyAuth();
   if (auth.error) return auth.error;
   const { supabase, user, role } = auth;
@@ -51,6 +56,21 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
+
+  after(
+    logAuditEvent({
+      actor_id: user.id,
+      action: "pickup_point.updated",
+      resource: "pickup_points",
+      resource_id: id,
+      metadata: {
+        // Only log keys that changed (not values) to keep the audit trail
+        // small and avoid storing PII like phone numbers in the metadata blob.
+        fields_updated: Object.keys(parsed.data),
+        actor_role: role,
+      },
+    }).catch(() => {})
+  );
 
   return NextResponse.json({ data: result.data });
 }

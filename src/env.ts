@@ -31,6 +31,20 @@ export const env = createEnv({
     // lifecycle: stub ON for local dev → flip OFF on a preview deploy
     // with your own WhatsApp number → keep OFF in staging/prod.
     GALLABOX_STUB: z.enum(["true", "false"]).optional(),
+    // DEV-ONLY FLAG — when "true", skips HMAC verification on the SendCloud
+    // webhook. Lets developers POST fake payloads via curl/Postman without a
+    // matching signature. NEVER set this in staging or production: any
+    // unauthenticated POST to /api/webhooks/sendcloud will be accepted.
+    // Replaces the older NODE_ENV-based fall-open which was too easy to trip
+    // when preview deploys flipped NODE_ENV for debugging.
+    SENDCLOUD_WEBHOOK_VERIFY_DISABLED: z.enum(["true", "false"]).optional(),
+    // Node runtime mode. Next inlines this at build time in both bundles, so
+    // exposing it through env.ts gives a single, typed read site instead of
+    // scattered `process.env.NODE_ENV` references.
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    // Logger min level override. Falls back to "info" in production and
+    // "debug" elsewhere (see src/lib/logger.ts).
+    LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).optional(),
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
@@ -62,6 +76,12 @@ export const env = createEnv({
     ADMIN_WHATSAPP_PHONE: process.env.ADMIN_WHATSAPP_PHONE,
     SEND_OWNER_INVITES: process.env.SEND_OWNER_INVITES as "true" | "false" | undefined,
     GALLABOX_STUB: process.env.GALLABOX_STUB as "true" | "false" | undefined,
+    SENDCLOUD_WEBHOOK_VERIFY_DISABLED: process.env.SENDCLOUD_WEBHOOK_VERIFY_DISABLED as
+      | "true"
+      | "false"
+      | undefined,
+    NODE_ENV: process.env.NODE_ENV,
+    LOG_LEVEL: process.env.LOG_LEVEL,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,

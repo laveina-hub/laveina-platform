@@ -1,5 +1,6 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 
+import { env } from "@/env";
 import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
 import { logAuditEvent } from "@/services/audit.service";
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
 }
 
 function defaultWebhookUrl(request: NextRequest): string {
-  const configured = process.env.NEXT_PUBLIC_APP_URL;
+  const configured = env.NEXT_PUBLIC_APP_URL;
   const base = configured && configured.length > 0 ? configured : new URL(request.url).origin;
   return `${base.replace(/\/$/, "")}/api/webhooks/sendcloud`;
 }

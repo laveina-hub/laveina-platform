@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 
 import { CrispChat } from "@/components/layout/CrispChat";
 import { IubendaCookie } from "@/components/layout/IubendaCookie";
+import { env } from "@/env";
 import { routing } from "@/i18n/routing";
 import { createClient } from "@/lib/supabase/server";
 import { AuthProvider } from "@/providers/auth-provider";
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata" });
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://laveina.co";
+  const siteUrl = env.NEXT_PUBLIC_APP_URL ?? "https://laveina.co";
 
   return {
     title: {

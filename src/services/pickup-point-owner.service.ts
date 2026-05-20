@@ -20,13 +20,13 @@ export async function createPickupPointOwner(
   info: OwnerInfo = {}
 ): Promise<CreateOwnerResult> {
   const admin = createAdminClient();
-  const isProduction = process.env.NODE_ENV === "production" || env.SEND_OWNER_INVITES === "true";
+  const isProduction = env.NODE_ENV === "production" || env.SEND_OWNER_INVITES === "true";
   const displayName = info.fullName ?? email.split("@")[0];
 
   if (isProduction) {
     const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
       data: { full_name: displayName },
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/auth/set-password`,
+      redirectTo: `${env.NEXT_PUBLIC_APP_URL ?? ""}/auth/set-password`,
     });
 
     if (error) {

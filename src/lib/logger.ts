@@ -17,6 +17,8 @@
  * for cross-call correlation without repeating context.
  */
 
+import { env } from "@/env";
+
 type LogLevel = "debug" | "info" | "warn" | "error";
 type LogContext = Record<string, unknown>;
 
@@ -28,11 +30,7 @@ const LEVEL_PRIORITY: Record<LogLevel, number> = {
 };
 
 // LOG_LEVEL=debug|info|warn|error (default: info; debug in dev)
-const minLevel: LogLevel = (() => {
-  const raw = (process.env.LOG_LEVEL ?? "").toLowerCase();
-  if (raw === "debug" || raw === "info" || raw === "warn" || raw === "error") return raw;
-  return process.env.NODE_ENV === "production" ? "info" : "debug";
-})();
+const minLevel: LogLevel = env.LOG_LEVEL ?? (env.NODE_ENV === "production" ? "info" : "debug");
 
 function unwrapError(err: unknown): LogContext {
   if (err instanceof Error) {

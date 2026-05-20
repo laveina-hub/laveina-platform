@@ -1,5 +1,6 @@
-import { after, NextResponse, type NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 
+import { err, forbidden, ok } from "@/lib/api-response";
 import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
 import { invalidateSettingsCache } from "@/services/admin-settings.service";
@@ -11,9 +12,7 @@ export async function GET() {
   if (auth.error) return auth.error;
   const { supabase, role } = auth;
 
-  if (role !== "admin") {
-    return NextResponse.json({ error: { message: "Forbidden", status: 403 } }, { status: 403 });
-  }
+  if (role !== "admin") return forbidden();
 
   const [settingsResult, insuranceResult, parcelSizesResult] = await Promise.all([
     supabase.from("admin_settings").select("key, value"),
@@ -34,12 +33,10 @@ export async function GET() {
     settingsMap[row.key] = row.value;
   }
 
-  return NextResponse.json({
-    data: {
-      settings: settingsMap,
-      insuranceOptions: insuranceResult.data ?? [],
-      parcelSizes: parcelSizesResult.data ?? [],
-    },
+  return ok({
+    settings: settingsMap,
+    insuranceOptions: insuranceResult.data ?? [],
+    parcelSizes: parcelSizesResult.data ?? [],
   });
 }
 
@@ -51,18 +48,13 @@ export async function PUT(request: NextRequest) {
   if (auth.error) return auth.error;
   const { supabase, role: putRole } = auth;
 
-  if (putRole !== "admin") {
-    return NextResponse.json({ error: { message: "Forbidden", status: 403 } }, { status: 403 });
-  }
+  if (putRole !== "admin") return forbidden();
 
   const body = await request.json();
   const parsed = adminSettingsUpdateSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: { message: parsed.error.issues[0].message, status: 400 } },
-      { status: 400 }
-    );
+    return err(parsed.error.issues[0].message, 400);
   }
 
   const { settings, insuranceOptions } = parsed.data;
@@ -100,10 +92,7 @@ export async function PUT(request: NextRequest) {
   }
 
   if (errors.length > 0) {
-    return NextResponse.json(
-      { error: { message: `Partial save failure: ${errors.join("; ")}`, status: 500 } },
-      { status: 500 }
-    );
+    return err(`Partial save failure: ${errors.join("; ")}`, 500);
   }
 
   // Invalidate process-level cache so admin writes propagate within the
@@ -122,5 +111,5 @@ export async function PUT(request: NextRequest) {
     }).catch(() => {})
   );
 
-  return NextResponse.json({ data: { success: true } });
+  return ok({ success: true });
 }

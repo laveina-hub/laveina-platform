@@ -324,6 +324,7 @@ export async function POST(request: NextRequest) {
         total: shipmentIds.length,
         results,
       },
+      error: null,
     });
   } catch (err) {
     console.error("POST /api/admin/dispatch failed:", err);

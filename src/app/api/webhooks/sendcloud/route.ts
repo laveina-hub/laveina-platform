@@ -255,15 +255,20 @@ function statusCodeToId(code: string): number {
 function verifySignature(body: string, signature: string | null): boolean {
   const secret = env.SENDCLOUD_SECRET_KEY;
 
+  // Fall-open is now gated by an explicit env flag rather than NODE_ENV — a
+  // dev who flips NODE_ENV for debugging can no longer accidentally disable
+  // signature verification on a non-local deploy. Set
+  // SENDCLOUD_WEBHOOK_VERIFY_DISABLED=true ONLY for local stub testing.
   if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      console.error("SendCloud webhook: SENDCLOUD_SECRET_KEY not configured in production");
-      return false;
+    if (env.SENDCLOUD_WEBHOOK_VERIFY_DISABLED === "true") {
+      console.warn(
+        "SendCloud webhook: SENDCLOUD_SECRET_KEY not configured and " +
+          "SENDCLOUD_WEBHOOK_VERIFY_DISABLED=true — skipping verification (dev only)"
+      );
+      return true;
     }
-    console.warn(
-      "SendCloud webhook: SENDCLOUD_SECRET_KEY not configured, skipping verification (dev only)"
-    );
-    return true;
+    console.error("SendCloud webhook: SENDCLOUD_SECRET_KEY not configured");
+    return false;
   }
 
   if (!signature) return false;

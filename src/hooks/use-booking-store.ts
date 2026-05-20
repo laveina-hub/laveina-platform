@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import { MAX_PARCELS_PER_BOOKING } from "@/constants/app";
 import type { DeliveryMode } from "@/types/enums";
 import type {
   DeliverySpeedInput as DeliverySpeed,
@@ -9,8 +10,9 @@ import type {
 
 export type { DeliverySpeed };
 
-/** A1 (client answer 2026-04-21): up to 5 parcels per booking, same destination. */
-export const MAX_PARCELS_PER_BOOKING = 5;
+/** Re-exported from constants/app so the schema, the wizard, and this store
+ *  share one source. A1 (client answer 2026-04-21): up to 5 parcels per booking. */
+export { MAX_PARCELS_PER_BOOKING };
 
 /** Route-aware quote snapshot cached from POST /api/shipments/quote. Drives
  *  Step 2–4 price displays so the wizard stays consistent with server math. */

@@ -5,9 +5,9 @@ import { ShipmentStatus } from "@/types/enums";
 
 describe("status-transitions", () => {
   describe("STATUS_TRANSITIONS", () => {
-    it("covers all 7 shipment statuses", () => {
+    it("covers all 8 shipment statuses (7 happy-path + cancelled)", () => {
       const allStatuses = Object.values(ShipmentStatus);
-      expect(allStatuses).toHaveLength(7);
+      expect(allStatuses).toHaveLength(8);
 
       for (const status of allStatuses) {
         expect(STATUS_TRANSITIONS).toHaveProperty(status);
@@ -18,9 +18,13 @@ describe("status-transitions", () => {
       expect(STATUS_TRANSITIONS[ShipmentStatus.DELIVERED]).toEqual([]);
     });
 
-    it("each status has exactly one valid next status (linear flow)", () => {
+    it("cancelled is a terminal state with no transitions", () => {
+      expect(STATUS_TRANSITIONS[ShipmentStatus.CANCELLED]).toEqual([]);
+    });
+
+    it("each happy-path status has exactly one valid next status (linear flow)", () => {
       const nonTerminal = Object.values(ShipmentStatus).filter(
-        (s) => s !== ShipmentStatus.DELIVERED
+        (s) => s !== ShipmentStatus.DELIVERED && s !== ShipmentStatus.CANCELLED
       );
 
       for (const status of nonTerminal) {
@@ -90,6 +94,27 @@ describe("status-transitions", () => {
 
     it("returns false for unknown status", () => {
       expect(isValidTransition("unknown_status", ShipmentStatus.DELIVERED)).toBe(false);
+    });
+
+    it("allows cancel from any pre-delivered state", () => {
+      expect(isValidTransition(ShipmentStatus.PAYMENT_CONFIRMED, ShipmentStatus.CANCELLED)).toBe(
+        true
+      );
+      expect(isValidTransition(ShipmentStatus.WAITING_AT_ORIGIN, ShipmentStatus.CANCELLED)).toBe(
+        true
+      );
+      expect(isValidTransition(ShipmentStatus.IN_TRANSIT, ShipmentStatus.CANCELLED)).toBe(true);
+      expect(isValidTransition(ShipmentStatus.READY_FOR_PICKUP, ShipmentStatus.CANCELLED)).toBe(
+        true
+      );
+    });
+
+    it("rejects cancel from delivered (terminal)", () => {
+      expect(isValidTransition(ShipmentStatus.DELIVERED, ShipmentStatus.CANCELLED)).toBe(false);
+    });
+
+    it("rejects cancel from already-cancelled (terminal)", () => {
+      expect(isValidTransition(ShipmentStatus.CANCELLED, ShipmentStatus.CANCELLED)).toBe(false);
     });
   });
 });
