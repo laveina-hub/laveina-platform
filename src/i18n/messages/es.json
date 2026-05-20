@@ -1089,7 +1089,8 @@
     "in_transit": "En tránsito",
     "arrived_at_destination": "Llegado a tienda de destino",
     "ready_for_pickup": "Listo para recoger",
-    "delivered": "Entregado"
+    "delivered": "Entregado",
+    "cancelled": "Cancelado"
   },
   "trackingBucket": {
     "awaiting_dropoff": "Pedido Confirmado",

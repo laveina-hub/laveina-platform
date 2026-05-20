@@ -1,16 +1,21 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 
 import { mapSendcloudStatusV3 } from "@/constants/sendcloud-status-map";
+import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
+import { logAuditEvent } from "@/services/audit.service";
 import { getSendcloudParcelStatus } from "@/services/sendcloud.service";
 import { DeliveryMode } from "@/types/enums";
 import type { ShipmentStatus } from "@/types/enums";
 
-export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const rl = adminLimiter.check(getClientIp(request));
+    if (!rl.success) return rateLimitResponse(rl.resetMs);
+
     const auth = await verifyAuth();
     if (auth.error) return auth.error;
-    const { supabase, role } = auth;
+    const { supabase, role, user } = auth;
 
     if (role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -76,6 +81,20 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
         new_status: mappedStatus,
       });
     }
+
+    after(
+      logAuditEvent({
+        actor_id: user.id,
+        action: "shipment.force_sync",
+        resource: "shipment",
+        resource_id: shipment.id,
+        metadata: {
+          sendcloud_status_code: statusCode,
+          mapped_status: mappedStatus ?? oldStatus,
+          status_changed: statusChanged,
+        },
+      }).catch(() => {})
+    );
 
     return NextResponse.json({
       data: {

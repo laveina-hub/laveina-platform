@@ -184,6 +184,24 @@ describe("booking step schemas", () => {
       expect(result.success).toBe(true);
     });
 
+    // Regression: real customer input formats that the original strict 3-3-3
+    // regex rejected. The schema now strips non-digit separators before
+    // validating, so all of these reach the validator as the same 9-digit
+    // number.
+    it.each([
+      ["iPhone 3-2-2-2 grouping", "+34 612 34 56 78"],
+      ["compact +34 with no spaces", "+34612345678"],
+      ["00 international prefix", "0034 612 345 678"],
+      ["bare 34 prefix without +", "34612345678"],
+      ["Madrid landline 2-3-2-2", "+34 91 234 56 78"],
+      ["parenthesised country code", "(+34) 612 345 678"],
+      ["dot separators", "+34.612.345.678"],
+      ["pasted with surrounding whitespace", "  +34 612 345 678  "],
+    ])("accepts %s", (_label, sender_phone) => {
+      const result = bookingStepContactSchema.safeParse({ ...validContact, sender_phone });
+      expect(result.success).toBe(true);
+    });
+
     it("rejects name shorter than 2 chars", () => {
       const result = bookingStepContactSchema.safeParse({
         ...validContact,
@@ -404,6 +422,18 @@ describe("createCheckoutSchema", () => {
     const result = createCheckoutSchema.safeParse({
       ...validCheckout,
       parcels: [],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects more than 5 parcels (A1 booking cap)", () => {
+    const result = createCheckoutSchema.safeParse({
+      ...validCheckout,
+      parcels: Array.from({ length: 6 }, () => ({
+        preset_slug: "mini" as const,
+        weight_kg: 1,
+        wants_insurance: false,
+      })),
     });
     expect(result.success).toBe(false);
   });

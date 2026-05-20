@@ -9,6 +9,7 @@ const statusStyles: Record<ShipmentStatus, string> = {
   arrived_at_destination: "bg-cyan-50 text-cyan-700 ring-cyan-600/20",
   ready_for_pickup: "bg-orange-50 text-orange-700 ring-orange-600/20",
   delivered: "bg-green-50 text-green-700 ring-green-600/20",
+  cancelled: "bg-red-50 text-red-700 ring-red-600/20",
 };
 
 export type StatusBadgeProps = {

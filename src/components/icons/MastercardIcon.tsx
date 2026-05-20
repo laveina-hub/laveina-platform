@@ -1,10 +1,14 @@
 interface MastercardIconProps {
   size?: number;
   className?: string;
+  /** Override the default aria-label (the brand name). Pass a translated
+   *  string like t("payments.mastercardLogo") for screen-reader friendliness
+   *  in non-English locales. */
+  ariaLabel?: string;
 }
 
 /** Mastercard brand mark (red + yellow overlapping circles) from design asset mastercard.svg. Brand colors hardcoded. */
-export function MastercardIcon({ size = 24, className }: MastercardIconProps) {
+export function MastercardIcon({ size = 24, className, ariaLabel }: MastercardIconProps) {
   const width = size;
   const height = Math.round((size * 13) / 20);
   return (
@@ -15,7 +19,7 @@ export function MastercardIcon({ size = 24, className }: MastercardIconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="Mastercard"
+      aria-label={ariaLabel ?? "Mastercard"}
       role="img"
     >
       <g clipPath="url(#mastercard-clip)">

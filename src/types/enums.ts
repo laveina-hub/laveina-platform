@@ -6,6 +6,11 @@ export const ShipmentStatus = {
   ARRIVED_AT_DESTINATION: "arrived_at_destination",
   READY_FOR_PICKUP: "ready_for_pickup",
   DELIVERED: "delivered",
+  // Terminal: parcel pulled back before delivery. Reachable from any
+  // pre-delivered state via the admin cancel route. Not part of the
+  // happy-path 7-stage flow in the spec — added because cancel must update
+  // local state, not just call SendCloud.
+  CANCELLED: "cancelled",
 } as const;
 
 export type ShipmentStatus = (typeof ShipmentStatus)[keyof typeof ShipmentStatus];

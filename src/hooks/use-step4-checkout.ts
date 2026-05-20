@@ -43,6 +43,19 @@ type ValidationDetails = {
   formErrors?: string[];
 };
 
+/** Runtime narrow for the `details` payload returned by the create-checkout
+ *  route on 400. Accepts the shape if at least one of the two expected
+ *  fields is an object/array; rejects everything else. */
+function isValidationDetails(value: unknown): value is ValidationDetails {
+  if (!value || typeof value !== "object") return false;
+  const obj = value as Record<string, unknown>;
+  const fe = obj.fieldErrors;
+  const form = obj.formErrors;
+  const feOk = fe === undefined || (typeof fe === "object" && fe !== null);
+  const formOk = form === undefined || Array.isArray(form);
+  return feOk && formOk;
+}
+
 function extractRecipientErrors(details: ValidationDetails): RecipientFieldErrors {
   const out: RecipientFieldErrors = {};
   for (const key of RECIPIENT_FIELD_KEYS) {
@@ -135,8 +148,12 @@ export function useStep4Checkout({ presets, speed }: UseStep4CheckoutArgs) {
         // inputs marked, and surface a targeted toast instead of the generic
         // "payment failed" — which would force them to hunt for the bad
         // field with no signal.
-        if (res.status === 400 && body?.error === "invalid_body" && body?.details) {
-          const details = body.details as ValidationDetails;
+        if (
+          res.status === 400 &&
+          body?.error === "invalid_body" &&
+          isValidationDetails(body?.details)
+        ) {
+          const details = body.details;
           const recipientErrors = extractRecipientErrors(details);
           const senderErrors = extractSenderErrors(details);
           const recipientHasErrors = Object.keys(recipientErrors).length > 0;

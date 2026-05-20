@@ -1,32 +1,38 @@
 import { z } from "zod";
 
+import { MAX_PARCELS_PER_BOOKING } from "@/constants/app";
 import {
   MAX_LONGEST_SIDE_CM,
   MAX_TOTAL_DIMENSIONS_CM,
   MAX_WEIGHT_KG,
 } from "@/constants/parcel-sizes";
+import { isValidSpanishPhone } from "@/lib/format/phone";
 
-// Spanish mobile / landline. Accepts either "+34 XXX XXX XXX" (with/without
-// spaces or dashes) or a bare 9-digit local number. Normalization to E.164
-// happens at the service layer.
-const SPANISH_PHONE_REGEX = /^(?:\+34[\s-]?)?[6-9]\d{2}[\s-]?\d{3}[\s-]?\d{3}$/;
 // Q18.3 — WhatsApp accepts any international number (tourists, expatriates
 // whose WhatsApp is tied to a non-ES mobile). E.164 constrains to + followed
 // by a country code (1–9) and 7–14 additional digits, total 8–15 digits.
-// We tolerate spaces/dashes in the input and strip them before checking.
+// We tolerate spaces/dashes/dots/parentheses in the input and strip them
+// before checking.
 const INTERNATIONAL_PHONE_REGEX = /^\+[1-9]\d{7,14}$/;
 
 const personNameField = z.string().min(2, "validation.nameMin").max(60, "validation.nameMax");
 
 // Q18.3 — WhatsApp validator accepts either a Spanish number (when the
 // checkbox copies phone → whatsapp) OR any international E.164. Input is
-// stripped of spaces/dashes, then either regex is allowed to match.
+// stripped of common separators (whitespace, dashes, dots, parentheses) so
+// `(+34) 612-345-678`, `+34.612.345.678`, `+34 612 34 56 78` and friends all
+// reach the regex as `+34612345678`.
+function stripPhoneSeparators(val: unknown): unknown {
+  if (typeof val !== "string") return val;
+  return val.trim().replace(/[\s\-.()]/g, "");
+}
+
 const internationalPhoneField = z.preprocess(
-  (val) => (typeof val === "string" ? val.replace(/[\s-]/g, "") : val),
+  stripPhoneSeparators,
   z
     .string()
     .refine(
-      (v) => SPANISH_PHONE_REGEX.test(v) || INTERNATIONAL_PHONE_REGEX.test(v),
+      (v) => isValidSpanishPhone(v) || INTERNATIONAL_PHONE_REGEX.test(v),
       "validation.whatsappInvalid"
     )
 );
@@ -36,6 +42,12 @@ const internationalPhoneField = z.preprocess(
 // local development, testers without a Spanish SIM need to enter a foreign
 // WhatsApp number (e.g. +386 for Slovenia, +1 for US) so they can verify the
 // end-to-end Gallabox delivery against their own device.
+//
+// Documented exception to the CLAUDE.md "no direct process.env" rule: this
+// schema is imported by client bundles (booking wizard), and `env.NODE_ENV`
+// from `@/env` is server-only under t3-env. `process.env.NODE_ENV` is the
+// one env var Next.js inlines into both server and client bundles at build
+// time, so reading it directly is safe and is the canonical pattern.
 //
 // Next.js replaces `process.env.NODE_ENV` at build time in both server and
 // client bundles, so this gate is effectively a compile-time constant:
@@ -49,10 +61,20 @@ const internationalPhoneField = z.preprocess(
 // rejected) continue to protect the production contract. Staging and
 // production always enforce the Spanish-only regex — there's no runtime
 // toggle, nothing a real customer can flip.
+//
+// The Spanish branch delegates to `isValidSpanishPhone` from
+// `@/lib/format/phone`, which strips every non-digit and accepts any common
+// grouping (3-3-3, 3-2-2-2 from iPhone contacts, 2-3-2-2 Madrid landline,
+// "0034" prefix, parentheses, dots). The previous inline regex required
+// digit groups in exact 3-3-3 positions and rejected every other layout —
+// the root cause of "Spanish numbers being rejected" on real customer input.
+const spanishPhoneField = z.preprocess(
+  stripPhoneSeparators,
+  z.string().refine((v) => isValidSpanishPhone(v), "validation.phoneInvalid")
+);
+
 const phoneField =
-  process.env.NODE_ENV === "development"
-    ? internationalPhoneField
-    : z.string().regex(SPANISH_PHONE_REGEX, "validation.phoneInvalid");
+  process.env.NODE_ENV === "development" ? internationalPhoneField : spanishPhoneField;
 
 const emailField = z.string().email("validation.emailInvalid");
 
@@ -226,7 +248,7 @@ export const quoteRequestSchema = z
     destination_postcode: z.string().regex(/^[0-9]{5}$/, "validation.postcodeInvalid"),
     origin_pickup_point_id: z.string().uuid().optional(),
     destination_pickup_point_id: z.string().uuid().optional(),
-    parcels: z.array(parcelItemSchema).min(1).max(5),
+    parcels: z.array(parcelItemSchema).min(1).max(MAX_PARCELS_PER_BOOKING),
   })
   .refine(
     (data) =>
@@ -256,7 +278,7 @@ export const createCheckoutSchema = z
     destination_postcode: z.string().regex(/^[0-9]{5}$/),
     destination_pickup_point_id: z.string().uuid(),
 
-    parcels: z.array(parcelItemSchema).min(1),
+    parcels: z.array(parcelItemSchema).min(1).max(MAX_PARCELS_PER_BOOKING),
     delivery_speed: deliverySpeedSchema,
   })
   .refine((data) => data.origin_pickup_point_id !== data.destination_pickup_point_id, {

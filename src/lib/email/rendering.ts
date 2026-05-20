@@ -72,3 +72,36 @@ export function wrapHtml(parts: WrapHtmlParts): string {
   </body>
 </html>`;
 }
+
+// Mailbox providers (Gmail, Outlook, iCloud) treat HTML-only mail as a strong
+// spam signal — a matching `text/plain` part dramatically improves the
+// delivered-to-inbox rate. We assemble our HTML from a small, known set of
+// tags (`<p>`, `<br/>`, `<a>`, `<strong>`, `<hr>`), so a tiny converter is
+// enough — no `html-to-text` dependency needed.
+//
+// The converter is conservative: it preserves anchor URLs (`label (url)`),
+// turns block-ish tags into newlines, decodes the entities `escapeHtml` emits,
+// and collapses runs of blank lines so the result is readable in any plaintext
+// client (and in spam-filter heuristics).
+export function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<!DOCTYPE[^>]*>/gi, "")
+    .replace(/<\/?(?:html|body|head)[^>]*>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<hr[^>]*>/gi, "\n----------\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<p[^>]*>/gi, "")
+    .replace(/<a [^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, "$2 ($1)")
+    .replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}

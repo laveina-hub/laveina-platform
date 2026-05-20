@@ -69,6 +69,23 @@ describe("routing.service", () => {
       const result = getDeliveryMode("08001", "08099");
       expect(result.mode).toBe("internal");
     });
+
+    it("blocks 00xxx postcodes (province 00 doesn't exist)", () => {
+      const result = getDeliveryMode("00100", "08036");
+      expect(result.mode).toBe("blocked");
+    });
+
+    it("blocks 53xxx–99xxx postcodes (unallocated provinces)", () => {
+      expect(getDeliveryMode("53000", "08036").mode).toBe("blocked");
+      expect(getDeliveryMode("99999", "08036").mode).toBe("blocked");
+      expect(getDeliveryMode("08001", "75001").mode).toBe("blocked");
+    });
+
+    it("accepts postcodes at the province boundary", () => {
+      // 01xxx = Álava, 52xxx = Melilla (the bounds)
+      expect(getDeliveryMode("01001", "08036").mode).toBe("sendcloud");
+      expect(getDeliveryMode("08001", "52001").mode).toBe("sendcloud");
+    });
   });
 
   describe("isInternalRoute", () => {

@@ -1,10 +1,12 @@
 interface StripeIconProps {
   size?: number;
   className?: string;
+  /** Override the default aria-label (the brand name). */
+  ariaLabel?: string;
 }
 
 /** Stripe wordmark (logo only) from design asset stripe.svg. Brand purple is hardcoded. Wrap in a gray pill to match the payment-badge style in the design. */
-export function StripeIcon({ size = 24, className }: StripeIconProps) {
+export function StripeIcon({ size = 24, className, ariaLabel }: StripeIconProps) {
   const width = size;
   const height = Math.round((size * 11) / 24);
   return (
@@ -15,7 +17,7 @@ export function StripeIcon({ size = 24, className }: StripeIconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="Stripe"
+      aria-label={ariaLabel ?? "Stripe"}
       role="img"
     >
       <g clipPath="url(#stripe-clip)">

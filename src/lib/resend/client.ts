@@ -1,4 +1,5 @@
 import { env } from "@/env";
+import { htmlToPlainText } from "@/lib/email/rendering";
 
 // Thin wrapper over Resend's REST API — mirrors `src/lib/gallabox/client.ts`
 // so transactional email sending stays SDK-free and consistent with the rest
@@ -69,7 +70,15 @@ export async function sendResendEmail(input: ResendSendInput): Promise<ResendRes
     subject: input.subject,
   };
   if (input.html) payload.html = input.html;
-  if (input.text) payload.text = input.text;
+  // Mailbox providers (Gmail, Outlook, iCloud) penalise HTML-only mail in
+  // their spam scoring. Derive a `text/plain` part from the HTML whenever the
+  // caller didn't supply one — keeps every send multipart without forcing
+  // each template to maintain a parallel plain body.
+  if (input.text) {
+    payload.text = input.text;
+  } else if (input.html) {
+    payload.text = htmlToPlainText(input.html);
+  }
   if (input.replyTo) payload.reply_to = input.replyTo;
 
   let lastError: Error | null = null;

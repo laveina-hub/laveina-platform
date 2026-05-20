@@ -1,10 +1,12 @@
 interface WhatsAppIconProps {
   size?: number;
   className?: string;
+  /** Override the default aria-label (the brand name). */
+  ariaLabel?: string;
 }
 
 /** WhatsApp brand badge (green circle with white logo) from design asset whatsapp.svg. Used on the "Share via WhatsApp" button. Brand colors are intentionally hardcoded — do not pass a color prop. */
-export function WhatsAppIcon({ size = 24, className }: WhatsAppIconProps) {
+export function WhatsAppIcon({ size = 24, className, ariaLabel }: WhatsAppIconProps) {
   return (
     <svg
       width={size}
@@ -13,7 +15,7 @@ export function WhatsAppIcon({ size = 24, className }: WhatsAppIconProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      aria-label="WhatsApp"
+      aria-label={ariaLabel ?? "WhatsApp"}
       role="img"
     >
       <path

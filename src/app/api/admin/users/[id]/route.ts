@@ -1,5 +1,6 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 
+import { err, forbidden, ok } from "@/lib/api-response";
 import { adminLimiter, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
 import { logAuditEvent } from "@/services/audit.service";
@@ -14,18 +15,14 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   const auth = await verifyAuth();
   if (auth.error) return auth.error;
 
-  if (auth.role !== "admin") {
-    return NextResponse.json({ error: { message: "Forbidden", status: 403 } }, { status: 403 });
-  }
+  if (auth.role !== "admin") return forbidden();
 
   const { id } = await context.params;
   const result = await getUserById(id);
 
-  if (result.error) {
-    return NextResponse.json({ error: result.error }, { status: result.error.status });
-  }
+  if (result.error) return err(result.error);
 
-  return NextResponse.json({ data: result.data });
+  return ok(result.data);
 }
 
 export async function PUT(request: NextRequest, context: RouteContext) {
@@ -35,40 +32,27 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   const auth = await verifyAuth();
   if (auth.error) return auth.error;
 
-  if (auth.role !== "admin") {
-    return NextResponse.json({ error: { message: "Forbidden", status: 403 } }, { status: 403 });
-  }
+  if (auth.role !== "admin") return forbidden();
 
   const { id } = await context.params;
 
   // Prevent admins from demoting themselves
   if (id === auth.user.id) {
-    return NextResponse.json(
-      {
-        error: {
-          message: "adminUsers.cannotChangeOwnRole",
-          code: "SELF_ROLE_CHANGE",
-          status: 400,
-        },
-      },
-      { status: 400 }
-    );
+    return err("adminUsers.cannotChangeOwnRole", 400, "SELF_ROLE_CHANGE");
   }
 
   const body: unknown = await request.json();
   const parsed = updateUserRoleSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid request body", details: parsed.error.flatten() },
+      { error: { message: "Invalid request body", status: 400 }, details: parsed.error.flatten() },
       { status: 400 }
     );
   }
 
   const result = await updateUserRole(id, parsed.data);
 
-  if (result.error) {
-    return NextResponse.json({ error: result.error }, { status: result.error.status });
-  }
+  if (result.error) return err(result.error);
 
   after(
     logAuditEvent({
@@ -80,5 +64,5 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }).catch(() => {})
   );
 
-  return NextResponse.json({ data: result.data });
+  return ok(result.data);
 }

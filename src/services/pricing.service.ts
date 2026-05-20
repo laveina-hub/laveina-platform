@@ -18,7 +18,6 @@ const IVA_RATE = 0.21;
 const DEFAULT_MIN_SHIPPING_CENTS = 400;
 const BASE_INSURANCE_COVERAGE_CENTS = 2500;
 const DEFAULT_MARGIN_PERCENT = 25;
-const DEFAULT_QUOTE_CACHE_TTL_SECONDS = 300;
 
 export { getSettingNumber };
 
@@ -607,14 +606,6 @@ export async function quoteShipmentPrices(
     },
     error: null,
   };
-}
-
-export function getQuoteCacheTtlSeconds(settings: AdminSettings): number {
-  return getSettingNumber(
-    settings,
-    "sendcloud_quote_cache_ttl_seconds",
-    DEFAULT_QUOTE_CACHE_TTL_SECONDS
-  );
 }
 
 // ── LEGACY API (removed) ──────────────────────────────────────────────────

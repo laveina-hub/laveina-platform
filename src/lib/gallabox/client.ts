@@ -68,7 +68,7 @@ function isRetryable(status: number): boolean {
  * synthetic `id` is prefixed with `stub:` so it's easy to spot in the DB.
  */
 function isStubEnabled(): boolean {
-  return process.env.GALLABOX_STUB === "true";
+  return env.GALLABOX_STUB === "true";
 }
 
 function stubSend(to: string, templateName: string, params: TemplateParam[]): GallaboxResponse {

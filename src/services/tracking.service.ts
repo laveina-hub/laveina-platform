@@ -130,6 +130,17 @@ export async function processQrScan(
     };
   }
 
+  if (shipment.status === ShipmentStatus.CANCELLED) {
+    return {
+      data: null,
+      error: {
+        message: "Shipment was cancelled and can no longer be scanned",
+        code: "CANCELLED",
+        status: 400,
+      },
+    };
+  }
+
   const decision = determineScanAction(shipment, parsed.data.pickup_point_id);
 
   if (decision.type === "error") {

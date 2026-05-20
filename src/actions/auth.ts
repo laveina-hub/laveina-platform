@@ -51,7 +51,7 @@ export async function sendPasswordResetOtp(email: string): Promise<ActionResult>
   const cookieStore = await cookies();
   cookieStore.set(RECOVERY_EMAIL_COOKIE, email, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: RECOVERY_EMAIL_MAX_AGE,
     path: "/",

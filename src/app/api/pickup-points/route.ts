@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { adminLimiter, getClientIp, publicLimiter, rateLimitResponse } from "@/lib/rate-limit";
 import { verifyAuth } from "@/lib/supabase/auth";
+import { logAuditEvent } from "@/services/audit.service";
 import {
   createPickupPoint,
   listPickupPoints,
@@ -83,6 +84,19 @@ export async function POST(request: NextRequest) {
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
+
+  after(
+    logAuditEvent({
+      actor_id: auth.user.id,
+      action: "pickup_point.created",
+      resource: "pickup_points",
+      resource_id: result.data.id,
+      metadata: {
+        name: result.data.name,
+        postcode: result.data.postcode,
+      },
+    }).catch(() => {})
+  );
 
   return NextResponse.json({ data: result.data }, { status: 201 });
 }

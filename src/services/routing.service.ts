@@ -4,6 +4,14 @@ import { DeliveryMode } from "@/types/enums";
 
 const BARCELONA_PREFIX = "08";
 
+// Spanish postcodes are 5 digits where the first two encode the province
+// (01–52). 53–99 and 00 are unallocated — accepting them lets typos through
+// to SendCloud, where they come back as "no eligible rates" with no postcode
+// hint for the user. Gating here gives a clean, localizable error at the
+// booking-wizard boundary instead.
+const MIN_SPANISH_PROVINCE = 1;
+const MAX_SPANISH_PROVINCE = 52;
+
 export type RoutingResult =
   | { mode: "internal" }
   | { mode: "sendcloud" }
@@ -30,8 +38,16 @@ export function getDeliveryMode(
   return { mode: DeliveryMode.SENDCLOUD };
 }
 
-function isValidSpanishPostcode(postcode: string): boolean {
-  return /^[0-9]{5}$/.test(postcode);
+/**
+ * Validates a Spanish postcode: exactly 5 digits AND the first two digits
+ * encode a real province (01–52). Rejects "00xxx" and "53xxx"–"99xxx".
+ * Exported so callers (validations/, /api/shipments/quote) can rely on the
+ * same definition the routing decision uses.
+ */
+export function isValidSpanishPostcode(postcode: string): boolean {
+  if (!/^[0-9]{5}$/.test(postcode)) return false;
+  const province = parseInt(postcode.slice(0, 2), 10);
+  return province >= MIN_SPANISH_PROVINCE && province <= MAX_SPANISH_PROVINCE;
 }
 
 export function isInternalRoute(result: RoutingResult): result is { mode: "internal" } {

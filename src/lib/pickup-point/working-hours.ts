@@ -40,7 +40,11 @@ export function getTodayWeekdayKey(now: Date = new Date(), timeZone = "Europe/Ma
     weekday: "long",
   }).formatToParts(now);
   const weekday = parts.find((p) => p.type === "weekday")?.value.toLowerCase() ?? "monday";
-  return (WEEKDAY_ORDER as string[]).includes(weekday) ? (weekday as WeekdayKey) : "monday";
+  // SAFETY: WEEKDAY_ORDER is a readonly tuple of WeekdayKey literals; the
+  // includes() narrows `weekday` to WeekdayKey only inside the true branch.
+  return (WEEKDAY_ORDER as readonly string[]).includes(weekday)
+    ? (weekday as WeekdayKey)
+    : "monday";
 }
 
 /** First open slot for today, or null if the shop is closed / data missing.

@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
 
+import { env } from "@/env";
 import { routing } from "@/i18n/routing";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://laveina.co";
+const BASE_URL = env.NEXT_PUBLIC_APP_URL ?? "https://laveina.co";
 
 const publicRoutes = [
   "/",
